@@ -1,0 +1,18 @@
+import type { ReactNode } from 'react'
+import { ThemeToggle } from './ShellControls'
+
+export function PublicShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="public-shell">
+      <header className="public-shell__header">
+        <a className="brand" href="/entrar" aria-label="Resgata — início">
+          <img src="/logo.svg" alt="" width="40" height="40" />
+          <span>Resgata</span>
+        </a>
+        <ThemeToggle />
+      </header>
+      <main className="public-shell__content">{children}</main>
+    </div>
+  )
+}
+

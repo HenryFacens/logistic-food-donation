@@ -1,0 +1,4 @@
+interface:
+  display_name: "Resgata Multi-Agent"
+  short_description: "Coordinate Resgata ownership and phase gates"
+  default_prompt: "Use $resgata-multi-agent to assign or review this Resgata work under the repository ownership, contract-freeze, handoff, and phase-gate rules."

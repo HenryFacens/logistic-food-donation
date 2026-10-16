@@ -1,0 +1,4 @@
+interface:
+  display_name: "Resgata Web Architecture"
+  short_description: "Preserve Resgata frontend boundaries and data flow"
+  default_prompt: "Use $resgata-web-architecture to implement this apps/web change without breaking feature boundaries, routing, or offline behavior."

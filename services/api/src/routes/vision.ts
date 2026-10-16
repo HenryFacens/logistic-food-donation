@@ -1,0 +1,123 @@
+import {
+  classificationSchema,
+  classifyDonationRequestSchema,
+  type Classification,
+  type ClassifyDonationRequest,
+} from "@resgata/shared";
+import { getConfig } from "../config.js";
+import { getPool } from "../db.js";
+import { ApiError } from "../errors.js";
+import { json, parseJson, type ApiHandler } from "../http.js";
+import { requireActor } from "../auth.js";
+
+const categories: Array<{
+  category: Classification["category"];
+  terms: string[];
+  perishabilityMinutes: number;
+}> = [
+  {
+    category: "bakery",
+    terms: ["pão", "pães", "bolo", "padaria"],
+    perishabilityMinutes: 360,
+  },
+  {
+    category: "produce",
+    terms: ["fruta", "verdura", "legume", "banana"],
+    perishabilityMinutes: 240,
+  },
+  {
+    category: "dairy",
+    terms: ["leite", "queijo", "iogurte"],
+    perishabilityMinutes: 180,
+  },
+  {
+    category: "prepared",
+    terms: ["refeição", "marmita", "comida pronta"],
+    perishabilityMinutes: 120,
+  },
+  {
+    category: "pantry",
+    terms: ["arroz", "feijão", "macarrão", "enlatado"],
+    perishabilityMinutes: 2880,
+  },
+];
+
+function normalizeText(value: string): string {
+  return value
+    .toLocaleLowerCase("pt-BR")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
+export function deterministicClassification(
+  request: ClassifyDonationRequest,
+): Classification {
+  const description =
+    request.manualDescription?.trim() ||
+    (request.source === "camera"
+      ? "Alimento identificado pela câmera"
+      : "Alimento identificado no arquivo");
+  const normalized = normalizeText(description);
+  const match = categories.find((entry) =>
+    entry.terms.some((term) => normalized.includes(normalizeText(term))),
+  );
+  return classificationSchema.parse({
+    category: match?.category ?? "other",
+    description: `${description} — SIMULADO`,
+    confidence: request.manualDescription ? 0.88 : 0.76,
+    perishabilityMinutes: match?.perishabilityMinutes ?? 720,
+    source: request.source,
+    simulated: true,
+  });
+}
+
+async function classifyWithProxy(
+  body: ClassifyDonationRequest,
+  correlationId: string,
+): Promise<Classification> {
+  const config = getConfig();
+  const response = await fetch(
+    `${(config.VISION_API_URL ?? config.OPENAI_BASE_URL).replace(/\/$/, "")}/classify`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-correlation-id": correlationId,
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(config.VISION_TIMEOUT_MS),
+    },
+  );
+  if (!response.ok) {
+    throw new ApiError(
+      503,
+      "vision_unavailable",
+      "O classificador de imagens está indisponível.",
+    );
+  }
+  return classificationSchema.parse(await response.json());
+}
+
+export const classifyDonation: ApiHandler = async (request) => {
+  const body = await parseJson(request, classifyDonationRequestSchema);
+  const client = await getPool().connect();
+  try {
+    await requireActor(client, request, ["seller"]);
+  } finally {
+    client.release();
+  }
+
+  const correlationId =
+    request.headers.get("x-correlation-id") ?? crypto.randomUUID();
+  try {
+    return json(200, await classifyWithProxy(body, correlationId));
+  } catch (error) {
+    if (
+      error instanceof ApiError &&
+      error.code !== "vision_unavailable"
+    ) {
+      throw error;
+    }
+    return json(200, deterministicClassification(body));
+  }
+};

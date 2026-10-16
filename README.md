@@ -1,26 +1,209 @@
-# Hackathon BCG — PWA
+# Resgata
 
-PWA com Vite + React + TypeScript + [vite-plugin-pwa](https://vite-pwa-org.netlify.app/).
+Resgata dispatches perishable food surplus to the most suitable NGO, retries
+the next destination when an offer expires, and tracks collection, delivery,
+notifications, coupons, and social impact.
 
-## Comandos
+The repository follows the product and architecture references under `docs/`.
+Project-local Codex maintenance skills live under `.codex/skills/`.
 
-```bash
-npm install
-npm run dev       # dev server (service worker habilitado em dev)
-npm run build     # build de produção em dist/
-npm run preview   # serve o build em http://localhost:4173
+## Delivery stages
+
+| Stage | Scope | Status |
+|---|---|---|
+| 0 | pnpm monorepo, source documents, agent rules, maintenance skills | complete |
+| 1 | shared contracts, state machine, matching, migrations, seed, OpenAPI | complete |
+| 2 | Compose infrastructure, API, workers, mocks, and web foundations | complete |
+| 3 | seller, NGO, driver, partner, admin, and offline features | complete |
+| 4 | full/lite runtime integration, smoke tests, concurrency, and visual QA | complete |
+| 5 | physical phone camera/GPS/PWA acceptance | documented, manual |
+
+## Workspace
+
+```text
+apps/web/                 React, Vite, Tailwind, TanStack Query, PWA
+packages/shared/          Zod contracts, state machine, haversine, matching
+services/api/             Azure Functions HTTP application
+services/workers/         outbox relay, matching, fallback, notifications
+services/mocks/           deterministic OpenAI, maps, and ACS mocks
+db/                       PostGIS migrations and fictional Campinas seed
+infra/                    nginx gateway, TLS test proxy, emulator configuration
+scripts/                  contract validation and end-to-end smoke
+docs/handoffs/            staged multi-agent implementation records
+.codex/skills/            architecture and multi-agent maintenance skills
 ```
 
-## O que já vem pronto
+## Architecture
 
-- **Manifest** (`vite.config.ts`): nome, cores, `display: standalone`.
-- **Ícones** gerados automaticamente a partir de `public/logo.svg` (troque o SVG e rode o build).
-- **Service worker** (Workbox) com precache de todo o app → funciona offline.
-- **Aviso de atualização** (`src/pwa/ReloadPrompt.tsx`): avisa quando há nova versão.
-- **Botão de instalar** (`src/pwa/useInstallPrompt.ts`) e indicador online/offline.
+```mermaid
+flowchart LR
+  Web["swa-resgata-web<br/>web"] --> Gateway["apim-resgata<br/>gateway"]
+  Gateway --> API["func-resgata-api<br/>api"]
+  API --> Postgres["psql-resgata<br/>postgres + PostGIS"]
+  API --> Azurite["stresgata<br/>azurite"]
+  API --> Stream["sigr-resgata<br/>SSE"]
+  API --> OpenAI["oai-resgata<br/>mock-openai"]
+  API --> Maps["maps-resgata<br/>mock-maps"]
+  API --> Outbox["transactional outbox"]
+  Outbox --> Workers["func-resgata-workers<br/>workers"]
+  Workers --> Bus["sbns-resgata<br/>servicebus or pg"]
+  Bus --> Workers
+  Workers --> ACS["acs-resgata<br/>mock-acs"]
+  Workers --> Postgres
+  ServiceBus["servicebus emulator"] --> MSSQL["mssql"]
+```
 
-## Testando no celular
+All Azure-named services run locally. No Azure credential or live cloud call is
+required.
 
-Service workers exigem HTTPS (exceto em `localhost`). Para testar no celular,
-faça deploy (Vercel, Netlify, Cloudflare Pages) apontando para `dist/`,
-ou use um túnel como `npx localtunnel --port 4173`.
+## Run the full stack
+
+Requirements: Docker Compose and enough memory for SQL Server. Copy the
+development environment and start the default Azure-emulator profile:
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+docker compose ps
+```
+
+Endpoints:
+
+- web: `http://localhost:5173`;
+- gateway and application: `http://localhost:8080`;
+- API directly: `http://localhost:7071/api`;
+- ACS message outbox: `http://localhost:4003/outbox`;
+- Service Bus health: `http://localhost:5300/health`.
+
+Every service should report healthy. Stop the stack with:
+
+```bash
+make down
+```
+
+## Lite mode
+
+Machines that cannot run the SQL Server image can use PostgreSQL as the message
+bus while preserving the same application behavior:
+
+```bash
+make lite
+```
+
+## Seed and reset
+
+The seed contains fictional Campinas/SP data: sellers, NGOs, drivers,
+partners, coupons, and historical donations.
+
+```bash
+make seed
+
+curl -X POST http://localhost:8080/api/dev/reset \
+  -H 'X-Demo-User: seller-padaria-cambui' \
+  -H 'Idempotency-Key: reset-demo-001'
+```
+
+## Demo profiles
+
+The `/entrar` screen selects a fictional identity and sends its key through
+`X-Demo-User`:
+
+- `seller-padaria-cambui`;
+- `ngo-prato-solidario`;
+- `driver-ana`;
+- `partner-cafe-local`.
+
+## Three-minute demo
+
+1. Open `/entrar`, choose **Padaria Cambuí**, classify or describe surplus,
+   and publish it.
+2. Switch to **ONG Prato Solidário**, inspect the explainable matching score,
+   and accept the pending offer.
+3. Switch to **Ana — motorista**, assume the route, confirm collection and
+   delivery with the six-digit demo codes and location.
+4. Return to the seller impact dashboard and inspect the live donation state.
+5. Open the ACS outbox on port 4003 to show offer, collection, and delivery
+   notifications.
+6. Open `/admin/queues` to show outbox, jobs, events, correlation IDs, and
+   dead-letter replay controls.
+
+Set `OFFER_TIMEOUT_SECONDS=5` before startup to demonstrate automatic fallback
+to the next NGO.
+
+## Validation
+
+Automated validation completed on 2026-10-16:
+
+- shared domain: 9 tests;
+- API: 5 tests;
+- workers: 9 tests;
+- mocks: 3 tests;
+- web: 34 tests across 14 files;
+- OpenAPI parsing and clean PostGIS migration/seed validation;
+- production PWA build with 13 precached entries;
+- architecture-boundary lint for 127 web source files;
+- full Service Bus profile smoke: happy path, idempotent replay, timeout
+  fallback, and exactly one winner under concurrent acceptance;
+- lite PostgreSQL-driver smoke with the same scenarios;
+- browser QA for seller, NGO, driver, and partner routes;
+- responsive QA at 390 by 844 with no horizontal document overflow.
+
+Run the full smoke:
+
+```bash
+make smoke
+make smoke-lite
+```
+
+## HTTPS phone testing
+
+Camera, GPS, and installability require a secure context on a physical device.
+The trusted-LAN certificate and temporary nginx TLS proxy procedure is in
+`docs/phone-testing.md`.
+
+## Maintenance skills
+
+- `.codex/skills/resgata-multi-agent`: ownership, handoffs, gates, and
+  subagent integration.
+- `.codex/skills/resgata-web-architecture`: route shells, dependency
+  boundaries, providers, contracts, and feature maintenance.
+
+Both skills were generated with the Codex skill-creator workflow and validated
+with its structural validator.
+
+## Decisions
+
+- The original Vite PWA was retained and moved into the pnpm monorepo.
+- PostgreSQL is the source of truth; no browser or service owns a separate
+  fictional dataset.
+- Every mutation uses correlation and idempotency metadata where applicable.
+- Donation creation writes its event and transactional outbox record in the
+  same database transaction.
+- Atomic database transitions enforce a single winner for concurrent offer
+  acceptance.
+- Service Bus is the default transport; PostgreSQL scheduling remains the
+  deterministic timeout source because the emulator does not provide
+  production-equivalent scheduled-message behavior.
+- The API keeps public `/api/admin/*` compatibility while Azure Functions uses
+  internal `/api/ops/*` routes because `/admin` is reserved by the Functions
+  host.
+- Dashboard routes use a desktop shell that collapses into a wrapped,
+  overflow-free header on narrow screens.
+- The current worktree contains root-level `@azure/mcp` tooling that requires
+  Node 22 on the host. Application runtime images remain pinned to Node 20 and
+  install only their filtered workspace dependencies.
+
+## Known gaps
+
+- Service Bus emulator state is non-persistent and lacks AMQP WebSockets,
+  partitioned entities, Entra ID, autoscale, disaster recovery, large-message
+  support, and production observability/SLA. See `docs/emulator-notes.md`.
+- SSE is implemented as a bounded resumable stream with `Last-Event-ID`, not a
+  permanently held managed SignalR connection.
+- Maps are represented by deterministic local routing/location data; live OSM
+  tiles are intentionally not required so the demo remains offline.
+- QR scanning uses the browser `BarcodeDetector` when available and always
+  provides a six-digit manual fallback; browser support differs from the
+  production-grade ZXing path.
+- Camera, GPS permission behavior, PWA installation, and offline replay still
+  require the documented physical-phone acceptance pass.

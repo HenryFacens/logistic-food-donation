@@ -1,0 +1,67 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["import", "jsx-a11y", "react", "typescript"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "import/no-cycle": "error",
+    "jsx-a11y/anchor-is-valid": "error",
+    "react/jsx-no-useless-fragment": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/shared/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/app/**", "@/features/**", "../../app/**", "../../features/**", "../../../app/**", "../../../features/**"],
+                "message": "shared cannot import from app or features"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/features/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/app/**", "../../app/**", "../../../app/**", "../../../../app/**"],
+                "message": "features cannot import from app"
+              },
+              {
+                "group": ["@/features/*/**"],
+                "message": "cross-feature imports must use the target feature index.ts"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/app/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/features/*/**", "../../features/*/**", "../../../features/*/**"],
+                "message": "app must import feature public APIs through index.ts"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
+

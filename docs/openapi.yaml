@@ -1,0 +1,1792 @@
+openapi: 3.1.0
+info:
+  title: Resgata API
+  version: 0.1.0
+  description: |
+    Contract for the Resgata demo. Fictional forecast, ROI, sponsor, coupon,
+    and historical data is returned with `simulated: true` and the visible
+    label `SIMULADO`.
+servers:
+  - url: /api
+tags:
+  - name: System
+  - name: Demo session
+  - name: Vision
+  - name: Donations
+  - name: Offers
+  - name: Pickups
+  - name: Coupons
+  - name: Impact
+  - name: Partner
+  - name: Admin
+  - name: Events
+paths:
+  /health:
+    get:
+      tags: [System]
+      operationId: getHealth
+      security: []
+      responses:
+        "200":
+          description: Service dependency health.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: A required dependency is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /demo/users:
+    get:
+      tags: [Demo session]
+      operationId: listDemoUsers
+      security: []
+      responses:
+        "200":
+          description: Seeded demo identities for the role picker.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DemoUser"
+
+  /me:
+    get:
+      tags: [Demo session]
+      operationId: getCurrentDemoUser
+      responses:
+        "200":
+          description: Identity selected by X-Demo-User.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentDemoUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /vision/classify:
+    post:
+      tags: [Vision]
+      operationId: classifyDonation
+      parameters:
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassifyDonationRequest"
+      responses:
+        "200":
+          description: Deterministic mock or manual classification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Classification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /donations:
+    get:
+      tags: [Donations]
+      operationId: listDonations
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/DonationStatus"
+      responses:
+        "200":
+          description: Donations visible to the selected demo user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonationList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Donations]
+      operationId: createDonation
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDonationRequest"
+      responses:
+        "201":
+          description: Donation and transactional outbox message were created.
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Donation"
+        "200":
+          description: Idempotent replay of the original successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Donation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /donations/{donationId}:
+    parameters:
+      - $ref: "#/components/parameters/DonationId"
+    get:
+      tags: [Donations]
+      operationId: getDonation
+      responses:
+        "200":
+          description: Donation detail with its ordered timeline.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DonationDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /donations/{donationId}/events:
+    parameters:
+      - $ref: "#/components/parameters/DonationId"
+    get:
+      tags: [Donations]
+      operationId: listDonationEvents
+      responses:
+        "200":
+          description: Ordered audit trail for one donation.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DonationEvent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /offers:
+    get:
+      tags: [Offers]
+      operationId: listOffers
+      parameters:
+        - $ref: "#/components/parameters/NgoIdQuery"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/OfferStatus"
+      responses:
+        "200":
+          description: Offers visible to the selected NGO.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /offers/{offerId}/accept:
+    post:
+      tags: [Offers]
+      operationId: acceptOffer
+      parameters:
+        - $ref: "#/components/parameters/OfferId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferDecisionRequest"
+      responses:
+        "200":
+          description: Offer accepted through an atomic single-winner operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferDecisionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /offers/{offerId}/reject:
+    post:
+      tags: [Offers]
+      operationId: rejectOffer
+      parameters:
+        - $ref: "#/components/parameters/OfferId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferDecisionRequest"
+      responses:
+        "200":
+          description: Offer declined; fallback dispatch continues asynchronously.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferDecisionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /pickups:
+    get:
+      tags: [Pickups]
+      operationId: listPickups
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/PickupStatus"
+      responses:
+        "200":
+          description: NGO receipts or driver collection tasks, scoped by role.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PickupList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /pickups/{pickupId}/assign:
+    post:
+      tags: [Pickups]
+      operationId: assignPickup
+      parameters:
+        - $ref: "#/components/parameters/PickupId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignPickupRequest"
+      responses:
+        "200":
+          description: Driver assigned to a pickup.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pickup"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /pickups/{pickupId}/collect:
+    post:
+      tags: [Pickups]
+      operationId: confirmCollection
+      parameters:
+        - $ref: "#/components/parameters/PickupId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmPickupRequest"
+      responses:
+        "200":
+          description: Pickup code confirmed and donation moved to collected.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pickup"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /pickups/{pickupId}/deliver:
+    post:
+      tags: [Pickups]
+      operationId: confirmDelivery
+      parameters:
+        - $ref: "#/components/parameters/PickupId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmPickupRequest"
+      responses:
+        "200":
+          description: Delivery code confirmed and donation moved to delivered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pickup"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /coupons:
+    get:
+      tags: [Coupons]
+      operationId: listCoupons
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Available simulated coupons for the selected driver.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CouponList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /coupons/{couponId}/redeem:
+    post:
+      tags: [Coupons]
+      operationId: redeemCoupon
+      parameters:
+        - $ref: "#/components/parameters/CouponId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      responses:
+        "201":
+          description: Simulated coupon redemption issued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CouponRedemption"
+        "200":
+          description: Idempotent replay of the original redemption.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CouponRedemption"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /metrics/impact:
+    get:
+      tags: [Impact]
+      operationId: getSellerImpact
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Seller impact calculated from donation history.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImpactDashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /impact/forecast:
+    get:
+      tags: [Impact]
+      operationId: getSellerForecast
+      responses:
+        "200":
+          description: Clearly labeled simulated forecast.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulatedForecast"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /partner/dashboard:
+    get:
+      tags: [Partner]
+      operationId: getPartnerDashboard
+      responses:
+        "200":
+          description: Clearly labeled simulated sponsor and ROI dashboard.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerDashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /partners/{partnerId}/redemptions:
+    get:
+      tags: [Partner]
+      operationId: listPartnerRedemptions
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Coupon redemptions owned by the authenticated partner.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerRedemptionList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /ngos:
+    get:
+      tags: [Offers]
+      operationId: listNgos
+      responses:
+        "200":
+          description: Active NGOs available to receive matched donations.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /dev/reset:
+    post:
+      tags: [Admin]
+      operationId: resetDemo
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      responses:
+        "200":
+          description: Local seeded state restored for another demo run.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoResetResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/queues:
+    get:
+      tags: [Admin]
+      operationId: getQueueDashboard
+      responses:
+        "200":
+          description: Queue counts for the active MessageBus driver.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueDashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /admin/dead-letters:
+    get:
+      tags: [Admin]
+      operationId: listDeadLetters
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: topic
+          in: query
+          schema:
+            $ref: "#/components/schemas/QueueName"
+      responses:
+        "200":
+          description: Unreplayed dead-letter messages.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeadLetterList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /admin/dead-letters/replay:
+    post:
+      tags: [Admin]
+      operationId: replayDeadLetters
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplayDeadLetterRequest"
+      responses:
+        "202":
+          description: Selected messages were queued for replay.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplayDeadLetterResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /stream:
+    get:
+      tags: [Events]
+      operationId: streamEvents
+      parameters:
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: donationId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: |
+            Server-sent event stream. Each `data` field contains a serialized
+            DonationEvent and the event `id` is resumable.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  securitySchemes:
+    DemoUserHeader:
+      type: apiKey
+      in: header
+      name: X-Demo-User
+      description: Seeded demo user key. This is not production authentication.
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    DonationId:
+      name: donationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    OfferId:
+      name: offerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    NgoIdQuery:
+      name: ngoId
+      in: query
+      required: false
+      description: Must match the NGO selected by X-Demo-User when provided.
+      schema:
+        type: string
+        format: uuid
+    PickupId:
+      name: pickupId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CouponId:
+      name: couponId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: X-Demo-User is absent, invalid, or not allowed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource does not exist or is not visible to the demo user.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Atomic state conflict or idempotency-key payload mismatch.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidationError:
+      description: Request failed schema or business validation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Role:
+      type: string
+      enum: [seller, ngo, driver, partner]
+    DonationCategory:
+      type: string
+      enum: [produce, bakery, dairy, prepared, pantry, other]
+    DonationStatus:
+      type: string
+      enum:
+        - posted
+        - classified
+        - offered
+        - accepted
+        - collected
+        - delivered
+        - expired
+        - no_destination
+    DonationUnit:
+      type: string
+      enum: [kg, unit, box, tray]
+    OfferStatus:
+      type: string
+      enum: [pending, accepted, declined, timed_out, cancelled]
+    PickupStatus:
+      type: string
+      enum:
+        - awaiting_driver
+        - assigned
+        - en_route_pickup
+        - collected
+        - en_route_delivery
+        - delivered
+        - cancelled
+    QueueName:
+      type: string
+      enum:
+        - donation.created
+        - donation.classified
+        - offer.sent
+        - offer.timeout
+        - pickup.confirmed
+
+    GeoPoint:
+      type: object
+      additionalProperties: false
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+    Address:
+      type: object
+      additionalProperties: false
+      required: [line1, district, city, state, postalCode, location]
+      properties:
+        line1:
+          type: string
+          minLength: 1
+        line2:
+          type: string
+        district:
+          type: string
+          minLength: 1
+        city:
+          const: Campinas
+        state:
+          const: SP
+        postalCode:
+          type: string
+          pattern: '^\d{5}-?\d{3}$'
+        location:
+          $ref: "#/components/schemas/GeoPoint"
+    DemoUser:
+      type: object
+      additionalProperties: false
+      required: [id, demoKey, role, displayName, phone]
+      properties:
+        id:
+          type: string
+          format: uuid
+        demoKey:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        displayName:
+          type: string
+        phone:
+          type: string
+
+    CurrentDemoUser:
+      type: object
+      additionalProperties: false
+      required: [id, demoKey, role, displayName, phone, profileId]
+      properties:
+        id:
+          type: string
+          format: uuid
+        demoKey:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        displayName:
+          type: string
+        phone:
+          type: string
+        profileId:
+          type: string
+          format: uuid
+
+    Classification:
+      type: object
+      additionalProperties: false
+      required:
+        - category
+        - description
+        - confidence
+        - perishabilityMinutes
+        - source
+        - simulated
+      properties:
+        category:
+          $ref: "#/components/schemas/DonationCategory"
+        description:
+          type: string
+          minLength: 1
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        perishabilityMinutes:
+          type: integer
+          minimum: 15
+          maximum: 10080
+        source:
+          type: string
+          enum: [camera, upload, manual]
+        simulated:
+          type: boolean
+    ClassifyDonationRequest:
+      type: object
+      additionalProperties: false
+      required: [source]
+      anyOf:
+        - required: [imageUrl]
+        - required: [imageBase64]
+        - required: [manualDescription]
+      properties:
+        imageUrl:
+          type: string
+          format: uri
+        imageBase64:
+          type: string
+          minLength: 1
+        manualDescription:
+          type: string
+          minLength: 1
+        source:
+          type: string
+          enum: [camera, upload, manual]
+    CreateDonationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - description
+        - quantity
+        - unit
+        - estimatedWeightKg
+        - perishabilityMinutes
+        - pickupAddress
+        - availableFrom
+        - expiresAt
+      properties:
+        category:
+          $ref: "#/components/schemas/DonationCategory"
+        description:
+          type: string
+          minLength: 1
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          $ref: "#/components/schemas/DonationUnit"
+        estimatedWeightKg:
+          type: number
+          exclusiveMinimum: 0
+        perishabilityMinutes:
+          type: integer
+          minimum: 15
+          maximum: 10080
+        pickupAddress:
+          $ref: "#/components/schemas/Address"
+        availableFrom:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        imageUrl:
+          type: string
+          format: uri
+        classification:
+          $ref: "#/components/schemas/Classification"
+    Donation:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - sellerId
+        - status
+        - category
+        - description
+        - quantity
+        - unit
+        - estimatedWeightKg
+        - perishabilityMinutes
+        - pickupAddress
+        - availableFrom
+        - expiresAt
+        - imageUrl
+        - classification
+        - correlationId
+        - version
+        - simulated
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        sellerId:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/DonationStatus"
+        category:
+          oneOf:
+            - $ref: "#/components/schemas/DonationCategory"
+            - type: "null"
+        description:
+          type: string
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          $ref: "#/components/schemas/DonationUnit"
+        estimatedWeightKg:
+          type: number
+          exclusiveMinimum: 0
+        perishabilityMinutes:
+          type: integer
+          minimum: 15
+        pickupAddress:
+          $ref: "#/components/schemas/Address"
+        availableFrom:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        imageUrl:
+          type: [string, "null"]
+          format: uri
+        classification:
+          oneOf:
+            - $ref: "#/components/schemas/Classification"
+            - type: "null"
+        correlationId:
+          type: string
+        version:
+          type: integer
+          minimum: 0
+        simulated:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        timeline:
+          type: array
+          items:
+            $ref: "#/components/schemas/DonationEvent"
+    PageInfo:
+      type: object
+      additionalProperties: false
+      required: [nextCursor, hasMore]
+      properties:
+        nextCursor:
+          type: [string, "null"]
+        hasMore:
+          type: boolean
+    DonationList:
+      type: object
+      additionalProperties: false
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Donation"
+        page:
+          $ref: "#/components/schemas/PageInfo"
+    DonationEvent:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - donationId
+        - fromStatus
+        - toStatus
+        - eventType
+        - correlationId
+        - payload
+        - occurredAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        donationId:
+          type: string
+          format: uuid
+        fromStatus:
+          oneOf:
+            - $ref: "#/components/schemas/DonationStatus"
+            - type: "null"
+        toStatus:
+          $ref: "#/components/schemas/DonationStatus"
+        eventType:
+          type: string
+        correlationId:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+        occurredAt:
+          type: string
+          format: date-time
+    DonationDetail:
+      allOf:
+        - $ref: "#/components/schemas/Donation"
+        - type: object
+          required: [timeline]
+
+    ScoreComponent:
+      type: object
+      additionalProperties: false
+      required: [raw, normalized, weight, contribution]
+      properties:
+        raw:
+          type: number
+        normalized:
+          type: number
+          minimum: 0
+          maximum: 1
+        weight:
+          type: number
+          minimum: 0
+          maximum: 1
+        contribution:
+          type: number
+          minimum: 0
+          maximum: 100
+    MatchingScore:
+      type: object
+      additionalProperties: false
+      required: [total, eligible, rejectionReasons, components]
+      properties:
+        total:
+          type: number
+          minimum: 0
+          maximum: 100
+        eligible:
+          type: boolean
+        rejectionReasons:
+          type: array
+          items:
+            type: string
+        components:
+          type: object
+          additionalProperties: false
+          required: [distance, capacity, perishability, categoryNeed]
+          properties:
+            distance:
+              $ref: "#/components/schemas/ScoreComponent"
+            capacity:
+              $ref: "#/components/schemas/ScoreComponent"
+            perishability:
+              $ref: "#/components/schemas/ScoreComponent"
+            categoryNeed:
+              $ref: "#/components/schemas/ScoreComponent"
+    Offer:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - donationId
+        - ngoId
+        - rank
+        - status
+        - score
+        - expiresAt
+        - acceptedAt
+        - correlationId
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        donationId:
+          type: string
+          format: uuid
+        ngoId:
+          type: string
+          format: uuid
+        rank:
+          type: integer
+          minimum: 1
+        status:
+          $ref: "#/components/schemas/OfferStatus"
+        score:
+          $ref: "#/components/schemas/MatchingScore"
+        expiresAt:
+          type: string
+          format: date-time
+        acceptedAt:
+          type: [string, "null"]
+          format: date-time
+        correlationId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        donation:
+          $ref: "#/components/schemas/Donation"
+    OfferList:
+      type: object
+      additionalProperties: false
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Offer"
+        page:
+          $ref: "#/components/schemas/PageInfo"
+    OfferDecisionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        correlationId:
+          type: string
+        reason:
+          type: string
+          maxLength: 500
+    OfferDecisionResponse:
+      type: object
+      additionalProperties: false
+      required: [offer, accepted, donationStatus]
+      properties:
+        offer:
+          $ref: "#/components/schemas/Offer"
+        accepted:
+          type: boolean
+        donationStatus:
+          type: string
+          enum: [offered, accepted]
+
+    Pickup:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - donationId
+        - ngoId
+        - driverId
+        - status
+        - pickupCode
+        - deliveryCode
+        - pickupLocation
+        - deliveryLocation
+        - assignedAt
+        - collectedAt
+        - deliveredAt
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        donationId:
+          type: string
+          format: uuid
+        ngoId:
+          type: string
+          format: uuid
+        driverId:
+          type: [string, "null"]
+          format: uuid
+        status:
+          $ref: "#/components/schemas/PickupStatus"
+        pickupCode:
+          type: string
+          pattern: '^\d{6}$'
+        deliveryCode:
+          type: string
+          pattern: '^\d{6}$'
+        pickupLocation:
+          $ref: "#/components/schemas/GeoPoint"
+        deliveryLocation:
+          $ref: "#/components/schemas/GeoPoint"
+        assignedAt:
+          type: [string, "null"]
+          format: date-time
+        collectedAt:
+          type: [string, "null"]
+          format: date-time
+        deliveredAt:
+          type: [string, "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    PickupList:
+      type: object
+      additionalProperties: false
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pickup"
+        page:
+          $ref: "#/components/schemas/PageInfo"
+    AssignPickupRequest:
+      type: object
+      additionalProperties: false
+      required: [driverId]
+      properties:
+        driverId:
+          type: string
+          format: uuid
+    ConfirmPickupRequest:
+      type: object
+      additionalProperties: false
+      required: [code, location]
+      properties:
+        code:
+          type: string
+          pattern: '^\d{6}$'
+        location:
+          $ref: "#/components/schemas/GeoPoint"
+
+    Coupon:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - partnerId
+        - title
+        - description
+        - terms
+        - pointsCost
+        - stock
+        - validFrom
+        - validUntil
+        - active
+        - simulated
+        - simulationLabel
+      properties:
+        id:
+          type: string
+          format: uuid
+        partnerId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        terms:
+          type: string
+        pointsCost:
+          type: integer
+          minimum: 0
+        stock:
+          type: integer
+          minimum: 0
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+        simulated:
+          const: true
+        simulationLabel:
+          const: SIMULADO
+    CouponList:
+      type: object
+      additionalProperties: false
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Coupon"
+        page:
+          $ref: "#/components/schemas/PageInfo"
+    CouponRedemption:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - couponId
+        - driverId
+        - redemptionCode
+        - status
+        - issuedAt
+        - usedAt
+        - simulated
+        - simulationLabel
+      properties:
+        id:
+          type: string
+          format: uuid
+        couponId:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+        redemptionCode:
+          type: string
+        status:
+          type: string
+          enum: [issued, used, cancelled]
+        issuedAt:
+          type: string
+          format: date-time
+        usedAt:
+          type: [string, "null"]
+          format: date-time
+        simulated:
+          const: true
+        simulationLabel:
+          const: SIMULADO
+
+    PartnerRedemption:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - couponId
+        - couponTitle
+        - driverId
+        - redemptionCode
+        - status
+        - issuedAt
+        - usedAt
+        - simulated
+        - simulationLabel
+      properties:
+        id:
+          type: string
+          format: uuid
+        couponId:
+          type: string
+          format: uuid
+        couponTitle:
+          type: string
+        driverId:
+          type: string
+          format: uuid
+        redemptionCode:
+          type: string
+        status:
+          type: string
+          enum: [issued, used, cancelled]
+        issuedAt:
+          type: string
+          format: date-time
+        usedAt:
+          type: [string, "null"]
+          format: date-time
+        simulated:
+          const: true
+        simulationLabel:
+          const: SIMULADO
+    PartnerRedemptionList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartnerRedemption"
+
+    Ngo:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - userId
+        - name
+        - document
+        - address
+        - capacityKg
+        - currentLoadKg
+        - serviceRadiusKm
+        - acceptedCategories
+        - categoryNeeds
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        document:
+          type: string
+        address:
+          $ref: "#/components/schemas/Address"
+        capacityKg:
+          type: number
+          minimum: 0
+        currentLoadKg:
+          type: number
+          minimum: 0
+        serviceRadiusKm:
+          type: number
+          minimum: 0
+        acceptedCategories:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/DonationCategory"
+        categoryNeeds:
+          type: object
+          additionalProperties:
+            type: number
+            minimum: 0
+            maximum: 1
+        active:
+          type: boolean
+    NgoList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ngo"
+
+    DemoResetResult:
+      type: object
+      additionalProperties: false
+      required: [reset, correlationId, simulated, simulationLabel]
+      properties:
+        reset:
+          const: true
+        correlationId:
+          type: string
+          format: uuid
+        simulated:
+          const: true
+        simulationLabel:
+          const: SIMULADO
+
+    ImpactMetric:
+      type: object
+      additionalProperties: false
+      required: [key, label, value, unit]
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+    ImpactDashboard:
+      type: object
+      additionalProperties: false
+      required: [periodStart, periodEnd, metrics, byCategory, recentDonationIds]
+      properties:
+        periodStart:
+          type: string
+          format: date-time
+        periodEnd:
+          type: string
+          format: date-time
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactMetric"
+        byCategory:
+          type: array
+          items:
+            type: object
+            required: [category, donations, weightKg]
+            properties:
+              category:
+                $ref: "#/components/schemas/DonationCategory"
+              donations:
+                type: integer
+                minimum: 0
+              weightKg:
+                type: number
+                minimum: 0
+        recentDonationIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    SimulatedForecast:
+      type: object
+      additionalProperties: false
+      required:
+        - generatedAt
+        - horizonDays
+        - expectedDonations
+        - expectedWeightKg
+        - methodology
+        - simulated
+        - simulationLabel
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+        horizonDays:
+          type: integer
+          minimum: 1
+        expectedDonations:
+          type: number
+          minimum: 0
+        expectedWeightKg:
+          type: number
+          minimum: 0
+        methodology:
+          type: string
+        simulated:
+          const: true
+        simulationLabel:
+          const: SIMULADO
+    PartnerDashboard:
+      type: object
+      additionalProperties: false
+      required:
+        - partnerId
+        - sponsoredDeliveries
+        - estimatedReachPeople
+        - estimatedRoi
+        - activeCoupons
+        - metrics
+        - simulated
+        - simulationLabel
+      properties:
+        partnerId:
+          type: string
+          format: uuid
+        sponsoredDeliveries:
+          type: integer
+          minimum: 0
+        estimatedReachPeople:
+          type: integer
+          minimum: 0
+        estimatedRoi:
+          type: number
+          minimum: 0
+        activeCoupons:
+          type: integer
+          minimum: 0
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactMetric"
+        simulated:
+          const: true
+        simulationLabel:
+          const: SIMULADO
+
+    QueueStatus:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - ready
+        - scheduled
+        - processing
+        - deadLetter
+        - oldestMessageAt
+      properties:
+        name:
+          $ref: "#/components/schemas/QueueName"
+        ready:
+          type: integer
+          minimum: 0
+        scheduled:
+          type: integer
+          minimum: 0
+        processing:
+          type: integer
+          minimum: 0
+        deadLetter:
+          type: integer
+          minimum: 0
+        oldestMessageAt:
+          type: [string, "null"]
+          format: date-time
+    QueueDashboard:
+      type: object
+      additionalProperties: false
+      required: [driver, queues, checkedAt]
+      properties:
+        driver:
+          type: string
+          enum: [servicebus, pg]
+        queues:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueueStatus"
+        checkedAt:
+          type: string
+          format: date-time
+    DeadLetter:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - originalMessageId
+        - topic
+        - eventType
+        - aggregateId
+        - correlationId
+        - payload
+        - attempts
+        - error
+        - deadLetteredAt
+        - replayedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        originalMessageId:
+          type: string
+          format: uuid
+        topic:
+          $ref: "#/components/schemas/QueueName"
+        eventType:
+          type: string
+        aggregateId:
+          type: string
+          format: uuid
+        correlationId:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+        attempts:
+          type: integer
+          minimum: 1
+        error:
+          type: string
+        deadLetteredAt:
+          type: string
+          format: date-time
+        replayedAt:
+          type: [string, "null"]
+          format: date-time
+    DeadLetterList:
+      type: object
+      additionalProperties: false
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeadLetter"
+        page:
+          $ref: "#/components/schemas/PageInfo"
+    ReplayDeadLetterRequest:
+      type: object
+      additionalProperties: false
+      required: [messageIds]
+      properties:
+        messageIds:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: string
+            format: uuid
+    ReplayDeadLetterResponse:
+      type: object
+      additionalProperties: false
+      required: [replayed, skipped]
+      properties:
+        replayed:
+          type: integer
+          minimum: 0
+        skipped:
+          type: integer
+          minimum: 0
+
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status, version, database, messageBus, checkedAt]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        version:
+          type: string
+        database:
+          type: string
+          enum: [up, down]
+        messageBus:
+          type: string
+          enum: [up, down]
+        checkedAt:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            correlationId:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+
+security:
+  - DemoUserHeader: []

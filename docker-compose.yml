@@ -1,0 +1,286 @@
+name: resgata
+
+x-app-environment: &app-environment
+  NODE_ENV: development
+  DATABASE_URL: postgresql://${POSTGRES_USER:-resgata}:${POSTGRES_PASSWORD:-resgata_dev}@postgres:5432/${POSTGRES_DB:-resgata}
+  QUEUE_DRIVER: ${QUEUE_DRIVER:-servicebus}
+  SCHEDULER_DRIVER: pg
+  SERVICE_BUS_CONNECTION_STRING: ${SERVICE_BUS_CONNECTION_STRING:-Endpoint=sb://servicebus;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;}
+  AzureWebJobsStorage: ${AZURE_WEBJOBS_STORAGE:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=bG9jYWwtcmVzZ2F0YS1henVyaXRlLWtleS0yMDI2;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;}
+  OPENAI_BASE_URL: http://mock-openai:3000
+  OPENAI_API_KEY: local-simulated-key
+  MAPS_BASE_URL: http://mock-maps:3000
+  ACS_BASE_URL: http://mock-acs:3000
+  ACS_MOCK_URL: http://mock-acs:3000/messages
+  ENABLE_DEV_RESET: "true"
+  OFFER_TIMEOUT_SECONDS: ${OFFER_TIMEOUT_SECONDS:-30}
+
+x-mock-service: &mock-service
+  build:
+    context: .
+    dockerfile: services/mocks/Dockerfile
+  restart: unless-stopped
+  networks:
+    - resgata
+  healthcheck:
+    test:
+      [
+        "CMD",
+        "node",
+        "-e",
+        "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+      ]
+    interval: 5s
+    timeout: 3s
+    retries: 12
+    start_period: 5s
+
+services:
+  gateway:
+    image: nginx:1.29-alpine
+    restart: unless-stopped
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    volumes:
+      - ./infra/nginx/gateway.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - resgata
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/_gateway/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-5173}:8080"
+    networks:
+      - resgata
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-7071}:80"
+    environment:
+      <<: *app-environment
+      FUNCTIONS_WORKER_RUNTIME: node
+      AzureWebJobsFeatureFlags: EnableWorkerIndexing
+    depends_on:
+      postgres:
+        condition: service_healthy
+      azurite:
+        condition: service_healthy
+      mock-openai:
+        condition: service_healthy
+      mock-maps:
+        condition: service_healthy
+      mock-acs:
+        condition: service_healthy
+    networks:
+      - resgata
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 15s
+
+  workers:
+    build:
+      context: .
+      dockerfile: infra/docker/workers.Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *app-environment
+      FUNCTIONS_WORKER_RUNTIME: node
+      AzureWebJobsFeatureFlags: EnableWorkerIndexing
+    depends_on:
+      postgres:
+        condition: service_healthy
+      azurite:
+        condition: service_healthy
+      mock-acs:
+        condition: service_healthy
+    networks:
+      - resgata
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('node:net').connect(80,'127.0.0.1').once('connect',function(){this.end();process.exit(0)}).once('error',()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 15s
+
+  postgres:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-resgata}
+      POSTGRES_USER: ${POSTGRES_USER:-resgata}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-resgata_dev}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/010-initial-schema.sql:ro
+      - ./db/migrations/002_messaging_and_atomic_operations.sql:/docker-entrypoint-initdb.d/020-messaging.sql:ro
+      - ./db/seed/001_demo_seed.sql:/docker-entrypoint-initdb.d/030-demo-seed.sql:ro
+    networks:
+      - resgata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
+    restart: unless-stopped
+    environment:
+      AZURITE_ACCOUNTS: devstoreaccount1:${AZURITE_ACCOUNT_KEY:-bG9jYWwtcmVzZ2F0YS1henVyaXRlLWtleS0yMDI2}
+    command:
+      - azurite
+      - --blobHost
+      - 0.0.0.0
+      - --queueHost
+      - 0.0.0.0
+      - --tableHost
+      - 0.0.0.0
+      - --location
+      - /data
+      - --debug
+      - /data/debug.log
+    ports:
+      - "${AZURITE_BLOB_PORT:-10000}:10000"
+      - "${AZURITE_QUEUE_PORT:-10001}:10001"
+      - "${AZURITE_TABLE_PORT:-10002}:10002"
+    volumes:
+      - azurite-data:/data
+    networks:
+      - resgata
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('node:net').connect(10000,'127.0.0.1').once('connect',function(){this.end();process.exit(0)}).once('error',()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-CU22-GDR1-ubuntu-22.04
+    profiles: ["azure"]
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Resgata!Dev2026}
+    ports:
+      - "${MSSQL_PORT:-1433}:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    networks:
+      - resgata
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S 127.0.0.1 -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q 'SELECT 1' >/dev/null",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  servicebus:
+    image: resgata/servicebus-emulator:2.0.1
+    build:
+      context: .
+      dockerfile: infra/docker/servicebus.Dockerfile
+    profiles: ["azure"]
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SQL_SERVER: mssql
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Resgata!Dev2026}
+      SQL_WAIT_INTERVAL: "5"
+      EMULATOR_HTTP_PORT: "5300"
+    ports:
+      - "${SERVICEBUS_AMQP_PORT:-5672}:5672"
+      - "${SERVICEBUS_HTTP_PORT:-5300}:5300"
+    volumes:
+      - ./infra/servicebus/Config.json:/ServiceBus_Emulator/ConfigFiles/Config.json:ro
+    depends_on:
+      mssql:
+        condition: service_healthy
+    networks:
+      - resgata
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/node", "/opt/resgata/healthcheck.mjs"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 20s
+
+  mock-openai:
+    <<: *mock-service
+    environment:
+      MOCK_KIND: openai
+      PORT: "3000"
+    ports:
+      - "${MOCK_OPENAI_PORT:-4001}:3000"
+
+  mock-maps:
+    <<: *mock-service
+    environment:
+      MOCK_KIND: maps
+      PORT: "3000"
+    ports:
+      - "${MOCK_MAPS_PORT:-4002}:3000"
+
+  mock-acs:
+    <<: *mock-service
+    environment:
+      MOCK_KIND: acs
+      PORT: "3000"
+    ports:
+      - "${MOCK_ACS_PORT:-4003}:3000"
+
+networks:
+  resgata:
+    name: resgata
+
+volumes:
+  postgres-data:
+  azurite-data:
+  mssql-data:
