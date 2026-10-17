@@ -1,4 +1,12 @@
-import { AppIcon, Button, Card, EmptyState, LoadingState, SimuladoBadge } from '../../shared/ui'
+import {
+  AppIcon,
+  Button,
+  Card,
+  EmptyState,
+  LoadingState,
+  MetricValue,
+  SimuladoBadge,
+} from '../../shared/ui'
 import { useImpactDashboardQuery, useImpactForecastQuery } from './queries'
 import {
   buildCategoryRows,
@@ -73,7 +81,7 @@ export function ImpactPage() {
         {cards.map((metric) => (
           <Card className="impact-metric" key={metric.key}>
             <span>{metric.label}</span>
-            <strong>{metric.formattedValue}</strong>
+            <strong><MetricValue value={metric.formattedValue} /></strong>
           </Card>
         ))}
       </section>
@@ -144,16 +152,20 @@ export function ImpactPage() {
               <div className="impact-forecast__numbers">
                 <div>
                   <strong>
-                    {formatMetricValue(
-                      forecast.data.expectedDonations,
-                      'doações',
-                    )}
+                    <MetricValue
+                      value={formatMetricValue(
+                        forecast.data.expectedDonations,
+                        'doações',
+                      )}
+                    />
                   </strong>
                   <span>esperadas em {forecast.data.horizonDays} dias</span>
                 </div>
                 <div>
                   <strong>
-                    {formatMetricValue(forecast.data.expectedWeightKg, 'kg')}
+                    <MetricValue
+                      value={formatMetricValue(forecast.data.expectedWeightKg, 'kg')}
+                    />
                   </strong>
                   <span>peso estimado</span>
                 </div>

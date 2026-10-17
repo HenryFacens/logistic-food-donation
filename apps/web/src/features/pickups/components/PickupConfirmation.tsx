@@ -101,7 +101,7 @@ export function PickupConfirmation({
         Código manual
         <input
           autoComplete="one-time-code"
-          className="min-h-12 rounded-xl border border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))] px-4 text-center text-2xl font-black tracking-[0.35em]"
+          className="min-h-12 rounded-xl border border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))] px-4 text-center font-mono text-2xl font-medium tabular-nums tracking-[0.35em]"
           id={`pickup-code-${pickup.id}-${action}`}
           inputMode="numeric"
           maxLength={6}

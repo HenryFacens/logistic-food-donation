@@ -11,3 +11,4 @@ export {
   useToast,
   type ToastTone,
 } from './ToastProvider'
+export { MetricValue, splitMetric } from './MetricValue'

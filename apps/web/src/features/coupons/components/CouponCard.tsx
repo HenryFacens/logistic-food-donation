@@ -4,6 +4,7 @@ import {
   AppIcon,
   Button,
   Card,
+  MetricValue,
   SimuladoBadge,
   StatusBadge,
 } from '../../../shared/ui'
@@ -39,7 +40,7 @@ export function CouponCard({
   return (
     <Card className="grid gap-4 overflow-hidden">
       <div className="flex items-start justify-between gap-3">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[rgb(var(--color-primary)/0.12)] text-[rgb(var(--color-primary-strong))]">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface-raised text-text">
           <AppIcon name="coupon" size={26} />
         </span>
         <div className="flex flex-wrap justify-end gap-2">
@@ -58,13 +59,13 @@ export function CouponCard({
       </div>
 
       <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl bg-[rgb(var(--color-primary)/0.07)] p-3">
-          <span className="block text-xs font-bold text-[rgb(var(--color-muted))]">Custo</span>
-          <strong>{coupon.pointsCost} pts</strong>
+        <div className="rounded-xl border border-border p-3">
+          <span className="block text-xs font-medium text-muted">Custo</span>
+          <strong className="block"><MetricValue value={`${coupon.pointsCost} pts`} /></strong>
         </div>
-        <div className="col-span-2 rounded-xl bg-[rgb(var(--color-primary)/0.07)] p-3">
-          <span className="block text-xs font-bold text-[rgb(var(--color-muted))]">Estoque</span>
-          <strong>{availability.stockLabel}</strong>
+        <div className="col-span-2 rounded-xl border border-border p-3">
+          <span className="block text-xs font-medium text-muted">Estoque</span>
+          <strong className="block"><MetricValue value={availability.stockLabel} /></strong>
         </div>
       </div>
 
@@ -76,7 +77,7 @@ export function CouponCard({
       {redemption ? (
         <output className="block rounded-2xl border-2 border-dashed border-[rgb(var(--color-primary))] bg-[rgb(var(--color-primary)/0.08)] p-4 text-center">
           <span className="eyebrow">Código emitido</span>
-          <strong className="block break-all text-2xl tracking-wider">{redemption.redemptionCode}</strong>
+          <strong className="metric-value block break-all text-2xl tracking-wider">{redemption.redemptionCode}</strong>
           <p className="mb-0 mt-2 text-sm">Apresente ao parceiro. Benefício e parceiro são simulados.</p>
         </output>
       ) : null}

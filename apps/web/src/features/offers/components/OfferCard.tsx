@@ -4,6 +4,7 @@ import {
   AppIcon,
   Button,
   Card,
+  MetricValue,
   SimuladoBadge,
   StatusBadge,
 } from '../../../shared/ui'
@@ -66,17 +67,17 @@ export function OfferCard({ deciding, offer, onDecision }: OfferCardProps) {
             label={decision.statusLabel}
             tone={decision.canDecide ? 'warning' : offer.status === 'accepted' ? 'success' : 'neutral'}
           />
-          <span className="text-sm font-bold text-[rgb(var(--color-muted))]">
+          <span className="text-sm font-medium tabular-nums text-[rgb(var(--color-muted))]">
             {decision.expirationLabel}
           </span>
         </div>
       </div>
 
-      <div className="rounded-2xl bg-[rgb(var(--color-primary)/0.08)] p-4">
+      <div className="rounded-2xl bg-surface-raised p-4">
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
             <span className="eyebrow">Índice de aderência</span>
-            <strong className="text-3xl">{Math.round(offer.score.total)}%</strong>
+            <strong className="block text-3xl"><MetricValue value={`${Math.round(offer.score.total)}%`} /></strong>
           </div>
           <AppIcon name="route" size={30} />
         </div>
@@ -86,7 +87,7 @@ export function OfferCard({ deciding, offer, onDecision }: OfferCardProps) {
               <span className="block text-xs font-bold text-[rgb(var(--color-muted))]">
                 {item.label}
               </span>
-              <strong>{item.value.toFixed(1)} pontos</strong>
+              <strong className="block"><MetricValue value={`${item.value.toFixed(1)} pts`} /></strong>
               <span className="block text-xs text-[rgb(var(--color-muted))]">
                 {item.detail}
               </span>

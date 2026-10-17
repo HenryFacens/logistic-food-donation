@@ -1,4 +1,4 @@
-import { AppIcon, Button, StatusBadge } from '../../shared/ui'
+import { Button, StatusBadge } from '../../shared/ui'
 import { useSession, useSse, useTheme } from '../providers'
 import { navigate } from '../../shared/routing'
 
@@ -8,10 +8,10 @@ export function ThemeToggle() {
   return (
     <Button
       aria-label={`Ativar tema ${nextTheme === 'dark' ? 'escuro' : 'claro'}`}
+      icon={nextTheme === 'dark' ? 'moon' : 'sun'}
       onClick={() => setTheme(nextTheme)}
       variant="ghost"
     >
-      <AppIcon name={nextTheme === 'dark' ? 'moon' : 'sun'} />
       {nextTheme === 'dark' ? 'Tema escuro' : 'Tema claro'}
     </Button>
   )

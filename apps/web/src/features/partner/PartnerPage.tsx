@@ -1,9 +1,9 @@
 import {
-  AppIcon,
   Button,
   Card,
   EmptyState,
   LoadingState,
+  MetricValue,
   SimuladoBadge,
   StatusBadge,
 } from '../../shared/ui'
@@ -95,34 +95,27 @@ export function PartnerPage() {
         </div>
         <div className="partner-hero__roi">
           <span>ROI social estimado</span>
-          <strong>{formatRoi(dashboard.data.estimatedRoi)}</strong>
+          <strong><MetricValue value={formatRoi(dashboard.data.estimatedRoi)} /></strong>
         </div>
       </section>
 
       <section className="partner-kpis" aria-label="Indicadores do parceiro">
         <Card className="partner-kpi">
-          <AppIcon name="route" size={24} />
           <span>Entregas patrocinadas</span>
           <strong>{dashboard.data.sponsoredDeliveries}</strong>
         </Card>
         <Card className="partner-kpi">
-          <AppIcon name="partner" size={24} />
           <span>Pessoas alcançadas</span>
           <strong>{dashboard.data.estimatedReachPeople}</strong>
         </Card>
         <Card className="partner-kpi">
-          <AppIcon name="coupon" size={24} />
           <span>Cupons ativos</span>
           <strong>{dashboard.data.activeCoupons}</strong>
         </Card>
         {dashboard.data.metrics.map((metric) => (
           <Card className="partner-kpi" key={metric.key}>
-            <AppIcon
-              name={metric.key === 'investment' ? 'dashboard' : 'coupon'}
-              size={24}
-            />
             <span>{metric.label}</span>
-            <strong>{formatPartnerMetric(metric.value, metric.unit)}</strong>
+            <strong><MetricValue value={formatPartnerMetric(metric.value, metric.unit)} /></strong>
           </Card>
         ))}
       </section>

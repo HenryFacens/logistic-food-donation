@@ -29,7 +29,7 @@ export function DonationCard({
     <Card className="grid gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="mb-1 text-xs font-extrabold uppercase tracking-wider text-primary">
+          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-muted">
             {donation.category
               ? donationCategoryLabels[donation.category]
               : 'Aguardando classificação'}

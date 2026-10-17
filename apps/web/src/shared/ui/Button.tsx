@@ -4,7 +4,7 @@ import { AppIcon, type AppIconName } from './AppIcon'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: AppIconName
-  variant?: 'ghost' | 'primary' | 'secondary'
+  variant?: 'destructive' | 'ghost' | 'primary' | 'secondary'
   children: ReactNode
 }
 

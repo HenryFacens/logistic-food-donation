@@ -23,7 +23,7 @@ export function RoleCard({ current, identity, onSelect }: RoleCardProps) {
   return (
     <Card className="flex min-h-64 flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
-        <span className="grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
+        <span className="grid size-12 place-items-center rounded-full bg-surface-raised text-text">
           <AppIcon name={roleIcons[identity.role]} size={24} />
         </span>
         <div className="flex flex-wrap justify-end gap-2">
@@ -33,7 +33,7 @@ export function RoleCard({ current, identity, onSelect }: RoleCardProps) {
       </div>
 
       <div className="flex-1">
-        <p className="mb-1 text-xs font-extrabold uppercase tracking-wider text-primary">
+        <p className="mb-1 text-xs font-medium uppercase tracking-wider text-muted">
           {roleLabels[identity.role]}
         </p>
         <h2 className="mb-2 text-xl font-extrabold text-text">
