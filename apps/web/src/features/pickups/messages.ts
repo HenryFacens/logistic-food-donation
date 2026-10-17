@@ -10,13 +10,13 @@ export const pickupMessages = {
   routePlanAzure: 'Tempos de trânsito do Azure Maps.',
   routePlanEstimate: 'Tempos estimados pela distância.',
   availabilityEyebrow: 'Disponibilidade',
-  online: 'Você está disponível para coletas',
-  offline: 'Você está offline',
+  online: 'Disponível para entregas',
+  offline: 'Você está pausado',
   onlineBadge: 'Disponível',
   offlineBadge: 'Offline',
-  capacity: 'Capacidade do veículo:',
-  goOnline: 'Ficar disponível',
-  goOffline: 'Ficar offline',
+  capacity: 'Cabe no seu veículo:',
+  goOnline: 'Começar',
+  goOffline: 'Pausar',
   updating: 'Atualizando…',
   refreshLocation: 'Atualizar minha localização',
   locationShared: 'Localização atualizada. Mostramos primeiro as coletas mais perto de você.',
@@ -37,11 +37,11 @@ export const pickupMessages = {
   deliverError: 'Não foi possível confirmar a entrega.',
   deliverSuccess: 'Entrega confirmada. Pontos adicionados.',
   driverDashboardDescription:
-    'Acompanhe operação, reputação e recompensas sem reduzir seu desempenho ao número de corridas.',
+    'Quanto você entregou, no prazo, e os pontos que já ganhou.',
   driverDashboardEyebrow: 'Transportador · desempenho',
   driverDashboardLoadError:
     'Não foi possível carregar as métricas do transportador.',
-  driverDashboardTitle: 'Suas métricas',
+  driverDashboardTitle: 'Seu desempenho',
   driverCompletionChartDescription:
     'Compare conclusões e cancelamentos sem reduzir o desempenho ao volume de corridas.',
   driverCompletionChartTitle: 'Qualidade da execução',
@@ -49,7 +49,7 @@ export const pickupMessages = {
     'Entregas com prazo registrado, separadas entre pontuais e atrasadas.',
   driverDeadlineChartTitle: 'Pontualidade',
   driverFunnelChartDescription:
-    'As disponíveis representam a rede agora; aceitas e concluídas usam o período selecionado.',
+    'Disponíveis agora na sua região, e as que você aceitou e concluiu no período.',
   driverFunnelChartTitle: 'Da oportunidade à entrega',
   driverGeolocationChartDescription:
     'Confirma se coleta e entrega registraram coordenadas; não valida a proximidade.',
@@ -71,11 +71,11 @@ export const pickupMessages = {
   emptyMine: 'Aceite entregas na aba Disponíveis para começar uma rota.',
   emptyNgo: 'Os recebimentos aceitos aparecerão aqui.',
   ngoDashboardDescription:
-    'Recebimento e distribuição aparecem separados: receber alimento não comprova que ele chegou à comunidade.',
+    'O que a ONG recebeu e conferiu. A distribuição para a comunidade aparece separada.',
   ngoDashboardEyebrow: 'Entidade receptora · impacto',
   ngoDashboardLoadError:
     'Não foi possível carregar as métricas da entidade.',
-  ngoDashboardTitle: 'Do recebimento à comunidade',
+  ngoDashboardTitle: 'Impacto da ONG',
   ngoCapacityChartDescription:
     'Uso atual da capacidade cadastrada pela entidade.',
   ngoCapacityChartTitle: 'Ocupação da capacidade',
@@ -99,7 +99,7 @@ export const pickupMessages = {
   receiptFormEyebrow: 'Conferência real',
   receiptFormNotesLabel: 'Observação (opcional)',
   receiptFormNotesPlaceholder:
-    'Registre detalhes relevantes para a rastreabilidade.',
+    'Ex.: 2 bandejas amassadas',
   receiptFormReasonsLegend: 'Motivos da rejeição',
   receiptFormRejectedWeight: 'Peso rejeitado',
   receiptFormReceivedWeight: 'Peso recebido',
@@ -112,9 +112,9 @@ export const pickupMessages = {
   receiptReasonsTitle: 'Motivos registrados',
   receiptSummaryEyebrow: 'Conferência concluída',
   receiptSummaryNotes: 'Observação:',
-  receiptSummaryStatus: 'Comprovado pela ONG',
+  receiptSummaryStatus: 'Conferido pela ONG',
   receiptPending:
-    'A conferência será liberada quando o transportador confirmar a entrega.',
+    'Você confere o peso e a qualidade quando o motorista entregar.',
   receiptSuccess: 'Recebimento conferido e registrado.',
   routeSimulation:
     'Trajeto ilustrativo. As coordenadas exibidas abaixo vêm da coleta real.',

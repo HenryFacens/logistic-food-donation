@@ -2,7 +2,7 @@ import { driverStatusSchema, type GeoPoint } from '@resgata/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useApiClient } from '../../../shared/api'
-import { Button, Card, StatusBadge } from '../../../shared/ui'
+import { Button, Card } from '../../../shared/ui'
 import { pickupMessages } from '../messages'
 import { pickupQueryKeys } from '../queryKeys'
 
@@ -54,40 +54,39 @@ export function DriverAvailability() {
   const available = status.data.available
 
   return (
-    <Card className="grid gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <span className="eyebrow">{pickupMessages.availabilityEyebrow}</span>
-          <strong className="block text-lg">
-            {available ? pickupMessages.online : pickupMessages.offline}
-          </strong>
-          <span className="text-sm">
+    <Card className={`driver-availability${available ? ' is-online' : ''}`}>
+      <div className="driver-availability__row">
+        <span className="driver-availability__dot" aria-hidden="true" />
+        <div className="driver-availability__copy">
+          <strong>{available ? pickupMessages.online : pickupMessages.offline}</strong>
+          <span>
             {pickupMessages.capacity} {status.data.capacityKg} kg
           </span>
         </div>
-        <StatusBadge
-          label={available ? pickupMessages.onlineBadge : pickupMessages.offlineBadge}
-          tone={available ? 'success' : 'neutral'}
-        />
-      </div>
-      <Button
-        disabled={update.isPending}
-        icon={available ? 'offline' : 'route'}
-        onClick={() => update.mutate(!available)}
-        variant={available ? 'secondary' : 'primary'}
-      >
-        {update.isPending
-          ? pickupMessages.updating
-          : available
-            ? pickupMessages.goOffline
-            : pickupMessages.goOnline}
-      </Button>
-      {available ? (
-        <Button disabled={update.isPending} onClick={() => update.mutate(true)} variant="ghost">
-          {pickupMessages.refreshLocation}
+        <Button
+          disabled={update.isPending}
+          icon={available ? 'offline' : 'route'}
+          onClick={() => update.mutate(!available)}
+          variant={available ? 'secondary' : 'primary'}
+        >
+          {update.isPending
+            ? pickupMessages.updating
+            : available
+              ? pickupMessages.goOffline
+              : pickupMessages.goOnline}
         </Button>
+      </div>
+      {available ? (
+        <button
+          className="driver-availability__location"
+          disabled={update.isPending}
+          onClick={() => update.mutate(true)}
+          type="button"
+        >
+          {pickupMessages.refreshLocation}
+        </button>
       ) : null}
-      {locationNote ? <p className="mb-0 text-sm">{locationNote}</p> : null}
+      {locationNote ? <output className="block text-sm">{locationNote}</output> : null}
     </Card>
   )
 }

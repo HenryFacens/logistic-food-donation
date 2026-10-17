@@ -14,6 +14,7 @@ export {
   EvidenceLegend,
   LineChart,
   MetricCard,
+  HeadlineMetrics,
   MetricGrid,
   MonthlySeriesBars,
   formatDashboardMonth,
@@ -29,6 +30,7 @@ export {
   type EvidenceLegendProps,
   type LineChartProps,
   type MetricCardProps,
+  type HeadlineMetric,
   type MetricGridProps,
   type MonthlySeriesBarsProps,
 } from './dashboard'

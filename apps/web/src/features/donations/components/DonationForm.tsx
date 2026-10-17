@@ -270,16 +270,10 @@ export function DonationForm({
         values={values}
       />
 
-      <section
-        className="screen-card producer-financial"
-        aria-labelledby="producer-financial-title"
-      >
-        <div>
-          <span className="eyebrow">{donationMessages.optional}</span>
-          <h2 id="producer-financial-title">
-            {donationMessages.financialTitle}
-          </h2>
-        </div>
+      <details className="screen-card producer-financial">
+        <summary id="producer-financial-title">
+          {donationMessages.financialTitle}
+        </summary>
         <p className="producer-financial__notice" id="financial-values-notice">
           {donationMessages.financialNotice}
         </p>
@@ -321,7 +315,7 @@ export function DonationForm({
             </small>
           </label>
         </div>
-      </section>
+      </details>
 
       <details className="screen-card producer-details">
         <summary>{donationMessages.publicationDetails}</summary>

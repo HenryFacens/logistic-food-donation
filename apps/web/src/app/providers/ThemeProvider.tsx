@@ -24,9 +24,9 @@ const restoreTheme = (): ThemePreference => {
     const value = localStorage.getItem(STORAGE_KEY)
     if (value === 'dark' || value === 'light' || value === 'system') return value
   } catch {
-    // The dark default remains the safe fallback.
+    // Light is the readable default outdoors.
   }
-  return 'dark'
+  return 'light'
 }
 
 const systemTheme = () =>

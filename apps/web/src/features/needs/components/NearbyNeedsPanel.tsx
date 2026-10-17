@@ -10,10 +10,7 @@ export function NearbyNeedsPanel() {
 
   return (
     <Card className="grid gap-3">
-      <div>
-        <span className="eyebrow">{needMessages.nearbyEyebrow}</span>
-        <h2 className="mb-0 text-lg font-extrabold">{needMessages.nearbyTitle}</h2>
-      </div>
+      <h2 className="mb-0 text-lg font-extrabold">{needMessages.nearbyTitle}</h2>
       <ul className="m-0 grid list-none gap-2 p-0">
         {needs.data.slice(0, 4).map((need) => (
           <li
@@ -27,7 +24,7 @@ export function NearbyNeedsPanel() {
             <span className="text-sm">
               {need.ngoName?.replace(/\s+SIMULADO$/u, '')}
               {need.distanceKm !== undefined ? ` · ${need.distanceKm} km` : ''} ·{' '}
-              {needMessages.until.toLowerCase()} {formatDeadline(need.neededBy)}
+              até {formatDeadline(need.neededBy)}
             </span>
           </li>
         ))}

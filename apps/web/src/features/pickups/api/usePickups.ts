@@ -83,7 +83,7 @@ export function usePickupActions() {
       staleTime: 0,
     })
     if (profile.role !== 'driver') {
-      throw new Error('O perfil de motorista não possui identificador de demonstração.')
+      throw new Error('Entre novamente como motorista.')
     }
     return profile.profileId
   }

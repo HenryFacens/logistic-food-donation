@@ -98,5 +98,7 @@ export const formatDashboardValue = (
 export const formatDashboardMonth = (month: string) => {
   const [year, monthNumber] = month.split('-').map(Number)
   const date = new Date(Date.UTC(year, monthNumber - 1, 1))
-  return monthFormatter.format(date)
+  // "ago. de 2026" -> "Ago. de 2026": capitalize the first letter only.
+  const label = monthFormatter.format(date).toLowerCase()
+  return label.charAt(0).toUpperCase() + label.slice(1)
 }

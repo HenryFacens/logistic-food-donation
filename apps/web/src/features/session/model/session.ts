@@ -21,19 +21,19 @@ export interface SessionEntry extends SessionIdentity {
 }
 
 export const roleLabels: Record<Role, string> = {
-  driver: 'Transportador',
-  ngo: 'ONG / entidade',
+  driver: 'Motorista',
+  ngo: 'ONG',
   partner: 'Patrocinador',
-  platform: 'Plataforma Resgata',
+  platform: 'Equipe Resgata',
   seller: 'Doador',
 }
 
 export const roleDescriptions: Record<Role, string> = {
-  driver: 'Executa coletas, entregas e acompanha reputação e recompensas.',
-  ngo: 'Analisa ofertas, confirma recebimentos e acompanha a distribuição.',
-  partner: 'Acompanha campanhas, benefícios, retorno e impacto.',
-  platform: 'Acompanha a saúde global da operação e suas filas.',
-  seller: 'Publica excedentes, acompanha impacto e avalia o transportador.',
+  driver: 'Busque doações e leve até as ONGs. Ganhe pontos e prêmios.',
+  ngo: 'Aceite doações, acompanhe a entrega e confira o que chegou.',
+  partner: 'Veja o impacto que sua marca apoia e os prêmios resgatados.',
+  platform: 'Acompanhe a operação inteira em tempo real.',
+  seller: 'Tire uma foto do que sobrou e doe em um minuto.',
 }
 
 export const rolePaths: Record<Role, string> = {
@@ -73,18 +73,16 @@ export const buildSessionEntries = (
         {
           ...identity,
           defaultPath: '/ong/ofertas',
-          description:
-            'Produto mobile para aceitar ofertas e conferir a recepção dos alimentos.',
+          description: roleDescriptions.ngo,
           entryPoint: 'ngo-operations',
-          label: 'ONG — Operação',
+          label: 'ONG',
         },
         {
           ...identity,
           defaultPath: '/ong/painel',
-          description:
-            'Produto web para recebimento, logística, distribuição e impacto social.',
+          description: 'Quanto a ONG recebeu, de quem e para quantas pessoas.',
           entryPoint: 'ngo-analytics',
-          label: 'ONG — Métricas',
+          label: 'Impacto da ONG',
         },
       ]
     }

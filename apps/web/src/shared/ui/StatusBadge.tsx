@@ -11,8 +11,8 @@ interface StatusBadgeProps {
 
 const toneIcons: Record<StatusTone, AppIconName> = {
   danger: 'warning',
-  info: 'wifi',
-  neutral: 'user',
+  info: 'clock',
+  neutral: 'clock',
   success: 'check',
   warning: 'warning',
 }

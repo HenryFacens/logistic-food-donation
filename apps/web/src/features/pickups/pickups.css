@@ -304,7 +304,6 @@
   color: rgb(var(--color-muted));
   font-size: 0.7rem;
   font-weight: 800;
-  text-transform: uppercase;
 }
 
 .pickup-card__locations strong {
@@ -337,14 +336,11 @@
   color: rgb(var(--color-primary-strong));
   font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .pickup-card__delivery-code > strong {
   margin: 0.25rem 0;
   font-size: clamp(2rem, 11vw, 3rem);
-  letter-spacing: 0.18em;
 }
 
 .pickup-card__delivery-code p {
@@ -673,7 +669,6 @@
   color: rgb(var(--color-muted));
   font-size: 0.72rem;
   font-weight: 800;
-  text-transform: uppercase;
 }
 
 .receipt-summary__metrics dd {
@@ -1277,8 +1272,9 @@
 .delivery-route li {
   position: relative;
   display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr) auto;
-  gap: 0.6rem;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  column-gap: 0.6rem;
+  row-gap: 0.35rem;
   align-items: start;
 }
 
@@ -1303,22 +1299,20 @@
 
 .delivery-route strong {
   display: block;
-  overflow: hidden;
-  font-size: 0.925rem;
+  font-size: 1rem;
   font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .delivery-route li > div > span {
   color: rgb(var(--color-muted));
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
-/* Deadline badges sit beside each address. */
+/* Deadline badges sit under each address, so the address keeps the width. */
 .delivery-route li > .status-badge,
 .delivery-route li > .delivery-card__urgency {
-  align-self: center;
+  grid-column: 2;
+  justify-self: start;
   white-space: nowrap;
 }
 
@@ -2020,7 +2014,6 @@
   color: rgb(var(--color-muted));
   font-size: 0.72rem;
   font-weight: 600;
-  text-transform: uppercase;
 }
 
 .route-plan__eta {
@@ -2038,4 +2031,181 @@
 
 .route-plan__note {
   margin: 0;
+}
+
+/* NGO deliveries: grouped by what the NGO has to do. */
+.ngo-deliveries__group {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ngo-deliveries__group h2 {
+  margin: 0.5rem 0 0;
+  font-size: 1.15rem;
+}
+
+.ngo-delivery {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.ngo-delivery--check {
+  border: 2px solid rgb(var(--color-primary));
+}
+
+.ngo-delivery__head h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.ngo-delivery__head p {
+  margin: 0.2rem 0 0;
+}
+
+.ngo-delivery__status {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-control);
+  background: rgb(var(--color-surface-raised));
+  color: rgb(var(--color-text));
+}
+
+.ngo-delivery__status svg {
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+  color: rgb(var(--color-primary-strong));
+}
+
+.ngo-delivery__code {
+  display: grid;
+  gap: 0.2rem;
+  padding: 1rem;
+  border: 2px solid rgb(var(--color-highlight));
+  border-radius: var(--radius-control);
+  background: rgb(var(--color-highlight) / 0.12);
+  text-align: center;
+}
+
+.ngo-delivery__code span {
+  font-weight: 700;
+}
+
+.ngo-delivery__code strong {
+  font-size: 2.4rem;
+  line-height: 1.1;
+}
+
+.ngo-delivery__code small {
+  color: rgb(var(--color-muted));
+  font-size: 0.9rem;
+}
+
+.ngo-delivery-done-list {
+  margin: 0;
+  padding-block: 0.25rem;
+  list-style: none;
+}
+
+.ngo-delivery-done {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.75rem;
+}
+
+.ngo-delivery-done + .ngo-delivery-done {
+  border-top: 1px solid rgb(var(--color-border));
+}
+
+.ngo-delivery-done div {
+  display: grid;
+  min-width: 0;
+}
+
+.ngo-delivery-done span {
+  color: rgb(var(--color-muted));
+  font-size: 0.9rem;
+}
+
+.ngo-delivery-done__kg {
+  display: grid;
+  flex: 0 0 auto;
+  color: rgb(var(--color-text)) !important;
+  font-weight: 700;
+  text-align: right;
+}
+
+.ngo-delivery-done__kg small {
+  color: rgb(var(--color-muted));
+  font-weight: 400;
+}
+
+/* Driver availability: one compact row above the list. */
+.driver-availability {
+  display: grid;
+  gap: 0.4rem;
+  padding-block: 0.85rem;
+}
+
+.driver-availability__row {
+  display: grid;
+  align-items: center;
+  gap: 0.75rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.driver-availability__dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: rgb(var(--color-border-strong));
+}
+
+.driver-availability.is-online .driver-availability__dot {
+  background: rgb(var(--color-success));
+  box-shadow: 0 0 0 4px rgb(var(--color-success) / 0.2);
+}
+
+.driver-availability__copy {
+  display: grid;
+}
+
+.driver-availability__copy span {
+  color: rgb(var(--color-muted));
+  font-size: 0.9rem;
+}
+
+.driver-availability__location {
+  justify-self: start;
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgb(var(--color-primary-strong));
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pickup-dashboard__more {
+  display: grid;
+  gap: 1rem;
+}
+
+.pickup-dashboard__more summary {
+  display: flex;
+  min-height: var(--control-min-size);
+  align-items: center;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.pickup-dashboard__generated {
+  margin: 0;
+  font-size: 0.9rem;
 }

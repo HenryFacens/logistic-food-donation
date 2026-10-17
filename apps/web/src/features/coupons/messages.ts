@@ -1,11 +1,10 @@
 export const couponMessages = {
-  emptyDescription: 'Novos benefícios simulados aparecerão quando estiverem ativos.',
-  emptyTitle: 'Nenhum cupom disponível',
-  loadError: 'Não foi possível carregar os cupons.',
-  redeemError: 'Não foi possível resgatar este cupom.',
-  redeemSuccess: 'Cupom emitido. Guarde o código para apresentar ao parceiro.',
-  simulationDescription:
-    'Benefícios, parceiros e resgates desta área pertencem à demonstração.',
+  description: 'Cada entrega concluída rende pontos. Troque por benefícios em parceiros de Campinas.',
+  emptyDescription: 'Novos prêmios aparecem aqui assim que os parceiros publicarem.',
+  emptyTitle: 'Nenhum prêmio disponível agora',
+  loadError: 'Verifique sua conexão e tente de novo.',
+  redeemError: 'Não foi possível trocar. Tente de novo.',
+  redeemSuccess: 'Prêmio trocado. Mostre o código no parceiro.',
 } as const
 
 export const couponErrorMessage = (error: unknown, fallback: string) =>

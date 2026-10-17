@@ -69,8 +69,6 @@
   color: rgb(var(--color-primary-strong));
   font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .seller-chart-card__heading h2,
@@ -179,8 +177,6 @@
   color: rgb(var(--color-primary-strong));
   font-size: 0.8125rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .seller-ratings__heading h2,
@@ -391,4 +387,34 @@
     font-size: clamp(2rem, 11vw, 3rem);
   }
 
+}
+
+.seller-metrics-page__action {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 2px solid rgb(var(--color-highlight));
+  border-radius: var(--radius-control);
+  background: rgb(var(--color-highlight) / 0.12);
+  color: rgb(var(--color-text));
+  font-weight: 600;
+}
+
+.seller-metrics-page__action a {
+  color: inherit;
+}
+
+.seller-metrics-more {
+  display: grid;
+  gap: 1rem;
+}
+
+.seller-metrics-more summary {
+  display: flex;
+  min-height: var(--control-min-size);
+  align-items: center;
+  cursor: pointer;
+  font-weight: 700;
 }

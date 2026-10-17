@@ -4,7 +4,7 @@ import {
   type GeoPoint,
   type Pickup,
 } from '@resgata/shared'
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useMemo, useState, type CSSProperties } from 'react'
 import { flushSync } from 'react-dom'
 import {
   AppIcon,
@@ -43,19 +43,11 @@ import {
   type AvailableSort,
   type DriverTab,
 } from '../viewModels'
+import { useNow } from '../hooks/useNow'
 import '../pickups.css'
 
 // Unassigned pickups emit no SSE event visible to drivers, so poll this tab.
 const AVAILABLE_REFETCH_MS = 15_000
-
-const useNow = (intervalMs: number) => {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), intervalMs)
-    return () => window.clearInterval(timer)
-  }, [intervalMs])
-  return now
-}
 
 const reducedMotion = () =>
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -73,12 +65,13 @@ const withViewTransition = (update: () => void) => {
 }
 
 export function DriverDeliveriesPage() {
-  const [tab, setTab] = useState<DriverTab>('available')
+  // null until the driver picks a tab: then open where the work is.
+  const [chosenTab, setTab] = useState<DriverTab | null>(null)
   const [sort, setSort] = useState<AvailableSort>('urgency')
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set())
   const [celebration, setCelebration] = useState<Celebration | null>(null)
   const pickups = usePickups('driver', {
-    refetchInterval: tab === 'available' ? AVAILABLE_REFETCH_MS : false,
+    refetchInterval: AVAILABLE_REFETCH_MS,
   })
   const profile = useCurrentProfile()
   const actions = usePickupActions()
@@ -90,6 +83,7 @@ export function DriverDeliveriesPage() {
     () => splitDriverPickups(pickups.data?.items ?? [], profile.data?.profileId),
     [pickups.data, profile.data?.profileId],
   )
+  const tab: DriverTab = chosenTab ?? (groups.active.length ? 'mine' : 'available')
   const available = useMemo(
     () => sortAvailablePickups(groups.available, sort),
     [groups.available, sort],

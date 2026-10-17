@@ -52,15 +52,21 @@ const summaryColumns = {
 };
 
 describe("pickup mapper", () => {
-  it("keeps proof codes for sellers and NGOs by default", () => {
+  it("keeps both proof codes when asked for all", () => {
     const pickup = mapPickup(row);
     expect(pickup.pickupCode).toBe("123456");
     expect(pickup.deliveryCode).toBe("654321");
     expect(pickup.summary).toBeUndefined();
   });
 
+  it("gives the NGO only the delivery code it informs on arrival", () => {
+    const pickup = mapPickup(row, { codes: "delivery" });
+    expect(pickup).not.toHaveProperty("pickupCode");
+    expect(pickup.deliveryCode).toBe(String(row.delivery_code).trim());
+  });
+
   it("omits proof codes for drivers", () => {
-    const pickup = mapPickup(row, { includeCodes: false });
+    const pickup = mapPickup(row, { codes: "none" });
     expect(pickup).not.toHaveProperty("pickupCode");
     expect(pickup).not.toHaveProperty("deliveryCode");
   });

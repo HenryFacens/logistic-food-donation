@@ -38,6 +38,52 @@ export function assertDonatable(classification?: Classification): void {
   }
 }
 
+// The donor sees who is coming, the NGO, and the pickup code to hand over.
+async function sellerPickups(
+  client: import("pg").PoolClient,
+  actor: { role: string },
+  rows: Array<{ id: string }>,
+) {
+  if (actor.role !== "seller" || !rows.length) return null;
+  const result = await client.query<{
+    donation_id: string;
+    status: string;
+    pickup_code: string;
+    driver_name: string | null;
+    vehicle: string | null;
+    ngo_name: string;
+    assigned_at: Date | null;
+    collected_at: Date | null;
+    delivered_at: Date | null;
+  }>(
+    `SELECT pickup.donation_id, pickup.status::text AS status, pickup.pickup_code,
+            driver.name AS driver_name, driver.vehicle, ngo.name AS ngo_name,
+            pickup.assigned_at, pickup.collected_at, pickup.delivered_at
+     FROM pickups AS pickup
+     JOIN ngos AS ngo ON ngo.id = pickup.ngo_id
+     LEFT JOIN drivers AS driver ON driver.id = pickup.driver_id
+     WHERE pickup.donation_id = ANY($1::uuid[])`,
+    [rows.map((row) => row.id)],
+  );
+  const iso = (value: Date | null) => (value ? value.toISOString() : null);
+  return new Map(
+    result.rows.map((row) => [
+      row.donation_id,
+      {
+        status: row.status,
+        // Only useful until the food is collected.
+        pickupCode: row.collected_at ? null : String(row.pickup_code).trim(),
+        driverName: row.driver_name,
+        vehicle: row.vehicle,
+        ngoName: row.ngo_name,
+        assignedAt: iso(row.assigned_at),
+        collectedAt: iso(row.collected_at),
+        deliveredAt: iso(row.delivered_at),
+      },
+    ]),
+  );
+}
+
 export const listDonations: ApiHandler = async (request) => {
   const query = donationListQuerySchema.parse({
     status: request.query.get("status") ?? undefined,
@@ -70,7 +116,17 @@ export const listDonations: ApiHandler = async (request) => {
        LIMIT $${values.length}`,
       values,
     );
-    return json(200, pageFrom(result.rows.map(mapDonation), query.limit));
+    const pickups = await sellerPickups(client, actor, result.rows);
+    return json(
+      200,
+      pageFrom(
+        result.rows.map((row) => ({
+          ...mapDonation(row),
+          ...(pickups ? { pickup: pickups.get(row.id) ?? null } : {}),
+        })),
+        query.limit,
+      ),
+    );
   } finally {
     client.release();
   }
@@ -231,8 +287,10 @@ export const getDonation: ApiHandler = async (request) => {
        ORDER BY occurred_at, id`,
       [donationId],
     );
+    const pickups = await sellerPickups(client, actor, [row]);
     return json(200, {
       ...mapDonation(row),
+      ...(pickups ? { pickup: pickups.get(row.id) ?? null } : {}),
       timeline: events.rows.map(mapDonationEvent),
     });
   } finally {

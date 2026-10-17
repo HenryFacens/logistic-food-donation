@@ -104,6 +104,8 @@ export const driverStatusSchema = z.object({
   id: uuidSchema,
   available: z.boolean(),
   capacityKg: z.number().positive(),
+  /** Reward points the driver can spend on coupons. */
+  points: z.number().int().nonnegative().optional(),
   currentLocation: geoPointSchema,
 });
 export type DriverStatus = z.infer<typeof driverStatusSchema>;

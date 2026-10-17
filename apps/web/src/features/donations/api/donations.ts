@@ -37,6 +37,14 @@ export const useDonations = (
       donationListSchema.parse(
         await apiClient.get<unknown>(`/donations?${search.toString()}`),
       ),
+    // Keep statuses live (accepted, driver on the way, delivered) while
+    // anything is still in progress.
+    refetchInterval: (query) =>
+      query.state.data?.items.some(
+        (donation) => !['delivered', 'expired', 'no_destination', 'cancelled'].includes(donation.status),
+      )
+        ? 10_000
+        : false,
   })
 }
 

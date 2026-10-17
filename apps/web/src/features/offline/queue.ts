@@ -327,7 +327,7 @@ export const createOfflineDonationQueue = ({
         )
       }
       if (!demoUser) {
-        throw new Error('Selecione um usuário de demonstração antes de doar.')
+        throw new Error('Escolha um perfil antes de doar.')
       }
 
       const existing = await storage.get(idempotencyKey)

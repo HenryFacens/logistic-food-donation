@@ -82,11 +82,11 @@ export const listPickups: ApiHandler = async (request) => {
        LIMIT $${values.length}`,
       values,
     );
-    const includeCodes = actor.role !== "driver";
+    const codes = actor.role === "ngo" ? "delivery" : "none";
     return json(
       200,
       pageFrom(
-        result.rows.map((row) => mapPickup(row, { includeCodes })),
+        result.rows.map((row) => mapPickup(row, { codes })),
         query.limit,
       ),
     );
@@ -177,7 +177,7 @@ export const assignPickup: ApiHandler = async (request) => {
         );
       }
       const pickup = mapPickup(updated.rows[0], {
-        includeCodes: actor.role !== "driver",
+        codes: actor.role === "ngo" ? "delivery" : "none",
       });
       await client.query(
         `INSERT INTO events (
@@ -314,7 +314,7 @@ async function confirmPickupState(
          WHERE pickup.id = $1`,
         [pickupId],
       );
-      const response = mapPickup(updated.rows[0], { includeCodes: false });
+      const response = mapPickup(updated.rows[0], { codes: "none" });
       return { status: 200, body: response, resourceId: response.id };
     },
   );

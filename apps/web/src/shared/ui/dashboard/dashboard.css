@@ -17,8 +17,6 @@
   color: rgb(var(--color-primary-strong));
   font-size: 0.8125rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .dashboard-header__title {
@@ -277,7 +275,7 @@
 .dashboard-metric-card__value {
   margin: 1rem 0 0;
   color: rgb(var(--color-text));
-  font-family: "Bricolage Grotesque", Figtree, Inter, sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.75rem, 4vw, 2.5rem);
   font-weight: 800;
   letter-spacing: -0.035em;
@@ -631,4 +629,46 @@
   .dashboard-line-chart__point {
     fill: Highlight;
   }
+}
+
+.headline-metrics {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.headline-metric {
+  display: grid;
+  align-content: start;
+  gap: 0.3rem;
+  padding: 1rem;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: var(--radius-card);
+  background: rgb(var(--color-surface));
+}
+
+.headline-metric__value {
+  color: rgb(var(--color-text));
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.headline-metric__label {
+  color: rgb(var(--color-text));
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.headline-metric .dashboard-evidence-badge {
+  justify-self: start;
+}
+
+/* Estimates read lighter than verified numbers. */
+.headline-metric[data-evidence="estimated"] {
+  border-style: dashed;
 }

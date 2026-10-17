@@ -1,56 +1,43 @@
 import type { Role } from '@resgata/shared'
-import { AppIcon, Button, Card, SimuladoBadge, StatusBadge } from '../../../shared/ui'
+import { AppIcon } from '../../../shared/ui'
 import { type SessionEntry } from '../model/session'
 
-const roleIcons: Record<
-  Role,
-  'dashboard' | 'donation' | 'partner' | 'route' | 'user'
-> = {
-  driver: 'route',
-  ngo: 'user',
+const roleIcons: Record<Role, 'chart' | 'heart' | 'partner' | 'truck' | 'home'> = {
+  driver: 'truck',
+  ngo: 'home',
   partner: 'partner',
-  platform: 'dashboard',
-  seller: 'donation',
+  platform: 'chart',
+  seller: 'heart',
 }
 
 interface RoleCardProps {
   current: boolean
   identity: SessionEntry
   onSelect(identity: SessionEntry): void
+  /** Secondary entries (dashboards) render as a compact row. */
+  compact?: boolean
 }
 
-export function RoleCard({ current, identity, onSelect }: RoleCardProps) {
+/** The whole card is one large button: pick who you are and go. */
+export function RoleCard({ compact = false, current, identity, onSelect }: RoleCardProps) {
+  const icon = identity.entryPoint === 'ngo-analytics' ? 'chart' : roleIcons[identity.role]
   return (
-    <Card className="flex min-h-64 flex-col gap-4">
-      <div className="flex items-start justify-between gap-3">
-        <span className="grid size-12 place-items-center rounded-full bg-surface-raised text-text">
-          <AppIcon name={roleIcons[identity.role]} size={24} />
-        </span>
-        <div className="flex flex-wrap justify-end gap-2">
-          {current ? <StatusBadge label="Perfil atual" tone="success" /> : null}
-          <SimuladoBadge />
-        </div>
-      </div>
-
-      <div className="flex-1">
-        <p className="mb-1 text-xs font-medium uppercase tracking-wider text-muted">
-          {identity.label}
-        </p>
-        <h2 className="mb-2 text-xl font-extrabold text-text">
-          {identity.displayName}
-        </h2>
-        <p className="mb-0 text-sm">{identity.description}</p>
-      </div>
-
-      <Button
-        aria-label={`Entrar em ${identity.label} como ${identity.displayName}`}
-        className="w-full"
-        icon="arrow-right"
-        onClick={() => onSelect(identity)}
-        variant={current ? 'secondary' : 'primary'}
-      >
-        {current ? 'Continuar com este perfil' : `Entrar em ${identity.label}`}
-      </Button>
-    </Card>
+    <button
+      aria-label={`Entrar como ${identity.label}: ${identity.displayName}`}
+      className={`role-card${compact ? ' role-card--compact' : ''}${current ? ' is-current' : ''}`}
+      onClick={() => onSelect(identity)}
+      type="button"
+    >
+      <span className={`role-card__icon role-card__icon--${identity.role}`}>
+        <AppIcon name={icon} size={compact ? 22 : 28} />
+      </span>
+      <span className="role-card__copy">
+        <strong>{identity.label}</strong>
+        <span className="role-card__name">{identity.displayName}</span>
+        {compact ? null : <span className="role-card__description">{identity.description}</span>}
+        {current ? <span className="role-card__current">Perfil atual</span> : null}
+      </span>
+      <AppIcon name="arrow-right" size={22} />
+    </button>
   )
 }

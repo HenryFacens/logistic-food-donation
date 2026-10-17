@@ -45,7 +45,7 @@ export function SellerDonationSection({
                 {donationMessages.listTitle}
               </h1>
             </div>
-            <Button icon="plus" onClick={onDonate} variant="secondary">
+            <Button icon="plus" onClick={onDonate} variant="primary">
               Nova doação
             </Button>
           </header>
@@ -104,11 +104,11 @@ export function SellerDonationSection({
 
       {donationsQuery.data?.items.length ? (
         <div className="grid gap-4">
-          {donationsQuery.data.items.map((donation, index) => (
+          {donationsQuery.data.items.map((donation) => (
             <DonationCard
               apiClient={apiClient}
               compact={compact}
-              defaultExpanded={presentation === 'mobile' && index === 0}
+              defaultExpanded={false}
               donation={donation}
               key={donation.id}
               presentation={presentation}

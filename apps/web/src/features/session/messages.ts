@@ -1,8 +1,9 @@
 export const sessionMessages = {
   eyebrow: 'Resgata',
-  title: 'Quem você quer representar?',
+  title: 'Quem é você?',
   description:
-    'Escolha o perfil para entrar. Ele será usado em toda a experiência do Resgata.',
+    'Comida boa que sobrou vai para quem precisa. Escolha como você participa.',
+  dashboards: 'Painéis de acompanhamento',
   loading: 'Carregando perfis',
   emptyTitle: 'Nenhum perfil disponível',
   emptyDescription:

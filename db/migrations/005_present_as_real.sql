@@ -30,6 +30,13 @@ BEGIN
   SET title = btrim(regexp_replace(title, '\s*SIMULADO\.?\s*', ' ', 'g')),
       terms = btrim(regexp_replace(terms, '\s*SIMULADO\.?\s*', ' ', 'g'))
   WHERE title LIKE '%SIMULADO%' OR terms LIKE '%SIMULADO%';
+  -- "Um café pequeno fictício.", "Limite fictício de R$ 50."
+  UPDATE coupons
+  SET description = regexp_replace(description, '\s+fictíci[oa]s?', '', 'g'),
+      terms = regexp_replace(terms, '\s+fictíci[oa]s?', '', 'g')
+  WHERE description ~ 'fictíci' OR terms ~ 'fictíci';
+  UPDATE partners SET description = regexp_replace(description, '\s+fictíci[oa]s?', '', 'g')
+  WHERE description ~ 'fictíci';
 
   -- Notes written for the demo: "Café comunitário (SIMULADO)".
   UPDATE ngo_needs SET notes = btrim(regexp_replace(notes, '\s*\(SIMULADO\)', '', 'g'))

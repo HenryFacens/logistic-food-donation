@@ -1,7 +1,7 @@
 import { DriverDeliveriesPage } from './pages/DriverDeliveriesPage'
-import { NgoPickupsPage } from './pages/PickupListPage'
+import { NgoDeliveriesPage } from './pages/NgoDeliveriesPage'
 
-export const ngoPickupsRouteElement = <NgoPickupsPage />
+export const ngoPickupsRouteElement = <NgoDeliveriesPage />
 export const driverPickupsRouteElement = <DriverDeliveriesPage />
 
 export const pickupRouteElements = {

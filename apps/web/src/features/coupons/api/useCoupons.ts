@@ -44,6 +44,8 @@ export function useRedeemCoupon() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: couponQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: ['partner'] }),
+        // Points balance shown on the rewards page.
+        queryClient.invalidateQueries({ queryKey: ['driver-status'] }),
       ])
       toast.show(couponMessages.redeemSuccess, 'success')
     },

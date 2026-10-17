@@ -43,18 +43,25 @@ export class ApiClientError extends Error {
 }
 
 const STATUS_MESSAGES: Record<number, string> = {
-  400: 'A solicitação contém dados inválidos.',
-  401: 'Selecione novamente um perfil de demonstração.',
-  403: 'Este perfil não pode executar esta ação.',
-  404: 'O recurso solicitado não foi encontrado.',
-  409: 'Os dados mudaram. Atualize a tela e tente novamente.',
-  422: 'Revise os campos informados e tente novamente.',
-  429: 'Muitas solicitações. Aguarde um instante e tente novamente.',
-  500: 'O serviço encontrou um erro inesperado.',
-  502: 'O serviço está temporariamente indisponível.',
-  503: 'O serviço está temporariamente indisponível.',
-  504: 'O serviço demorou demais para responder.',
+  400: 'Algum dado está errado. Confira e tente de novo.',
+  401: 'Sua sessão terminou. Escolha seu perfil de novo.',
+  403: 'Seu perfil não pode fazer isso.',
+  404: 'Não encontramos isso. Talvez já tenha sido removido.',
+  409: 'Alguém mudou isso antes de você. Atualize a tela e tente de novo.',
+  422: 'Confira os campos marcados e tente de novo.',
+  429: 'Muitas tentativas seguidas. Espere um pouco e tente de novo.',
+  500: 'Algo deu errado do nosso lado. Tente de novo em instantes.',
+  502: 'O serviço está fora do ar por um momento. Tente de novo em instantes.',
+  503: 'O serviço está fora do ar por um momento. Tente de novo em instantes.',
+  504: 'A conexão está lenta. Tente de novo.',
 }
+
+const TECHNICAL_CODES = new Set([
+  'invalid_cursor',
+  'invalid_json',
+  'invalid_route',
+  'validation_error',
+])
 
 const kindFromStatus = (status: number): ApiErrorKind => {
   if (status === 401 || status === 403) return 'unauthorized'
@@ -90,12 +97,23 @@ export const normalizeResponseError = async (
   }
 
   const apiError = isApiError(body) ? body.error : undefined
+  // The API writes specific pt-BR messages for business errors ("Código de
+  // confirmação inválido."); show those. Technical ones and server errors
+  // fall back to the plain status text.
+  const specific =
+    apiError &&
+    response.status >= 400 &&
+    response.status < 500 &&
+    !TECHNICAL_CODES.has(apiError.code)
+      ? apiError.message
+      : undefined
   return new ApiClientError({
     code: apiError?.code,
     correlationId: apiError?.correlationId,
     details: apiError?.details,
     kind: kindFromStatus(response.status),
     message:
+      specific ||
       STATUS_MESSAGES[response.status] ||
       apiError?.message ||
       'Não foi possível concluir a solicitação.',

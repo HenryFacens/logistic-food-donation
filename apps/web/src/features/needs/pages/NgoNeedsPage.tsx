@@ -51,12 +51,17 @@ function AvailabilityCard() {
     setDraft({ ...values, [field]: value })
 
   return (
-    <Card className="grid gap-4">
-      <div>
-        <span className="eyebrow">{needMessages.availabilityEyebrow}</span>
-        <h2 className="mb-1 text-xl font-extrabold">{needMessages.availabilityTitle}</h2>
-        <p className="mb-0 text-sm">{needMessages.availabilityDescription}</p>
-      </div>
+    <details className="screen-card needs-availability">
+      <summary aria-label={needMessages.availabilityTitle}>
+        <span>
+          <strong>{needMessages.availabilityTitle}</strong>
+          <small>
+            {availability.data.receivingStart}–{availability.data.receivingEnd} ·{' '}
+            {availability.data.availableCapacityKg.toLocaleString('pt-BR')} kg livres hoje
+          </small>
+        </span>
+      </summary>
+      <p className="mb-0 text-sm">{needMessages.availabilityDescription}</p>
       <form
         className="grid gap-3"
         onSubmit={(event) => {
@@ -118,11 +123,11 @@ function AvailabilityCard() {
           </p>
         ) : null}
       </form>
-    </Card>
+    </details>
   )
 }
 
-function NewNeedForm() {
+function NewNeedForm({ onDone }: { onDone(published: boolean): void }) {
   const { create } = useNeedMutations()
   const [category, setCategory] = useState<DonationCategory>('bakery')
   const [item, setItem] = useState('')
@@ -133,9 +138,8 @@ function NewNeedForm() {
   const [notes, setNotes] = useState('')
 
   return (
-    <Card className="grid gap-4">
+    <Card className="grid gap-4 border-2 border-primary">
       <div>
-        <span className="eyebrow">{needMessages.newEyebrow}</span>
         <h2 className="mb-1 text-xl font-extrabold">{needMessages.newTitle}</h2>
         <p className="mb-0 text-sm">{needMessages.newDescription}</p>
       </div>
@@ -158,11 +162,24 @@ function NewNeedForm() {
                 setItem('')
                 setQuantity('')
                 setNotes('')
+                onDone(true)
               },
             },
           )
         }}
       >
+        <label className="grid gap-2 font-bold">
+          {needMessages.item}
+          <input
+            className={inputClass}
+            maxLength={120}
+            minLength={2}
+            onChange={(event) => setItem(event.target.value)}
+            placeholder={needMessages.itemPlaceholder}
+            required
+            value={item}
+          />
+        </label>
         <fieldset className="grid gap-2">
           <legend className="mb-2 font-bold">{needMessages.whatYouNeed}</legend>
           <div className="flex flex-wrap gap-2">
@@ -179,18 +196,6 @@ function NewNeedForm() {
           </div>
         </fieldset>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="grid gap-2 font-bold sm:col-span-2">
-            {needMessages.item}
-            <input
-              className={inputClass}
-              maxLength={120}
-              minLength={2}
-              onChange={(event) => setItem(event.target.value)}
-              placeholder={needMessages.itemPlaceholder}
-              required
-              value={item}
-            />
-          </label>
           <div className="grid grid-cols-[1fr_auto] gap-2">
             <label className="grid gap-2 font-bold">
               {needMessages.howMuch}
@@ -243,16 +248,18 @@ function NewNeedForm() {
             value={notes}
           />
         </label>
-        <Button disabled={create.isPending} type="submit" variant="primary">
-          {create.isPending ? needMessages.publishing : needMessages.publish}
-        </Button>
+        <div className="grid grid-cols-[1fr_1.6fr] gap-2">
+          <Button onClick={() => onDone(false)} variant="secondary">
+            Cancelar
+          </Button>
+          <Button disabled={create.isPending} type="submit" variant="primary">
+            {create.isPending ? needMessages.publishing : needMessages.publish}
+          </Button>
+        </div>
         {create.isError ? (
           <p className="mb-0 text-sm text-danger" role="alert">
             {create.error.message}
           </p>
-        ) : null}
-        {create.isSuccess ? (
-          <StatusBadge label={needMessages.published} tone="success" />
         ) : null}
       </form>
     </Card>
@@ -262,45 +269,83 @@ function NewNeedForm() {
 export function NgoNeedsPage() {
   const needs = useMyNeeds()
   const { cancel } = useNeedMutations()
+  const [creating, setCreating] = useState(false)
+  const [justPublished, setJustPublished] = useState(false)
+  const open = needs.data?.filter((need) => need.status === 'open') ?? []
+  const closed = needs.data?.filter((need) => need.status !== 'open') ?? []
 
   return (
-    <div className="grid gap-5">
-      <NewNeedForm />
-      <AvailabilityCard />
+    <div className="grid gap-4">
+      <header>
+        <h1 className="mb-1 text-[1.8rem]">{needMessages.listTitle}</h1>
+        <p className="mb-0">{needMessages.newDescription}</p>
+      </header>
+
+      {creating ? (
+        <NewNeedForm
+          onDone={(published) => {
+            setCreating(false)
+            setJustPublished(published)
+          }}
+        />
+      ) : (
+        <Button
+          icon="plus"
+          onClick={() => {
+            setJustPublished(false)
+            setCreating(true)
+          }}
+          variant="primary"
+        >
+          {needMessages.newTitle}
+        </Button>
+      )}
+      {justPublished && !creating ? (
+        <output className="block font-bold text-success-strong">
+          {needMessages.published}
+        </output>
+      ) : null}
+
       <section className="grid gap-3">
-        <h2 className="mb-0 text-xl font-extrabold">{needMessages.listTitle}</h2>
         {needs.isPending ? <LoadingState label={needMessages.loading} /> : null}
-        {needs.isError ? (
+        {needs.isError && !needs.data ? (
           <EmptyState
-            description={needs.error.message}
+            action={
+              <Button icon="refresh" onClick={() => void needs.refetch()}>
+                Tentar novamente
+              </Button>
+            }
+            description="Verifique sua conexão e tente de novo."
             icon="warning"
             title={needMessages.loadError}
           />
         ) : null}
-        {needs.data && !needs.data.length ? (
-          <EmptyState description={needMessages.emptyDescription} title={needMessages.emptyTitle} />
+        {needs.data && !open.length && !creating ? (
+          <EmptyState description={needMessages.emptyDescription} icon="heart" title={needMessages.emptyTitle} />
         ) : null}
-        {needs.data?.map((need) => (
+        {[...open, ...closed.slice(0, 5)].map((need) => (
           <Card className="grid gap-2" key={need.id}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span>
-                <strong>{need.item}</strong>{' '}
-                <span className="text-sm">· {needCategoryLabels[need.category]}</span>
+                <strong className="text-lg">{need.item}</strong>{' '}
+                <span className="text-sm text-muted">· {needCategoryLabels[need.category]}</span>
               </span>
               <StatusBadge
                 label={needMessages.status[need.status]}
                 tone={need.status === 'open' ? 'info' : need.status === 'fulfilled' ? 'success' : 'neutral'}
               />
             </div>
-            <p className="mb-0 text-sm">
-              {formatQuantity(need.quantity - need.remainingQuantity, need.unit)}{' '}
-              {needMessages.of} {formatQuantity(need.quantity, need.unit)} ·{' '}
-              {needMessages.until.toLowerCase()}{' '}
+            <p className="mb-0">
+              Recebido {formatQuantity(need.quantity - need.remainingQuantity, need.unit)}{' '}
+              {needMessages.of} {formatQuantity(need.quantity, need.unit)} · até{' '}
               {formatDeadline(need.neededBy)}
             </p>
-            <div className="h-2 overflow-hidden rounded-full bg-border">
-              <div className="h-full bg-primary" style={{ width: `${needProgress(need)}%` }} />
-            </div>
+            <progress
+              aria-label={`${Math.round(needProgress(need))}% recebido`}
+              className="need-progress"
+              max={100}
+              value={needProgress(need)}
+            />
             {need.notes ? <p className="mb-0 text-sm">{need.notes}</p> : null}
             {need.status === 'open' ? (
               <Button
@@ -315,6 +360,8 @@ export function NgoNeedsPage() {
           </Card>
         ))}
       </section>
+
+      <AvailabilityCard />
     </div>
   )
 }

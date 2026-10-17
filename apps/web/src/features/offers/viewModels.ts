@@ -101,9 +101,9 @@ export const offerSummary = (offer: Offer) => {
 export const offerFreshnessLabel = (offer: Offer) => {
   const minutes = offer.donation?.perishabilityMinutes
   if (!minutes) return null
-  if (minutes < 60) return `Boa por cerca de ${minutes} min`
+  if (minutes < 60) return `Bom para consumo por ~${minutes} min`
   const hours = Math.max(1, Math.round(minutes / 60))
-  return `Boa por cerca de ${hours}h`
+  return `Bom para consumo por ~${hours}h`
 }
 
 export const offerResponseWindow = (
@@ -119,4 +119,38 @@ export const offerResponseWindow = (
   return hours > 0
     ? `Responder em ${hours}h ${minutes.toString().padStart(2, '0')}min`
     : `Responder em ${minutes} min`
+}
+
+export interface OfferReason {
+  icon: 'navigation' | 'heart' | 'clock' | 'box'
+  text: string
+}
+
+/** Why this donation fits the NGO, as plain sentences (no scores). */
+export const offerReasons = (offer: Offer): OfferReason[] => {
+  const reasons: OfferReason[] = []
+  const match = offer.score.needMatch
+  if (match) {
+    const unit = unitLabels[match.unit] ?? match.unit
+    reasons.push({
+      icon: 'heart',
+      text:
+        match.coveredQuantity !== null
+          ? `Atende sua solicitação de ${match.item}: cobre ~${match.coveredQuantity.toLocaleString('pt-BR')} de ${match.remainingQuantity.toLocaleString('pt-BR')} ${unit}`
+          : `Atende sua solicitação de ${match.item}`,
+    })
+  }
+  if (offer.distanceKm !== undefined) {
+    const km = offer.distanceKm.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
+    reasons.push({
+      icon: 'navigation',
+      text:
+        offer.etaMinutes !== undefined
+          ? `${km} km de vocês, ~${offer.etaMinutes} min de carro`
+          : `${km} km de vocês`,
+    })
+  }
+  const freshness = offerFreshnessLabel(offer)
+  if (freshness) reasons.push({ icon: 'clock', text: freshness })
+  return reasons
 }

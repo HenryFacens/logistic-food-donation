@@ -34,13 +34,13 @@ describe('createApiClient', () => {
     expect(headers.get('Content-Type')).toBe('application/json')
   })
 
-  it('normalizes API conflicts to pt-BR', async () => {
+  it('shows the API business message for conflicts', async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(
         JSON.stringify({
           error: {
             code: 'state_conflict',
-            message: 'internal message',
+            message: 'A oferta não está pendente.',
             correlationId: 'correlation-123',
           },
         }),
@@ -59,8 +59,30 @@ describe('createApiClient', () => {
       code: 'state_conflict',
       correlationId: 'correlation-123',
       kind: 'conflict',
-      message: 'Os dados mudaram. Atualize a tela e tente novamente.',
+      message: 'A oferta não está pendente.',
       status: 409,
+    })
+  })
+
+  it('keeps technical API messages out of the interface', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: { code: 'validation_error', message: 'Requisição inválida.' },
+        }),
+        { status: 422 },
+      ),
+    )
+    const client = createApiClient({
+      baseUrl: '/api',
+      fetcher,
+      getDemoKey: () => null,
+    })
+
+    const error = await client.get('/donations').catch((caught) => caught)
+    expect(error).toMatchObject({
+      message: 'Confira os campos marcados e tente de novo.',
+      status: 422,
     })
   })
 })

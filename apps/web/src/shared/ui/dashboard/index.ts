@@ -38,3 +38,8 @@ export {
   formatDashboardMonth,
   formatDashboardValue,
 } from './formatters'
+export {
+  HeadlineMetrics,
+  type HeadlineMetric,
+  type HeadlineMetricsProps,
+} from './HeadlineMetrics'

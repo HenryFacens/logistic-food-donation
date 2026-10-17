@@ -692,19 +692,19 @@ export const getDriverDashboard: ApiHandler = async (request) => {
         metrics: [
           availableMetric(
             "availableMissions",
-            "Missões disponíveis",
+            "Entregas disponíveis",
             numeric(availableResult.rows[0]?.available),
-            "missões",
+            "entregas",
             "calculated",
             "Coletas abertas na rede; ainda não há filtro de elegibilidade individual.",
           ),
-          availableMetric("acceptedMissions", "Missões aceitas", accepted, "missões", "calculated"),
-          availableMetric("completedMissions", "Missões concluídas", completed, "missões", "calculated"),
+          availableMetric("acceptedMissions", "Entregas aceitas", accepted, "entregas", "calculated"),
+          availableMetric("completedMissions", "Entregas concluídas", completed, "entregas", "calculated"),
           availableMetric(
             "cancelledMissions",
-            "Missões canceladas",
+            "Entregas canceladas",
             numeric(row.cancelled),
-            "missões",
+            "entregas",
             "calculated",
           ),
           availableMetric(
@@ -720,7 +720,7 @@ export const getDriverDashboard: ApiHandler = async (request) => {
             nullableNumeric(row.accept_seconds),
             "s",
             "calculated",
-            "Não há missões atribuídas no período.",
+            "Não há entregas atribuídas no período.",
           ),
           optionalMetric(
             "averageCollectionTime",

@@ -20,7 +20,7 @@
   align-items: center;
   gap: 0.65rem;
   margin-bottom: 1rem;
-  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-family: var(--font-display);
   font-size: 1.45rem;
 }
 

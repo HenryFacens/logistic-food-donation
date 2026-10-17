@@ -183,7 +183,7 @@ export function PartnerPage() {
                   ? formatPartnerMetric(investment.value, investment.unit)
                   : '—'}
               </strong>
-              <small>informado pelo painel simulado</small>
+              <small>investimento da campanha</small>
             </div>
             <div>
               <span>ROI social estimado</span>
@@ -212,9 +212,9 @@ export function PartnerPage() {
               <small>estimativa do contrato do parceiro</small>
             </div>
             <div>
-              <span>Missões incentivadas</span>
+              <span>Entregas incentivadas</span>
               <strong>{dashboard.data.sponsoredDeliveries}</strong>
-              <small>entregas patrocinadas simuladas</small>
+              <small>entregas patrocinadas</small>
             </div>
           </div>
           <div className="partner-unavailable">
@@ -295,8 +295,7 @@ export function PartnerPage() {
           <div className="partner-table-wrap">
             <table className="partner-table">
               <caption className="partner-visually-hidden">
-                Histórico real de registros de resgate; cada linha informa se o
-                cupom é simulado
+                Histórico de resgates dos cupons desta campanha
               </caption>
               <thead>
                 <tr>

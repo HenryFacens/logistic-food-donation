@@ -18,6 +18,9 @@ import {
 } from '../model/session'
 import { sessionMessages } from '../messages'
 
+// The three people in the rescue loop; dashboards are listed below them.
+const MAIN_ENTRIES: readonly SessionEntry['entryPoint'][] = ['seller', 'ngo-operations', 'driver']
+
 export interface LoginPageProps {
   apiClient: ApiClient
   currentDemoKey?: string | null
@@ -39,6 +42,9 @@ export function LoginPage({
   const users = groupSessionIdentities(usersQuery.data || [])
   const entries = buildSessionEntries(users)
 
+  const isCurrent = (identity: SessionEntry) =>
+    identity.demoKey === currentDemoKey && identity.entryPoint === currentEntryPoint
+
   const selectIdentity = (identity: SessionEntry) => {
     onSelectUser(identity)
     onNavigate(identity.defaultPath)
@@ -47,8 +53,7 @@ export function LoginPage({
   return (
     <div className="grid w-full max-w-6xl gap-6">
       <header className="max-w-2xl">
-        <span className="eyebrow">{sessionMessages.eyebrow}</span>
-        <h1 className="mb-3 text-4xl font-black leading-tight sm:text-5xl">
+        <h1 className="mb-2 text-[2rem] leading-tight sm:text-5xl">
           {sessionMessages.title}
         </h1>
         <p className="mb-0 text-base sm:text-lg">{sessionMessages.description}</p>
@@ -82,19 +87,37 @@ export function LoginPage({
       ) : null}
 
       {entries.length ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {entries.map((identity) => (
-            <RoleCard
-              current={
-                identity.demoKey === currentDemoKey &&
-                identity.entryPoint === currentEntryPoint
-              }
-              identity={identity}
-              key={`${identity.demoKey}:${identity.entryPoint}`}
-              onSelect={selectIdentity}
-            />
-          ))}
+        <div className="grid gap-3 sm:grid-cols-3">
+          {entries
+            .filter((identity) => MAIN_ENTRIES.includes(identity.entryPoint))
+            .map((identity) => (
+              <RoleCard
+                current={isCurrent(identity)}
+                identity={identity}
+                key={`${identity.demoKey}:${identity.entryPoint}`}
+                onSelect={selectIdentity}
+              />
+            ))}
         </div>
+      ) : null}
+
+      {entries.some((identity) => !MAIN_ENTRIES.includes(identity.entryPoint)) ? (
+        <section className="grid gap-2">
+          <h2 className="mb-0 text-lg">{sessionMessages.dashboards}</h2>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {entries
+              .filter((identity) => !MAIN_ENTRIES.includes(identity.entryPoint))
+              .map((identity) => (
+                <RoleCard
+                  compact
+                  current={isCurrent(identity)}
+                  identity={identity}
+                  key={`${identity.demoKey}:${identity.entryPoint}`}
+                  onSelect={selectIdentity}
+                />
+              ))}
+          </div>
+        </section>
       ) : null}
 
       <details className="max-w-md">

@@ -2,41 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Resgata design tokens. Light is the default: vendors and drivers use the app
+ * outdoors, where light screens stay readable. Lexend was designed to improve
+ * reading fluency, which suits people who read little or read in a hurry.
+ */
 :root {
-  /* Verdana Health palette (light is the default theme). */
-  --color-canvas: 248 250 252;
+  --color-canvas: 242 245 241;
   --color-surface: 255 255 255;
-  --color-surface-raised: 241 245 249;
-  --color-text: 15 23 42;
-  --color-muted: 100 116 139;
-  --color-border: 226 232 240;
-  --color-border-strong: 203 213 225;
-  --color-primary: 5 150 105;
-  --color-primary-strong: 4 120 87;
-  /* #059669 with white text is 3.8:1, so filled CTAs use the strong shade. */
-  --color-primary-pressed: 6 95 70;
+  --color-surface-raised: 234 240 235;
+  --color-text: 18 38 30;
+  --color-muted: 74 94 85;
+  --color-border: 213 223 216;
+  --color-border-strong: 170 187 177;
+  --color-primary: 11 122 90;
+  --color-primary-strong: 8 102 75;
+  --color-primary-pressed: 6 81 60;
   --color-primary-contrast: 255 255 255;
-  --color-success: 22 163 74;
-  --color-warning: 202 138 4;
-  --color-danger: 220 38 38;
-  --color-info: 2 132 199;
-  /* Dark text of each semantic tone for chips on a light tint (AA). */
-  --color-success-strong: 22 101 52;
-  --color-warning-strong: 133 77 14;
-  --color-danger-strong: 153 27 27;
-  --color-info-strong: 7 89 133;
-  --color-neutral-strong: 51 65 85;
-  --color-inverse: 15 23 42;
+  --color-highlight: 242 183 5;
+  --color-success: 30 125 69;
+  --color-warning: 168 106 0;
+  --color-danger: 200 68 44;
+  --color-info: 29 111 184;
+  /* Readable text of each tone on its own light tint (AA). */
+  --color-success-strong: 22 94 52;
+  --color-warning-strong: 116 72 0;
+  --color-danger-strong: 150 44 26;
+  --color-info-strong: 21 85 142;
+  --color-neutral-strong: 58 77 68;
+  --color-inverse: 18 38 30;
   --color-inverse-contrast: 255 255 255;
-  --radius-control: 0.5rem;
-  --radius-card: 0.5rem;
+  --radius-control: 0.75rem;
+  --radius-card: 1rem;
   --control-min-size: 3rem;
-  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.05), 0 1px 3px rgb(15 23 42 / 0.06);
-  --shadow-floating: 0 10px 30px rgb(15 23 42 / 0.10);
+  --shadow-card: 0 1px 2px rgb(18 38 30 / 0.06);
+  --shadow-floating: 0 12px 32px rgb(18 38 30 / 0.16);
   --content-max: 76rem;
-  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-display: Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Only for codes people read aloud or type: 6-digit pickup/delivery codes. */
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   color: rgb(var(--color-text));
   background: rgb(var(--color-canvas));
@@ -48,30 +53,31 @@
 }
 
 :root[data-theme="dark"] {
-  --color-canvas: 11 18 32;
-  --color-surface: 17 26 46;
-  --color-surface-raised: 26 37 64;
-  --color-text: 226 232 240;
-  --color-muted: 148 163 184;
-  --color-border: 36 48 74;
-  --color-border-strong: 51 65 98;
-  --color-primary: 52 211 153;
-  --color-primary-strong: 52 211 153;
-  --color-primary-pressed: 110 231 183;
-  --color-primary-contrast: 5 46 34;
-  --color-success: 74 222 128;
-  --color-warning: 250 204 21;
-  --color-danger: 248 113 113;
-  --color-info: 56 189 248;
-  --color-success-strong: 134 239 172;
-  --color-warning-strong: 253 230 138;
-  --color-danger-strong: 252 165 165;
-  --color-info-strong: 125 211 252;
-  --color-neutral-strong: 203 213 225;
-  --color-inverse: 26 37 64;
-  --color-inverse-contrast: 226 232 240;
+  --color-canvas: 15 26 22;
+  --color-surface: 23 37 31;
+  --color-surface-raised: 31 48 41;
+  --color-text: 232 240 235;
+  --color-muted: 163 181 171;
+  --color-border: 44 64 55;
+  --color-border-strong: 72 96 85;
+  --color-primary: 79 209 160;
+  --color-primary-strong: 79 209 160;
+  --color-primary-pressed: 127 224 187;
+  --color-primary-contrast: 6 40 28;
+  --color-highlight: 245 200 66;
+  --color-success: 110 224 160;
+  --color-warning: 245 200 66;
+  --color-danger: 255 138 115;
+  --color-info: 124 184 242;
+  --color-success-strong: 150 236 186;
+  --color-warning-strong: 250 222 140;
+  --color-danger-strong: 255 180 165;
+  --color-info-strong: 170 208 248;
+  --color-neutral-strong: 205 218 210;
+  --color-inverse: 31 48 41;
+  --color-inverse-contrast: 232 240 235;
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
-  --shadow-floating: 0 10px 30px rgb(0 0 0 / 0.45);
+  --shadow-floating: 0 12px 32px rgb(0 0 0 / 0.45);
 }
 
 * {
@@ -79,6 +85,8 @@
 }
 
 html {
+  /* 17 px base: larger text and touch targets for field use. */
+  font-size: 106.25%;
   min-width: 320px;
   background: rgb(var(--color-canvas));
 }
@@ -133,8 +141,9 @@ h1,
 h2,
 h3,
 .display-title {
-  font-family: "Bricolage Grotesque", Figtree, Inter, ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: -0.025em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 h4,
@@ -161,9 +170,9 @@ h4,
 
 /* Metric numbers: kg, counts, durations, points, and confirmation codes. */
 .metric-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: 0;
 }
 
@@ -189,12 +198,17 @@ p {
 
 .eyebrow {
   display: block;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.15rem;
   color: rgb(var(--color-muted));
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Codes the driver reads or types (pickup and delivery confirmation). */
+.code-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }
 
 .button {
@@ -277,20 +291,19 @@ p {
   font-size: 1rem;
 }
 
-/* Chip: uppercase label on a light tint with dark text of the same tone. */
+/* Chip: icon plus label on a light tint with dark text of the same tone. */
 .status-badge,
 .simulated-badge {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.3rem 0.55rem;
+  padding: 0.3rem 0.65rem;
   border: 1px solid transparent;
-  border-radius: var(--radius-control);
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.05em;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
   line-height: 1.2;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -627,7 +640,7 @@ p {
 }
 
 .metric-card > strong {
-  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.75rem, 4vw, 2.45rem);
   line-height: 1;
 }
@@ -838,4 +851,149 @@ p {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Folded settings (e.g. NGO receiving hours). */
+.needs-availability {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.needs-availability summary {
+  display: flex;
+  min-height: var(--control-min-size);
+  align-items: center;
+  cursor: pointer;
+  list-style-position: outside;
+}
+
+.needs-availability summary span {
+  display: grid;
+}
+
+.needs-availability summary small {
+  color: rgb(var(--color-muted));
+  font-size: 0.9rem;
+}
+
+.needs-availability[open] summary {
+  margin-bottom: 0.5rem;
+}
+
+/* Sign-in role picker: each role is one large button. */
+.role-card {
+  display: grid;
+  width: 100%;
+  min-height: 5.5rem;
+  align-items: center;
+  gap: 0.9rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 1rem;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: var(--radius-card);
+  background: rgb(var(--color-surface));
+  box-shadow: var(--shadow-card);
+  color: rgb(var(--color-text));
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 150ms ease;
+}
+
+.role-card:hover,
+.role-card:focus-visible {
+  border-color: rgb(var(--color-primary));
+}
+
+.role-card.is-current {
+  border: 2px solid rgb(var(--color-primary));
+}
+
+.role-card > svg {
+  color: rgb(var(--color-primary-strong));
+}
+
+.role-card__icon {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(var(--color-primary) / 0.12);
+  color: rgb(var(--color-primary-strong));
+}
+
+.role-card__icon--driver {
+  background: rgb(var(--color-highlight) / 0.22);
+  color: rgb(var(--color-warning-strong));
+}
+
+.role-card__icon--ngo {
+  background: rgb(var(--color-info) / 0.14);
+  color: rgb(var(--color-info-strong));
+}
+
+.role-card__copy {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.role-card__copy strong {
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.role-card__name {
+  color: rgb(var(--color-muted));
+  font-weight: 500;
+}
+
+.role-card__description {
+  margin-top: 0.3rem;
+  color: rgb(var(--color-text));
+  font-size: 0.95rem;
+}
+
+.role-card__current {
+  color: rgb(var(--color-primary-strong));
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.role-card--compact {
+  min-height: 4rem;
+  padding: 0.7rem 1rem;
+  box-shadow: none;
+}
+
+.role-card--compact .role-card__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.role-card--compact .role-card__copy strong {
+  font-size: 1.05rem;
+}
+
+.need-progress {
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  appearance: none;
+  background: rgb(var(--color-border));
+}
+
+.need-progress::-webkit-progress-bar {
+  background: rgb(var(--color-border));
+}
+
+.need-progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: rgb(var(--color-primary));
+}
+
+.need-progress::-moz-progress-bar {
+  border-radius: 999px;
+  background: rgb(var(--color-primary));
 }

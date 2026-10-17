@@ -11,7 +11,7 @@ export function DriverDashboardPage() {
   const dashboard = useDriverDashboard()
 
   if (dashboard.isPending) {
-    return <LoadingState label="Consolidando suas missões e recompensas" />
+    return <LoadingState label="Carregando seu desempenho" />
   }
 
   if (dashboard.isError) {

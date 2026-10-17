@@ -1,69 +1,76 @@
-import { Button, EmptyState, LoadingState, SimuladoBadge } from '../../../shared/ui'
+import { driverStatusSchema } from '@resgata/shared'
+import { useQuery } from '@tanstack/react-query'
+import { useApiClient } from '../../../shared/api'
+import { Button, EmptyState, LoadingState } from '../../../shared/ui'
 import { useCoupons, useRedeemCoupon } from '../api/useCoupons'
 import { CouponCard } from '../components/CouponCard'
 import { couponMessages } from '../messages'
-import { couponAvailability } from '../viewModels'
 import '../coupons.css'
 
 export function CouponsPage() {
+  const api = useApiClient()
   const coupons = useCoupons()
   const redemption = useRedeemCoupon()
+  // Same query key as the driver availability card, so both stay in sync.
+  const driver = useQuery({
+    queryKey: ['driver-status'],
+    queryFn: async () => driverStatusSchema.parse(await api.get('/drivers/me')),
+  })
+  const points = driver.data?.points
 
-  if (coupons.isPending) return <LoadingState label="Buscando benefícios" />
-  if (coupons.isError) {
+  if (coupons.isPending) return <LoadingState label="Buscando prêmios" />
+  if (coupons.isError && !coupons.data) {
     return (
       <EmptyState
         action={<Button icon="refresh" onClick={() => void coupons.refetch()}>Tentar novamente</Button>}
         description={couponMessages.loadError}
         icon="warning"
-        title="Falha ao carregar"
-      />
-    )
-  }
-  if (!coupons.data.items.length) {
-    return (
-      <EmptyState
-        description={couponMessages.emptyDescription}
-        icon="coupon"
-        title={couponMessages.emptyTitle}
+        title="Não foi possível carregar os prêmios"
       />
     )
   }
 
-  const availableCount = coupons.data.items.filter(
-    (coupon) => couponAvailability(coupon).available,
-  ).length
+  // What the driver can take now comes first, then the cheapest to unlock.
+  const items = [...coupons.data.items].sort((left, right) => {
+    const reach = (cost: number) => (points !== undefined && cost <= points ? 0 : 1)
+    return reach(left.pointsCost) - reach(right.pointsCost) || left.pointsCost - right.pointsCost
+  })
 
   return (
     <div className="coupons-screen">
       <header className="coupons-screen__header">
-        <div>
-          <span className="eyebrow">Recompensas por entregas</span>
-          <h1>Cupons</h1>
-          <p>{couponMessages.simulationDescription}</p>
-        </div>
-        <SimuladoBadge />
+        <h1>Prêmios</h1>
+        <p>{couponMessages.description}</p>
       </header>
-      <section className="coupons-screen__summary" aria-label="Resumo dos benefícios">
-        <span>
-          <strong>{availableCount}</strong>
-          benefícios disponíveis
-        </span>
-        <span>
-          <strong>{coupons.data.items.length}</strong>
-          opções na carteira
-        </span>
-      </section>
-      <div className="coupons-screen__list">
-        {coupons.data.items.map((coupon) => (
-          <CouponCard
-            coupon={coupon}
-            key={coupon.id}
-            onRedeem={redemption.mutateAsync}
-            redeeming={redemption.isPending && redemption.variables === coupon.id}
-          />
-        ))}
-      </div>
+
+      {points !== undefined ? (
+        <section className="coupons-balance" aria-label="Seus pontos">
+          <span>Você tem</span>
+          <strong>
+            {points.toLocaleString('pt-BR')} <small>pontos</small>
+          </strong>
+        </section>
+      ) : null}
+
+      {items.length ? (
+        <div className="coupons-screen__list">
+          {items.map((coupon) => (
+            <CouponCard
+              coupon={coupon}
+              key={coupon.id}
+              onRedeem={redemption.mutateAsync}
+              points={points}
+              redeeming={redemption.isPending && redemption.variables === coupon.id}
+            />
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          description={couponMessages.emptyDescription}
+          icon="coupon"
+          title={couponMessages.emptyTitle}
+        />
+      )}
     </div>
   )
 }

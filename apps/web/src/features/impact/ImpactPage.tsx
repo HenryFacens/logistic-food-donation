@@ -211,7 +211,7 @@ export function ImpactPage() {
           </div>
 
           {forecast.isPending ? (
-            <LoadingState label="Gerando previsão simulada" />
+            <LoadingState label="Calculando a previsão" />
           ) : forecast.isError ? (
             <EmptyState
               action={

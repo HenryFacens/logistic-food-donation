@@ -1,13 +1,13 @@
 export const donationMessages = {
   donateEyebrow: 'Nova doação',
-  donateTitle: 'Confirmar item',
+  donateTitle: 'Nova doação',
   donateDescription:
     'Revise a identificação, a quantidade e o prazo antes de publicar.',
   donateStep: 'Etapa final',
   quantityTitle: 'Quantos?',
   expiryTitle: 'Retirar até quando?',
   optional: 'Preenchimento opcional',
-  financialTitle: 'Valores gerenciais',
+  financialTitle: 'Valor e custo de descarte (opcional)',
   financialNotice:
     'Use estes valores somente para estimativas de gestão. Eles não comprovam nem calculam dedução fiscal.',
   unitValueLabel: 'Valor declarado por kg',
@@ -17,9 +17,9 @@ export const donationMessages = {
   disposalCostHelp:
     'Informe o custo total que seria necessário para descartar esta doação.',
   pickupLocation: 'Local de retirada',
-  publicationDetails: 'Detalhes da publicação',
+  publicationDetails: 'Categoria, horário e validade',
   classificationPending:
-    'Adicione uma foto ou uma descrição para receber a classificação assistida.',
+    'Comece pela foto: a IA preenche o alimento, o peso e a validade para você conferir.',
   listEyebrow: 'Padaria Cambuí',
   listTitle: 'Suas doações',
   pickupDetails: 'Local de retirada',
@@ -79,8 +79,5 @@ export const donationMessages = {
   outOfRange: 'Fora do raio:',
   timelineLoading: 'Carregando histórico',
   timelineEmpty: 'Ainda não há eventos para esta doação.',
-  pickupIdentification: 'Identificação da retirada',
-  pickupIdentificationUnavailable:
-    'O QR e o código de retirada ainda não estão disponíveis ao produtor neste contrato.',
   nextStep: 'Próxima etapa',
 } as const

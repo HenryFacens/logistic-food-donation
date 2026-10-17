@@ -4,18 +4,15 @@ export const offerMessages = {
   covers: 'cobre',
   of: 'de',
   unitLabels: { box: 'caixas', kg: 'kg', tray: 'bandejas', unit: 'unidades' },
-  conditionGood: 'Foto analisada: bom para doação',
-  conditionAttention: 'Foto analisada: receber com atenção',
-  acceptError: 'Não foi possível aceitar esta oferta.',
-  acceptSuccess: 'Oferta aceita. O recebimento já foi criado.',
-  acceptanceChoiceDescription:
-    'A preferência logística ainda não é enviada ao servidor. A aceitação da oferta é real.',
-  acceptanceChoiceTitle: 'Como vocês vão receber?',
-  emptyDescription: 'Novas oportunidades compatíveis aparecerão aqui.',
-  emptyTitle: 'Nenhuma oferta disponível',
-  loadError: 'Não foi possível carregar as ofertas.',
-  rejectError: 'Não foi possível recusar esta oferta.',
-  rejectSuccess: 'Oferta recusada. A próxima ONG será consultada.',
+  conditionGood: 'Foto conferida pela IA: aparência boa.',
+  conditionAttention: 'Foto conferida pela IA: confira ao receber.',
+  acceptError: 'Não foi possível aceitar. Talvez outra ONG tenha aceitado antes.',
+  acceptSuccess: 'Doação aceita. Já estamos chamando um motorista — acompanhe em Entregas.',
+  emptyDescription: 'Cadastre o que vocês precisam em Solicitações para receber doações que combinem.',
+  emptyTitle: 'Nada para responder agora',
+  loadError: 'Verifique sua conexão e tente de novo.',
+  rejectError: 'Não foi possível recusar. Tente de novo.',
+  rejectSuccess: 'Recusada. Vamos oferecer para outra ONG.',
 } as const
 
 export const getErrorMessage = (error: unknown, fallback: string) =>

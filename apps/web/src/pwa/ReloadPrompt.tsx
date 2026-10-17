@@ -27,7 +27,7 @@ export function ReloadPrompt() {
       <span>
         {needRefresh
           ? 'Nova versão disponível.'
-          : 'App pronto para funcionar offline.'}
+          : 'Pronto: o app também abre sem internet.'}
       </span>
       <div className="toast-actions">
         {needRefresh && (

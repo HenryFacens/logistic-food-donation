@@ -839,7 +839,7 @@ paths:
       operationId: getDriverStatus
       responses:
         "200":
-          description: "Availability, vehicle capacity, and last location."
+          description: "Availability, vehicle capacity, reward points, and last location."
     post:
       tags: [Pickups]
       operationId: updateDriverStatus
@@ -1489,6 +1489,22 @@ components:
         disposalCostBrl:
           type: [number, "null"]
           minimum: 0
+        pickup:
+          type: [object, "null"]
+          description: >-
+            Delivery progress, returned only to the donor. Carries the pickup
+            code the donor tells the driver; null once collected.
+          properties:
+            status: { type: string }
+            pickupCode:
+              type: [string, "null"]
+              pattern: '^\d{6}$'
+            driverName: { type: [string, "null"] }
+            vehicle: { type: [string, "null"] }
+            ngoName: { type: string }
+            assignedAt: { type: [string, "null"], format: date-time }
+            collectedAt: { type: [string, "null"], format: date-time }
+            deliveredAt: { type: [string, "null"], format: date-time }
         perishabilityMinutes:
           type: integer
           minimum: 15
@@ -1753,8 +1769,9 @@ components:
           type: string
           pattern: '^\d{6}$'
           description: >-
-            Collection proof code. Returned to the NGO; omitted from every
-            driver response because the seller informs it on site.
+            Collection proof code. Not returned on pickups: the seller reads
+            it on its own donation (`Donation.pickup.pickupCode`) and informs
+            the driver on site.
         deliveryCode:
           type: string
           pattern: '^\d{6}$'

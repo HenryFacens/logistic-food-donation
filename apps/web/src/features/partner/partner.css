@@ -114,7 +114,7 @@
 .partner-insight__metrics strong,
 .partner-fiscal__grid strong {
   overflow-wrap: anywhere;
-  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.55rem, 3vw, 2.3rem);
   line-height: 1;
 }
@@ -208,8 +208,6 @@
 .partner-table th {
   color: rgb(var(--color-muted));
   font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .partner-table tbody tr:last-child td {

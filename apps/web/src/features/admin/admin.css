@@ -73,8 +73,6 @@
   color: rgb(var(--color-primary-strong));
   font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .platform-chart-card h2,
@@ -215,7 +213,7 @@
 
 .admin-indicator > b {
   color: rgb(var(--color-primary-strong));
-  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(3rem, 6vw, 4.5rem);
   line-height: 0.9;
 }
@@ -311,14 +309,13 @@
 
 .admin-activity__metrics strong {
   overflow-wrap: anywhere;
-  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.45rem, 3vw, 2.1rem);
   line-height: 1;
 }
 
 .admin-activity__metrics > div:last-child strong {
   font-size: 1.1rem;
-  text-transform: uppercase;
 }
 
 .admin-queue-grid {
@@ -485,8 +482,6 @@
 .admin-table th {
   color: rgb(var(--color-muted));
   font-size: 0.7rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .admin-table tbody tr:last-child td {

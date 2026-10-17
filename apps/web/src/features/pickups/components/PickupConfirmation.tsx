@@ -8,7 +8,6 @@ import {
 import { Button } from '../../../shared/ui'
 import { pickupErrorMessage, pickupMessages } from '../messages'
 import {
-  coordinateLabel,
   mapPickupConfirmation,
   normalizeConfirmationCode,
 } from '../viewModels'
@@ -50,7 +49,7 @@ export function PickupConfirmation({
     readBrowserLocation()
       .then((location) => {
         setCurrentLocation(location)
-        setLocationMessage(`Localização capturada: ${coordinateLabel(location)}`)
+        setLocationMessage("Localização registrada.")
       })
       .catch((caught: unknown) => {
         setCurrentLocation(null)
@@ -89,13 +88,16 @@ export function PickupConfirmation({
   return (
     <div className="pickup-confirmation">
       <div className="pickup-confirmation__heading">
-        <span className="eyebrow">Confirmação segura</span>
         <h3>Confirmar {label}</h3>
-        <p>Leia o QR ou use o código manual informado no local.</p>
+        <p>
+          {action === 'collect'
+            ? 'Peça ao doador o código de 6 números que aparece no celular dele.'
+            : 'Entregue os alimentos e peça à ONG o código de 6 números.'}
+        </p>
       </div>
       <QrCodeReader onCode={readCode} />
       <label className="pickup-confirmation__code" htmlFor={`pickup-code-${pickup.id}-${action}`}>
-        <span>Ou digite o código de 6 números</span>
+        <span>Código de 6 números</span>
         <span className="pickup-confirmation__digits" aria-hidden="true">
           {codeDigits.map((digit, index) => (
             <span className={digit ? 'is-filled' : ''} key={index}>{digit}</span>
@@ -103,7 +105,7 @@ export function PickupConfirmation({
         </span>
         <input
           autoComplete="one-time-code"
-          className="min-h-12 rounded-xl border border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))] px-4 text-center font-mono text-2xl font-medium tabular-nums tracking-[0.35em]"
+          className="min-h-12 rounded-xl border border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))] px-4 text-center code-value text-2xl"
           id={`pickup-code-${pickup.id}-${action}`}
           inputMode="numeric"
           maxLength={6}
@@ -115,23 +117,23 @@ export function PickupConfirmation({
       </label>
       <div className="pickup-confirmation__location">
         <div>
-          <strong>{currentLocation ? 'GPS capturado' : 'Confirmar localização'}</strong>
+          <strong>{currentLocation ? 'Localização registrada' : 'Localização (opcional)'}</strong>
           <span>
             {currentLocation
-              ? coordinateLabel(currentLocation)
-              : `Sem validação de distância. Se o GPS falhar, será usado o ponto cadastrado da ${label}.`}
+              ? 'Ajuda a comprovar que você estava no local.'
+              : 'Se o GPS não funcionar, usamos o endereço cadastrado.'}
           </span>
         </div>
         <Button icon="location" onClick={locate}>
-          {currentLocation ? 'Atualizar GPS' : 'Usar GPS'}
+          {currentLocation ? 'Atualizar' : 'Usar GPS'}
         </Button>
       </div>
       {locationMessage ? <output className="pickup-confirmation__location-message">{locationMessage}</output> : null}
       {error ? <p className="mb-0 text-sm font-bold text-[rgb(var(--color-danger))]" role="alert">{error}</p> : null}
       <div className="pickup-confirmation__actions">
-        <Button disabled={busy} onClick={onCancel} variant="ghost">Cancelar</Button>
+        <Button disabled={busy} onClick={onCancel} variant="secondary">Voltar</Button>
         <Button disabled={busy} icon="check" onClick={() => void submit()} variant="primary">
-          Confirmar {label}
+          {busy ? 'Confirmando…' : `Confirmar ${label}`}
         </Button>
       </div>
     </div>

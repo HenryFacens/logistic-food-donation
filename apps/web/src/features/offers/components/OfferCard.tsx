@@ -1,19 +1,13 @@
 import type { Offer } from '@resgata/shared'
 import { useState } from 'react'
-import {
-  AppIcon,
-  Button,
-  Card,
-  StatusBadge,
-} from '../../../shared/ui'
+import { AppIcon, Button, StatusBadge } from '../../../shared/ui'
 import { getErrorMessage, offerMessages } from '../messages'
 import {
   mapOfferDecision,
-  offerFreshnessLabel,
+  offerReasons,
   offerResponseWindow,
   offerSummary,
   offerTitle,
-  scoreExplanations,
 } from '../viewModels'
 
 interface OfferCardProps {
@@ -26,15 +20,13 @@ interface OfferCardProps {
   }): Promise<unknown>
 }
 
+/** A pending offer: what it is, why it fits, and the decision. */
 export function OfferCard({ deciding, offer, onDecision }: OfferCardProps) {
   const [error, setError] = useState<string | null>(null)
   const [showReject, setShowReject] = useState(false)
-  const [showAcceptance, setShowAcceptance] = useState(false)
-  const [logisticsChoice, setLogisticsChoice] = useState<'own' | 'network'>('network')
   const [reason, setReason] = useState('')
   const decision = mapOfferDecision(offer)
-  const freshness = offerFreshnessLabel(offer)
-  const scoreItems = scoreExplanations(offer.score)
+  const condition = offer.donation?.classification?.condition
 
   const decide = async (action: 'accept' | 'reject') => {
     setError(null)
@@ -45,29 +37,18 @@ export function OfferCard({ deciding, offer, onDecision }: OfferCardProps) {
         reason: action === 'reject' && reason.trim() ? reason.trim() : undefined,
       })
       setShowReject(false)
-      setShowAcceptance(false)
     } catch (caught) {
       setError(
         getErrorMessage(
           caught,
-          action === 'accept'
-            ? offerMessages.acceptError
-            : offerMessages.rejectError,
+          action === 'accept' ? offerMessages.acceptError : offerMessages.rejectError,
         ),
       )
     }
   }
 
   return (
-    <Card className="offer-card">
-      <div className="offer-card__topline">
-        <StatusBadge
-          icon="clock"
-          label={offerResponseWindow(offer)}
-          tone={decision.canDecide ? 'danger' : offer.status === 'accepted' ? 'success' : 'neutral'}
-        />
-      </div>
-
+    <article className="screen-card offer-card">
       {offer.donation?.imageUrl ? (
         <img
           alt={`Foto de ${offerTitle(offer)}`}
@@ -78,172 +59,119 @@ export function OfferCard({ deciding, offer, onDecision }: OfferCardProps) {
       ) : null}
 
       <div className="offer-card__summary">
-        <span className="eyebrow">Compatibilidade #{offer.rank}</span>
         <h2>{offerTitle(offer)}</h2>
         <p>{offerSummary(offer)}</p>
-      </div>
-
-      {offer.donation ? (
-        <div className="offer-card__facts">
-          <div>
-            <span>Retirada</span>
-            <strong>
-              {offer.donation.pickupAddress.district}, {offer.donation.pickupAddress.city}
-            </strong>
-          </div>
-          <div>
-            <span>Disponível a partir de</span>
-            <strong>{new Date(offer.donation.availableFrom).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</strong>
-          </div>
-          {offer.distanceKm !== undefined ? (
-            <div>
-              <span>{offerMessages.distance}</span>
-              <strong>
-                {offer.distanceKm.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km
-                {offer.etaMinutes !== undefined ? ` · ~${offer.etaMinutes} min` : ''}
-              </strong>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="offer-card__match">
-        <div className="offer-card__match-heading">
-          <span className="offer-card__check">
-            <AppIcon name="check" size={18} />
-          </span>
-          <div className="offer-card__match-copy">
-            <strong>{Math.round(offer.score.total)}% compatível</strong>
-            {freshness ? <span>{freshness}</span> : null}
-          </div>
-        </div>
-        <div className="offer-card__reasons" aria-label="Motivos da compatibilidade">
-          {scoreItems.map((item) => (
-            <span key={item.label}>
-              {item.label} {Math.round(Number.parseFloat(item.detail))}%
-            </span>
-          ))}
-        </div>
-        {offer.score.needMatch ? (
-          <div className="offer-card__request">
-            <strong>
-              {offerMessages.matchesRequest} {offer.score.needMatch.item}
-              {offer.score.needMatch.coveredQuantity !== null
-                ? ` — ${offerMessages.covers} ~${offer.score.needMatch.coveredQuantity.toLocaleString('pt-BR')} ${offerMessages.of} ${offer.score.needMatch.remainingQuantity.toLocaleString('pt-BR')} ${offerMessages.unitLabels[offer.score.needMatch.unit]}`
-                : ''}
-            </strong>
-            <span>{offer.score.needMatch.reason}</span>
-          </div>
+        {offer.donation ? (
+          <p>
+            Retirada em {offer.donation.pickupAddress.district},{' '}
+            {offer.donation.pickupAddress.city}
+          </p>
         ) : null}
       </div>
 
-      {offer.donation?.classification?.condition ? (
-        <div
-          className={`offer-card__condition offer-card__condition--${offer.donation.classification.condition}`}
-        >
-          <strong>
-            {offer.donation.classification.condition === 'good'
-              ? offerMessages.conditionGood
-              : offerMessages.conditionAttention}
-          </strong>
-          {offer.donation.classification.conditionNotes ? (
-            <span>{offer.donation.classification.conditionNotes}</span>
-          ) : null}
-        </div>
+      <ul className="offer-card__reasons" aria-label="Por que esta doação combina com vocês">
+        {offerReasons(offer).map((item) => (
+          <li key={item.text}>
+            <AppIcon name={item.icon} size={18} />
+            <span>{item.text}</span>
+          </li>
+        ))}
+      </ul>
+
+      {condition ? (
+        <p className={`offer-card__condition offer-card__condition--${condition}`}>
+          <AppIcon name={condition === 'good' ? 'check' : 'warning'} size={18} />
+          <span>
+            <strong>
+              {condition === 'good' ? offerMessages.conditionGood : offerMessages.conditionAttention}
+            </strong>
+            {offer.donation?.classification?.conditionNotes
+              ? ` ${offer.donation.classification.conditionNotes}`
+              : ''}
+          </span>
+        </p>
       ) : null}
 
-      {error ? <p className="mb-0 text-sm font-bold text-[rgb(var(--color-danger))]" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="offer-card__error" role="alert">
+          {error}
+        </p>
+      ) : null}
 
-      {showReject && decision.canDecide ? (
+      {decision.canDecide && showReject ? (
         <div className="offer-card__form">
-          <label className="font-bold" htmlFor={`reason-${offer.id}`}>Motivo opcional</label>
+          <label htmlFor={`reason-${offer.id}`}>Por que não? (opcional)</label>
           <textarea
             id={`reason-${offer.id}`}
             maxLength={500}
             onChange={(event) => setReason(event.target.value)}
-            placeholder="Ex.: sem capacidade refrigerada hoje"
+            placeholder="Ex.: sem geladeira livre hoje"
             value={reason}
           />
           <div className="offer-card__actions">
-            <Button disabled={deciding} onClick={() => setShowReject(false)} variant="ghost">Cancelar</Button>
-            <Button disabled={deciding} icon="warning" onClick={() => void decide('reject')}>
+            <Button disabled={deciding} onClick={() => setShowReject(false)} variant="ghost">
+              Voltar
+            </Button>
+            <Button disabled={deciding} onClick={() => void decide('reject')} variant="secondary">
               Confirmar recusa
             </Button>
           </div>
         </div>
       ) : null}
 
-      {decision.canDecide && !showReject && !showAcceptance ? (
-        <div className="offer-card__actions">
-          <Button disabled={deciding} icon="warning" onClick={() => setShowReject(true)}>
-            Recusar
-          </Button>
-          <Button disabled={deciding} icon="check" onClick={() => setShowAcceptance(true)} variant="primary">
-            Aceitar
-          </Button>
-        </div>
-      ) : null}
-
-      {showAcceptance && decision.canDecide ? (
-        <section
-          aria-label={offerMessages.acceptanceChoiceTitle}
-          className="offer-card__sheet"
-        >
-          <div className="offer-card__sheet-handle" />
-          <div className="offer-card__sheet-title">
-            <div>
-              <h3>{offerMessages.acceptanceChoiceTitle}</h3>
-              <p>Reservaremos esta doação para a entidade agora.</p>
-            </div>
-          </div>
-          <div className="offer-card__logistics" role="radiogroup" aria-label="Preferência logística simulada">
-            <label
-              className={logisticsChoice === 'own' ? 'is-selected' : ''}
-            >
-              <input
-                checked={logisticsChoice === 'own'}
-                name={`logistics-${offer.id}`}
-                onChange={() => setLogisticsChoice('own')}
-                type="radio"
-                value="own"
-              />
-              <span><AppIcon name="truck" size={26} /></span>
-              <span><strong>Vamos buscar</strong><small>Usamos nosso veículo</small></span>
-            </label>
-            <label
-              className={logisticsChoice === 'network' ? 'is-selected' : ''}
-            >
-              <input
-                checked={logisticsChoice === 'network'}
-                name={`logistics-${offer.id}`}
-                onChange={() => setLogisticsChoice('network')}
-                type="radio"
-                value="network"
-              />
-              <span><AppIcon name="user" size={26} /></span>
-              <span><strong>Precisamos de coletador</strong><small>Aguardamos alguém da rede</small></span>
-            </label>
-          </div>
-          <p className="offer-card__simulation-note">
-            {offerMessages.acceptanceChoiceDescription}
+      {decision.canDecide && !showReject ? (
+        <>
+          <p className="offer-card__deadline">
+            <AppIcon name="clock" size={18} />
+            {offerResponseWindow(offer)}
           </p>
           <div className="offer-card__actions">
-            <Button disabled={deciding} onClick={() => setShowAcceptance(false)} variant="ghost">
-              Voltar
+            <Button disabled={deciding} onClick={() => setShowReject(true)} variant="secondary">
+              Não podemos
             </Button>
-            <Button disabled={deciding} icon="check" onClick={() => void decide('accept')} variant="primary">
-              Aceitar oferta
+            <Button
+              disabled={deciding}
+              icon="check"
+              onClick={() => void decide('accept')}
+              variant="primary"
+            >
+              {deciding ? 'Aceitando…' : 'Aceitar doação'}
             </Button>
           </div>
-        </section>
+        </>
       ) : null}
 
       {!decision.canDecide ? (
         <div className="offer-card__closed">
-          <StatusBadge label={decision.statusLabel} tone={offer.status === 'accepted' ? 'success' : 'neutral'} />
-          <span>{decision.expirationLabel}</span>
+          <StatusBadge
+            label={decision.statusLabel}
+            tone={offer.status === 'accepted' ? 'success' : 'neutral'}
+          />
         </div>
       ) : null}
-    </Card>
+    </article>
+  )
+}
+
+/** Past offers stay visible as one line each. */
+export function OfferHistoryRow({ offer }: { offer: Offer }) {
+  const decision = mapOfferDecision(offer)
+  return (
+    <li className="offer-history-row">
+      <div>
+        <strong>{offerTitle(offer)}</strong>
+        <span>
+          {new Date(offer.acceptedAt ?? offer.createdAt).toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+          })}
+          {offer.donation ? ` · ${offer.donation.estimatedWeightKg.toLocaleString('pt-BR')} kg` : ''}
+        </span>
+      </div>
+      <StatusBadge
+        label={decision.statusLabel}
+        tone={offer.status === 'accepted' ? 'success' : 'neutral'}
+      />
+    </li>
   )
 }

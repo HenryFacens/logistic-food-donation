@@ -113,6 +113,21 @@ export const donationSchema = z.object({
   classification: classificationSchema.nullable(),
   unitValueBrl: z.number().nonnegative().nullable(),
   disposalCostBrl: z.number().nonnegative().nullable(),
+  /** Delivery progress, present for the donor's own donations. */
+  pickup: z
+    .object({
+      status: z.string(),
+      /** Six-digit code the donor gives the driver at pickup. */
+      pickupCode: z.string().length(6).nullable(),
+      driverName: z.string().nullable(),
+      vehicle: z.string().nullable(),
+      ngoName: z.string(),
+      assignedAt: isoDateTimeSchema.nullable(),
+      collectedAt: isoDateTimeSchema.nullable(),
+      deliveredAt: isoDateTimeSchema.nullable(),
+    })
+    .nullable()
+    .optional(),
   correlationId: correlationIdSchema,
   version: z.number().int().nonnegative(),
   simulated: z.boolean(),

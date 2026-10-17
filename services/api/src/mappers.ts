@@ -137,12 +137,15 @@ function mapPickupSummary(row: Row) {
 }
 
 /**
- * `includeCodes` is false for drivers: the seller and the NGO inform the
- * proof codes on site, so the driver must never receive them from the API.
+ * Proof codes are handed over in person: the seller gives the pickup code and
+ * the NGO gives the delivery code. Each party only receives its own code and
+ * the driver receives neither from the API.
  */
+export type PickupCodeAccess = "all" | "pickup" | "delivery" | "none";
+
 export function mapPickup(
   row: Row,
-  { includeCodes = true }: { includeCodes?: boolean } = {},
+  { codes = "all" }: { codes?: PickupCodeAccess } = {},
 ) {
   return pickupSchema.parse({
     id: row.id,
@@ -152,11 +155,11 @@ export function mapPickup(
     ngoId: row.ngo_id,
     driverId: row.driver_id,
     status: row.status,
-    ...(includeCodes
-      ? {
-          pickupCode: String(row.pickup_code).trim(),
-          deliveryCode: String(row.delivery_code).trim(),
-        }
+    ...(codes === "all" || codes === "pickup"
+      ? { pickupCode: String(row.pickup_code).trim() }
+      : {}),
+    ...(codes === "all" || codes === "delivery"
+      ? { deliveryCode: String(row.delivery_code).trim() }
       : {}),
     pickupLocation: {
       latitude: number(row.pickup_latitude),

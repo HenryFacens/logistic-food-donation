@@ -33,6 +33,8 @@ export function useOffers() {
   return useQuery({
     queryKey: offerQueryKeys.list(),
     queryFn: async () => offerListSchema.parse(await api.get('/offers?limit=50')),
+    // New offers arrive from the matching worker; keep the list live.
+    refetchInterval: 15_000,
   })
 }
 

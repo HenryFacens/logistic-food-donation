@@ -17,7 +17,7 @@ export const sellerMetricsMessages = {
   eyebrow: 'Produtor / doador',
   title: 'Seu impacto',
   subtitle:
-    'Acompanhe suas doações, os valores documentados e o que ainda depende de estimativa ou validação.',
+    'O que suas doações já fizeram. Números conferidos pela ONG aparecem separados das estimativas.',
   loading: 'Calculando as métricas das suas doações',
   loadErrorTitle: 'Não foi possível carregar suas métricas',
   retry: 'Tentar novamente',
@@ -28,7 +28,7 @@ export const sellerMetricsMessages = {
     flowEyebrow: 'Da publicação ao recebimento',
     flowTitle: 'Quanto da doação chegou à ONG',
     flowDescription:
-      'Compare o volume anunciado, coletado e efetivamente conferido no destino.',
+      'Do que você publicou, quanto foi coletado e quanto a ONG conferiu na chegada.',
     flowAriaLabel:
       'Funil de quilos publicados, coletados e recebidos pela ONG',
     completionEyebrow: 'Resultado do período',
@@ -62,7 +62,7 @@ export const sellerMetricsMessages = {
   },
   ratings: {
     eyebrow: 'Após o recebimento',
-    title: 'Avalie o transportador',
+    title: 'Avalie o motorista',
     description:
       'Sua avaliação fica disponível somente quando a ONG confirma o recebimento.',
     loading: 'Buscando entregas disponíveis para avaliação',
@@ -71,7 +71,7 @@ export const sellerMetricsMessages = {
     emptyDescription:
       'Quando uma entrega for confirmada pela ONG, ela aparecerá aqui.',
     deliveredAt: 'Recebimento confirmado em',
-    scoreLegend: 'Qual nota você dá ao transportador?',
+    scoreLegend: 'Qual nota você dá ao motorista?',
     scoreLabel: (score: number) =>
       `${score} ${score === 1 ? 'estrela' : 'estrelas'}`,
     tagsLegend: 'O que se destacou?',

@@ -123,7 +123,7 @@ export function PickupCard({
 
       <div className="grid gap-3 rounded-2xl border border-border bg-canvas p-4 sm:grid-cols-2">
         <div>
-          <span className="block text-xs font-medium uppercase tracking-wider text-muted">Retirada</span>
+          <span className="block text-sm font-medium text-muted">Retirada</span>
           {summary ? (
             <>
               <strong className="block">{displayName(summary.sellerName)}</strong>
@@ -143,7 +143,7 @@ export function PickupCard({
           )}
         </div>
         <div>
-          <span className="block text-xs font-medium uppercase tracking-wider text-muted">Entrega</span>
+          <span className="block text-sm font-medium text-muted">Entrega</span>
           {summary ? (
             <>
               <strong className="block">{displayName(summary.ngoName)}</strong>
@@ -174,8 +174,8 @@ export function PickupCard({
 
       {audience === 'ngo' && pickup.deliveryCode ? (
         <div className="rounded-2xl border border-dashed border-border-strong p-4">
-          <span className="block text-xs font-medium uppercase tracking-wider text-muted">Código para confirmar entrega</span>
-          <strong className="metric-value text-3xl tracking-[0.22em]">{pickup.deliveryCode}</strong>
+          <span className="block text-sm font-medium text-muted">Código para confirmar entrega</span>
+          <strong className="code-value text-3xl">{pickup.deliveryCode}</strong>
           <p className="mb-0 mt-1 text-sm">Informe este código ao motorista somente quando os alimentos chegarem.</p>
         </div>
       ) : null}

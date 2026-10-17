@@ -44,23 +44,13 @@ export function DonatePage({
         </button>
         <div className="producer-screen-header__copy">
           <span className="eyebrow">
-            {donationMessages.donateEyebrow} · {district}
+            {profile.data?.legalName ?? district}
           </span>
           <h1 className="screen-header__title">
             {donationMessages.donateTitle}
           </h1>
         </div>
-        <strong className="producer-screen-header__step">
-          {donationMessages.donateStep}
-        </strong>
       </header>
-
-      <progress
-        aria-label="Etapa 2 de 2"
-        className="producer-step-progress"
-        max={2}
-        value={2}
-      />
 
       <VisionClassifier
         apiClient={apiClient}

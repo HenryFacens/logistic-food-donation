@@ -90,6 +90,7 @@ const driverStatusSql = `
     id,
     active AS available,
     capacity_kg::float8 AS "capacityKg",
+    points,
     json_build_object(
       'latitude', ST_Y(current_location::geometry),
       'longitude', ST_X(current_location::geometry)

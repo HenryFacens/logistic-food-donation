@@ -7,12 +7,15 @@ export type AppIconName =
   | 'box'
   | 'camera'
   | 'chart'
+  | 'chevron-down'
+  | 'chevron-up'
   | 'check'
   | 'clock'
   | 'coupon'
   | 'dashboard'
   | 'donation'
   | 'flag'
+  | 'heart'
   | 'home'
   | 'image'
   | 'leaf'
@@ -43,6 +46,9 @@ const paths: Record<AppIconName, string> = {
   box: 'm3 7 9-4 9 4v10l-9 4-9-4V7Zm0 0 9 4 9-4m-9 4v10',
   camera: 'M4 8h3l2-3h6l2 3h3v11H4V8Zm8 2.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z',
   chart: 'M4 20V10m6 10V4m6 16v-8m6 8H2',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  heart: 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z',
   check: 'm5 12 4 4L19 6',
   clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-13v4l3 2',
   coupon: 'M4 7a2 2 0 0 0 2-2h12v4a3 3 0 0 0 0 6v4H6a2 2 0 0 0-2-2V7Zm8-2v14',

@@ -36,7 +36,7 @@ describe('delivery receipt panel', () => {
       />,
     )
 
-    expect(markup).toContain('Conferência real')
+    expect(markup).toContain('Confirmar recebimento')
     expect(markup).toContain('180')
     expect(markup).toContain('Confirmar recebimento')
   })
@@ -69,7 +69,7 @@ describe('delivery receipt panel', () => {
       />,
     )
 
-    expect(markup).toContain('Comprovado pela ONG')
+    expect(markup).toContain('Conferido pela ONG')
     expect(markup).toContain('160 kg')
     expect(markup).toContain('Embalagem danificada')
     expect(markup).not.toContain('Confirmar recebimento')

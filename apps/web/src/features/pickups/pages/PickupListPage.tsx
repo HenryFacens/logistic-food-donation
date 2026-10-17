@@ -77,6 +77,4 @@ export function PickupListPage({ audience }: { audience: 'driver' | 'ngo' }) {
   )
 }
 
-export function NgoPickupsPage() {
-  return <PickupListPage audience="ngo" />
-}
+export { NgoDeliveriesPage as NgoPickupsPage } from './NgoDeliveriesPage'

@@ -38,7 +38,7 @@ const commonProps = {
 }
 
 describe('MetricsDashboard', () => {
-  it('renders the driver dashboard as charts without simulation labels', () => {
+  it('leads the driver dashboard with headline numbers and one funnel', () => {
     const markup = renderToStaticMarkup(
       <MetricsDashboard
         {...commonProps}
@@ -69,13 +69,14 @@ describe('MetricsDashboard', () => {
     )
 
     expect(markup).toContain('Da oportunidade à entrega')
-    expect(markup).toContain('dashboard-line-chart__curve')
-    expect(markup).toContain('Carga transportada e entregue')
-    expect(markup).toContain('O tempo de aceite')
+    expect(markup).toContain('de comida entregues')
+    expect(markup).toContain('para trocar em Prêmios')
+    // No decorative curves or donuts.
+    expect(markup).not.toContain('dashboard-line-chart__curve')
     expect(markup).not.toContain('SIMULADO')
   })
 
-  it('renders NGO receipt charts without inventing unavailable distribution', () => {
+  it('shows the NGO flow without inventing unavailable distribution', () => {
     const markup = renderToStaticMarkup(
       <MetricsDashboard
         {...commonProps}
@@ -100,10 +101,9 @@ describe('MetricsDashboard', () => {
       />,
     )
 
-    expect(markup).toContain('Condição dos alimentos')
-    expect(markup).toContain('Ocupação da capacidade')
     expect(markup).toContain('Recebidos pela ONG')
     expect(markup).not.toContain('Distribuídos à comunidade</span>')
-    expect(markup).toContain('Não disponível')
+    // Metrics without data are left out instead of shown as empty cards.
+    expect(markup).not.toContain('communityDistributedWeight')
   })
 })

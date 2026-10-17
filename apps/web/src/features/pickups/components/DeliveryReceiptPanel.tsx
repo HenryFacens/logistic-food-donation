@@ -153,8 +153,6 @@ function ReceiptForm({
       }}
     >
       <div className="receipt-form__heading">
-        <span className="eyebrow">{pickupMessages.receiptFormEyebrow}</span>
-        <h3>{pickupMessages.receiptFormTitle}</h3>
         <p>
           {receiptEstimatedWeightMessage(
             formatWeight(pickup.estimatedWeightKg),
