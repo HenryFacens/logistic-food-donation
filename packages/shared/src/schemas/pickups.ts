@@ -112,3 +112,34 @@ export const confirmPickupRequestSchema = z.object({
   code: z.string().regex(/^\d{6}$/),
   location: geoPointSchema,
 });
+
+export const routePlanStopSchema = z.object({
+  order: z.number().int().positive(),
+  kind: z.enum(["pickup", "delivery"]),
+  pickupId: uuidSchema,
+  name: z.string(),
+  address: z.string(),
+  point: geoPointSchema,
+  /** Minutes from now until the driver arrives. */
+  etaMinutes: z.number().nonnegative(),
+  deadline: isoDateTimeSchema.nullable(),
+  lateMinutes: z.number().nonnegative(),
+});
+export type RoutePlanStop = z.infer<typeof routePlanStopSchema>;
+
+export const driverRoutePlanSchema = z.object({
+  start: geoPointSchema,
+  stops: z.array(routePlanStopSchema),
+  drivingMinutes: z.number().nonnegative(),
+  distanceKm: z.number().nonnegative().nullable(),
+  /** Same deliveries in acceptance order (each pickup then its delivery). */
+  baselineMinutes: z.number().nonnegative(),
+  savedMinutes: z.number(),
+  lateMinutes: z.number().nonnegative(),
+  method: z.enum(["exact", "greedy", "given"]),
+  travelTimes: z.enum(["azure-maps", "estimate"]),
+  /** Road geometry through the stops in order: [latitude, longitude]. */
+  path: z.array(z.tuple([z.number(), z.number()])).nullable(),
+  generatedAt: isoDateTimeSchema,
+});
+export type DriverRoutePlan = z.infer<typeof driverRoutePlanSchema>;

@@ -12,6 +12,8 @@ x-app-environment: &app-environment
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5-5}
   MATCHING_MODEL: ${MATCHING_MODEL:-claude-sonnet-5-5}
+  # Azure Maps: tiles, routes, address search, and matching ETAs.
+  AZURE_MAPS_KEY: ${AZURE_MAPS_KEY:-}
   # Sign-in: demo profiles stay available locally; dev codes are echoed in
   # the API response only when ENABLE_DEV_LOGIN_CODES=true.
   ENABLE_DEMO_LOGIN: ${ENABLE_DEMO_LOGIN:-true}

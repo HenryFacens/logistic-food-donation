@@ -1,3 +1,5 @@
+import { env } from '../config/env'
+
 export interface ParsedPlaceAddress {
   city: string
   district: string
@@ -101,7 +103,39 @@ export const parsePhotonFeature = (feature: PhotonFeature): ParsedPlaceAddress |
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
+/** Azure Maps suggestions through our API; Photon is the fallback. */
 export async function searchAddresses(
+  query: string,
+  signal?: AbortSignal,
+): Promise<ParsedPlaceAddress[]> {
+  try {
+    const response = await fetch(
+      `${env.apiBaseUrl}/maps/search?q=${encodeURIComponent(query)}`,
+      { signal },
+    )
+    if (response.ok) {
+      const body: unknown = await response.json()
+      if (isRecord(body) && Array.isArray(body.items)) {
+        return body.items.filter(isRecord).map((item) => ({
+          city: String(item.city ?? ''),
+          district: String(item.district ?? ''),
+          line1: String(item.line1 ?? ''),
+          location: {
+            latitude: Number(isRecord(item.location) ? item.location.latitude : 0),
+            longitude: Number(isRecord(item.location) ? item.location.longitude : 0),
+          },
+          postalCode: String(item.postalCode ?? ''),
+          state: String(item.state ?? ''),
+        }))
+      }
+    }
+  } catch (error) {
+    if (signal?.aborted) throw error
+  }
+  return searchPhoton(query, signal)
+}
+
+async function searchPhoton(
   query: string,
   signal?: AbortSignal,
 ): Promise<ParsedPlaceAddress[]> {

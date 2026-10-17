@@ -25,6 +25,11 @@ const environmentSchema = z.object({
   AzureWebJobsStorage: z.string().optional(),
   PHOTO_CONTAINER: z.string().default("photos"),
   GEO_PROVIDER: z.enum(["auto", "simulated"]).default("auto"),
+  AZURE_MAPS_KEY: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined),
   NOMINATIM_URL: z.url().default("https://nominatim.openstreetmap.org"),
   VIACEP_URL: z.url().default("https://viacep.com.br/ws"),
   GEO_USER_AGENT: z

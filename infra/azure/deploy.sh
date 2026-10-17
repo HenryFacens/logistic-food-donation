@@ -3,6 +3,7 @@
 #
 #   infra/azure/deploy.sh                # infrastructure + images + apps
 #   SKIP_INFRA=1 infra/azure/deploy.sh   # rebuild images and update apps only
+#   SKIP_INFRA=1 RESET_DB=1 infra/azure/deploy.sh  # also reload schema + demo data
 #
 # Requires `az login`. Generated names and the database password are kept in
 # .env.azure (git-ignored); ANTHROPIC_API_KEY is read from .env.
@@ -39,6 +40,7 @@ source "$STATE_FILE"
 ANTHROPIC_API_KEY="$(env_value ANTHROPIC_API_KEY "$ROOT/.env")"
 ANTHROPIC_MODEL="$(env_value ANTHROPIC_MODEL "$ROOT/.env")"
 ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-sonnet-5-5}"
+AZURE_MAPS_KEY="$(env_value AZURE_MAPS_KEY "$ROOT/.env")"
 TAG="$(git rev-parse --short HEAD)$(git diff --quiet || echo -dirty)"
 
 az extension add --name containerapp --upgrade --only-show-errors >/dev/null
@@ -81,7 +83,17 @@ STORAGE_CONNECTION="$(az storage account show-connection-string -n "$AZ_STORAGE"
 PG_HOST="$(az postgres flexible-server show -n "$AZ_PG_SERVER" -g "$RESOURCE_GROUP" --query fullyQualifiedDomainName -o tsv)"
 DATABASE_URL="postgresql://$AZ_PG_USER:$AZ_PG_PASSWORD@$PG_HOST:5432/resgata?sslmode=require"
 
-if [[ -z "${SKIP_INFRA:-}" ]]; then
+if [[ -n "${RESET_DB:-}" ]]; then
+  # Demo data only: drop and recreate the database so every migration and
+  # seed runs again (needed after schema changes such as new migrations).
+  log "Recreating database resgata (RESET_DB=1)"
+  az postgres flexible-server db delete -g "$RESOURCE_GROUP" -s "$AZ_PG_SERVER" -n resgata \
+    --yes --only-show-errors >/dev/null 2>&1 || true
+  az postgres flexible-server db create -g "$RESOURCE_GROUP" -s "$AZ_PG_SERVER" -n resgata \
+    --only-show-errors >/dev/null
+fi
+
+if [[ -z "${SKIP_INFRA:-}" || -n "${RESET_DB:-}" ]]; then
   log "Database schema and demo data"
   MY_IP="$(curl -fsS https://api.ipify.org)"
   az postgres flexible-server firewall-rule create -g "$RESOURCE_GROUP" -s "$AZ_PG_SERVER" \
@@ -129,6 +141,7 @@ COMMON_ENV=(
   "DATABASE_URL=secretref:database-url"
   "AzureWebJobsStorage=secretref:storage-connection"
   "ANTHROPIC_API_KEY=secretref:anthropic-api-key"
+  "AZURE_MAPS_KEY=secretref:azure-maps-key"
   "ANTHROPIC_MODEL=$ANTHROPIC_MODEL"
   "MATCHING_MODEL=$ANTHROPIC_MODEL"
   "QUEUE_DRIVER=pg"
@@ -150,6 +163,7 @@ SECRETS=(
   "database-url=$DATABASE_URL"
   "storage-connection=$STORAGE_CONNECTION"
   "anthropic-api-key=${ANTHROPIC_API_KEY:-unset}"
+  "azure-maps-key=${AZURE_MAPS_KEY:-unset}"
   "acr-password=$ACR_PASSWORD"
 )
 

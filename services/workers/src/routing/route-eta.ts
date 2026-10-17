@@ -63,3 +63,59 @@ export class OsrmRoutingProvider implements RouteEtaProvider {
     }
   }
 }
+
+interface AzureMatrixResponse {
+  matrix?: Array<
+    Array<{
+      statusCode?: number;
+      response?: { routeSummary?: { lengthInMeters: number; travelTimeInSeconds: number } };
+    }>
+  >;
+}
+
+/** Azure Maps Route Matrix (sync, up to 100 cells): one origin to many NGOs. */
+export class AzureMapsRoutingProvider implements RouteEtaProvider {
+  constructor(
+    private readonly key: string,
+    private readonly fallback: RouteEtaProvider = new NoRoutingProvider(),
+    private readonly timeoutMs = 5000,
+  ) {}
+
+  async routes(origin: GeoPoint, destinations: GeoPoint[]) {
+    if (destinations.length === 0) return [];
+    const toMultiPoint = (points: GeoPoint[]) => ({
+      type: "MultiPoint",
+      coordinates: points.map((point) => [point.longitude, point.latitude]),
+    });
+    try {
+      const url = new URL("https://atlas.microsoft.com/route/matrix/sync/json");
+      url.searchParams.set("api-version", "1.0");
+      url.searchParams.set("travelMode", "car");
+      url.searchParams.set("subscription-key", this.key);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          origins: toMultiPoint([origin]),
+          destinations: toMultiPoint(destinations.slice(0, 100)),
+        }),
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+      if (!response.ok) throw new Error(`Azure Maps matrix returned ${response.status}`);
+      const body = (await response.json()) as AzureMatrixResponse;
+      const row = body.matrix?.[0] ?? [];
+      const routes = destinations.map((_, index) => {
+        const summary = row[index]?.response?.routeSummary;
+        if (!summary) return null;
+        return {
+          distanceKm: summary.lengthInMeters / 1000,
+          etaMinutes: Math.ceil(summary.travelTimeInSeconds / 60 + HANDLING_MINUTES),
+        };
+      });
+      return routes.some(Boolean) ? routes : this.fallback.routes(origin, destinations);
+    } catch (error) {
+      console.error("[routing] Azure Maps unavailable, falling back:", (error as Error).message);
+      return this.fallback.routes(origin, destinations);
+    }
+  }
+}

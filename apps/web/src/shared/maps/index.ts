@@ -5,6 +5,6 @@ export {
   readBrowserLocation,
   type BrowserLocationReason,
 } from './readBrowserLocation'
-export { RouteMap } from './RouteMap'
-export { parseOsrmRoute } from './routing'
+export { RouteMap, type RouteMapStop } from './RouteMap'
+export { fetchRouteThrough, parseOsrmRoute } from './routing'
 export { useDrivingRoute, type DrivingRoute } from './useDrivingRoute'

@@ -45,7 +45,13 @@ import {
   listPickups,
 } from "./routes/pickups.js";
 import { logout, requestLoginCode, verifyLoginCode } from "./routes/auth.js";
+import {
+  getAddressSuggestions,
+  getMapRoute,
+  getMapTile,
+} from "./routes/maps.js";
 import { getDonationMatching } from "./routes/matching.js";
+import { getDriverRoutePlan } from "./routes/routePlan.js";
 import {
   cancelNeed,
   createNeed,
@@ -192,6 +198,11 @@ route("requestLoginCode", "POST", "auth/code", requestLoginCode);
 route("verifyLoginCode", "POST", "auth/verify", verifyLoginCode);
 route("logout", "POST", "auth/logout", logout);
 
+// Azure Maps proxy (key stays server-side).
+route("getMapTile", "GET", "maps/tile/{z}/{x}/{y}", getMapTile);
+route("getMapRoute", "GET", "maps/route", getMapRoute);
+route("getAddressSuggestions", "GET", "maps/search", getAddressSuggestions);
+
 // Photos, locations, and profiles.
 route("getPhoto", "GET", "photos/{photoId}", getPhoto);
 route("getCepAddress", "GET", "geo/cep/{cep}", getCepAddress);
@@ -199,6 +210,7 @@ route("getReverseAddress", "GET", "geo/reverse", getReverseAddress);
 route("getSellerProfile", "GET", "sellers/me", getSellerProfile);
 route("updateSellerProfile", "POST", "sellers/me", updateSellerProfile);
 route("getDriverStatus", "GET", "drivers/me", getDriverStatus);
+route("getDriverRoutePlan", "GET", "drivers/me/route-plan", getDriverRoutePlan);
 route("updateDriverStatus", "POST", "drivers/me", updateDriverStatus);
 
 // NGO demand: needs and receiving availability.

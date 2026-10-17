@@ -1,5 +1,10 @@
 import type { Address, GeoPoint, GeocodeResult } from "@resgata/shared";
 import { getConfig } from "./config.js";
+import {
+  azureMapsEnabled,
+  reverseAddress as azureReverse,
+  searchAddresses as azureSearch,
+} from "./azure-maps.js";
 import { ApiError } from "./errors.js";
 
 const TIMEOUT_MS = 6000;
@@ -86,7 +91,13 @@ export async function lookupCep(rawCep: string): Promise<GeocodeResult> {
     const city = cep.localidade || "Campinas";
     const state = (cep.uf || "SP").toUpperCase();
     const line1 = cep.logradouro || "Endereço do CEP";
+    const azureMatch = azureMapsEnabled()
+      ? await azureSearch(`${line1}, ${city} ${state} ${formatCep(digits)}`, 1)
+          .then((items) => items[0]?.location ?? null)
+          .catch(() => null)
+      : null;
     const location =
+      azureMatch ??
       (await nominatimSearch({
         street: line1,
         city,
@@ -125,6 +136,10 @@ export async function lookupCep(rawCep: string): Promise<GeocodeResult> {
 export async function reverseGeocode(point: GeoPoint): Promise<GeocodeResult> {
   const config = getConfig();
   if (config.GEO_PROVIDER === "simulated") return simulatedReverse(point);
+  if (azureMapsEnabled()) {
+    const address = await azureReverse(point).catch(() => null);
+    if (address) return { address, source: "azure-maps", simulated: false };
+  }
   try {
     const url = new URL("/reverse", config.NOMINATIM_URL);
     url.searchParams.set("format", "jsonv2");

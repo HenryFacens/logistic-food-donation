@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { addressSchema } from "./common.js";
 
-export const geocodeSourceSchema = z.enum(["nominatim", "viacep", "simulated"]);
+export const geocodeSourceSchema = z.enum([
+  "azure-maps",
+  "nominatim",
+  "viacep",
+  "simulated",
+]);
 
 export const geocodeResultSchema = z.object({
   address: addressSchema,

@@ -119,3 +119,11 @@
 .address-suggest__list button:focus-visible {
   background: rgb(var(--color-primary) / 0.12);
 }
+
+.route-map-pin--delivery span {
+  background: rgb(var(--color-primary-strong));
+}
+
+.route-map-pin--start span {
+  background: rgb(var(--color-info));
+}

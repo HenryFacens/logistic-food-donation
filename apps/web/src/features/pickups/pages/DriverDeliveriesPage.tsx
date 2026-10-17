@@ -26,6 +26,7 @@ import {
 } from '../components/AvailablePickupCard'
 import { DriverAvailability } from '../components/DriverAvailability'
 import { PickupCard } from '../components/PickupCard'
+import { RoutePlanCard } from '../components/RoutePlanCard'
 import { SelectionBar } from '../components/SelectionBar'
 import { SuccessBurst, type Celebration } from '../components/SuccessBurst'
 import { pickupMessages } from '../messages'
@@ -318,6 +319,7 @@ export function DriverDeliveriesPage() {
           key="mine"
           role="tabpanel"
         >
+          <RoutePlanCard active={groups.active} />
           {groups.active.length ? (
             groups.active.map((pickup, index) => (
               <div

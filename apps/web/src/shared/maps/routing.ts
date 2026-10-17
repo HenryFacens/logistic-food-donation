@@ -1,4 +1,5 @@
 import type { GeoPoint } from '@resgata/shared'
+import { env } from '../config/env'
 
 export interface DrivingRoute {
   distanceKm: number
@@ -45,11 +46,41 @@ export const parseOsrmRoute = (body: unknown): DrivingRoute | null => {
   }
 }
 
+/** Road route through the points in order, via Azure Maps on our API. */
+export async function fetchRouteThrough(
+  points: readonly GeoPoint[],
+  signal?: AbortSignal,
+): Promise<DrivingRoute> {
+  const query = points.map((point) => `${point.latitude},${point.longitude}`).join(';')
+  const response = await fetch(
+    `${env.apiBaseUrl}/maps/route?points=${encodeURIComponent(query)}`,
+    { signal },
+  )
+  if (!response.ok) throw new Error(`maps/route ${response.status}`)
+  const body: unknown = await response.json()
+  if (!isRecord(body) || !Array.isArray(body.path)) throw new Error('maps/route returned no path')
+  return {
+    distanceKm: Number(body.distanceKm),
+    durationMinutes: Math.max(1, Math.round(Number(body.durationMinutes))),
+    path: (body.path as unknown[]).flatMap((pair) =>
+      Array.isArray(pair) && pair.length >= 2
+        ? [[Number(pair[0]), Number(pair[1])] as [number, number]]
+        : [],
+    ),
+  }
+}
+
 export async function fetchDrivingRoute(
   origin: GeoPoint,
   destination: GeoPoint,
   signal?: AbortSignal,
 ): Promise<DrivingRoute> {
+  try {
+    return await fetchRouteThrough([origin, destination], signal)
+  } catch (error) {
+    if (signal?.aborted) throw error
+    // Fall back to the public OSRM server when Azure Maps is unavailable.
+  }
   const path = `${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}`
   const response = await fetch(
     `${OSRM_ROUTE}/${path}?overview=full&geometries=geojson`,

@@ -36,6 +36,7 @@ import {
   FallbackNeedMatcher,
 } from "./matching/need-matcher.js";
 import {
+  AzureMapsRoutingProvider,
   NoRoutingProvider,
   OsrmRoutingProvider,
   type RouteEtaProvider,
@@ -115,9 +116,12 @@ export class WorkersRuntime {
           })
         : undefined,
     );
-    const routing: RouteEtaProvider = config.osrmUrl
+    const osrm: RouteEtaProvider = config.osrmUrl
       ? new OsrmRoutingProvider(config.osrmUrl)
       : new NoRoutingProvider();
+    const routing: RouteEtaProvider = config.azureMapsKey
+      ? new AzureMapsRoutingProvider(config.azureMapsKey, osrm)
+      : osrm;
     const handlers = new Map<QueueName, MessageHandler>([
       [
         "donation.created",

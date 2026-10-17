@@ -150,11 +150,19 @@ The full loop from the product flowchart runs end to end:
    drivers whose vehicle fits the load. Drivers go online/offline, share their
    location, and see open pickups nearest first.
 
+7. **Driver routes.** Drivers accept several deliveries at once and see an
+   optimized stop order (`GET /drivers/me/route-plan`): every pickup precedes
+   its delivery, deadlines weigh ten times more than driving minutes, and
+   travel times come from the Azure Maps route matrix. Up to five deliveries
+   are solved exactly; larger loads use a greedy heuristic. The plan shows the
+   minutes saved versus the acceptance order on an Azure Maps map.
+
 ### External services
 
 | Concern | Default | Production setting |
 |---|---|---|
 | Image analysis | Claude when `ANTHROPIC_API_KEY` is set, SIMULADO otherwise | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` |
+| Maps, routes, address search | Azure Maps (`AZURE_MAPS_KEY`) via `/api/maps/*`; OpenStreetMap services as fallback | Same key; the browser never sees it |
 | Addresses | ViaCEP + public Nominatim, SIMULADO fallback | Self-hosted Nominatim (`NOMINATIM_URL`) or `GEO_PROVIDER=simulated` |
 | Road ETAs | Public OSRM demo server, straight-line fallback | Self-hosted OSRM (`OSRM_URL`) or `ROUTING_PROVIDER=none` |
 | Messages | Local ACS mock (`:4003/outbox`) | `NOTIFICATION_PROVIDER=whatsapp` with `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, and an approved `WHATSAPP_TEMPLATE_NAME` |

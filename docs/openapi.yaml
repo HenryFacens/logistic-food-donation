@@ -925,6 +925,56 @@ paths:
         "200":
           description: "Updated availability."
 
+  /maps/tile/{z}/{x}/{y}:
+    get:
+      tags: [Locations]
+      operationId: getMapTile
+      security: []
+      description: Azure Maps raster tile (256 px) proxied so the key stays server-side.
+      parameters:
+        - { name: z, in: path, required: true, schema: { type: integer } }
+        - { name: x, in: path, required: true, schema: { type: integer } }
+        - { name: y, in: path, required: true, schema: { type: integer } }
+        - { name: style, in: query, schema: { type: string, enum: [dark, light] } }
+      responses:
+        "200":
+          description: "PNG tile."
+  /maps/route:
+    get:
+      tags: [Locations]
+      operationId: getMapRoute
+      security: []
+      parameters:
+        - name: points
+          in: query
+          required: true
+          description: "lat,lon pairs separated by ';' (2-25 points), visited in order."
+          schema: { type: string }
+      responses:
+        "200":
+          description: "Road route: distanceKm, durationMinutes, path, legs."
+  /maps/search:
+    get:
+      tags: [Locations]
+      operationId: getAddressSuggestions
+      security: []
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: "Brazilian address suggestions (Address objects) biased to Campinas."
+  /drivers/me/route-plan:
+    get:
+      tags: [Pickups]
+      operationId: getDriverRoutePlan
+      description: >-
+        Optimized stop order for the driver's active deliveries (pickup before
+        delivery, deadline-aware), with Azure Maps travel times, ETAs, the
+        savings versus acceptance order, and the road geometry.
+      responses:
+        "200":
+          description: "DriverRoutePlan."
+
   /admin/queues:
     get:
       tags: [Admin]

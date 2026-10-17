@@ -20,6 +20,8 @@ export interface WorkersConfig {
   };
   /** OSRM base URL for road ETAs; undefined uses straight-line estimates. */
   osrmUrl?: string;
+  /** Azure Maps key: preferred source of road ETAs (OSRM becomes the fallback). */
+  azureMapsKey?: string;
   /** Claude item-level request matching; rules only when the key is absent. */
   anthropicApiKey?: string;
   matchingModel: string;
@@ -91,6 +93,7 @@ export function loadConfig(): WorkersConfig {
     notificationProvider,
     whatsapp,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY?.trim() || undefined,
+    azureMapsKey: process.env.AZURE_MAPS_KEY?.trim() || undefined,
     matchingModel:
       process.env.MATCHING_MODEL?.trim() ||
       process.env.ANTHROPIC_MODEL?.trim() ||
