@@ -1,4 +1,4 @@
--- São Paulo network for the driver trip demo ("Meu trajeto": BCG → USP).
+-- São Paulo network for the driver trip demo ("Meu trajeto": BCG → USP at 16:00).
 -- Shops and NGOs sit along the Vila Olímpia → Marginal Pinheiros → Butantã
 -- road, plus some far away, so ranking by detour has something to show.
 -- The NGOs are inactive for matching: Campinas donations never consider
@@ -63,7 +63,7 @@ INSERT INTO ngos (
 ON CONFLICT (id) DO NOTHING;
 
 -- Open deliveries for the trip demo. Deadlines are anchored to the next
--- 09:30 in São Paulo (today, or tomorrow once 09:35 has passed), the
+-- 16:00 in São Paulo (today, or tomorrow once 16:05 has passed), the
 -- departure used in the demo, so the story holds whenever it runs.
 CREATE OR REPLACE FUNCTION reset_trip_demo_pickups()
 RETURNS integer
@@ -81,7 +81,7 @@ DECLARE
   departure timestamptz;
   created integer;
 BEGIN
-  departure := (date_trunc('day', local_now) + interval '9 hours 30 minutes')
+  departure := (date_trunc('day', local_now) + interval '16 hours')
     AT TIME ZONE 'America/Sao_Paulo';
   IF departure < now() - interval '5 minutes' THEN
     departure := departure + interval '1 day';
@@ -107,8 +107,8 @@ BEGIN
       -- Wrong direction: Mooca to Santana.
       (204, 104, 103, 'produce'::donation_category, 'Hortifrúti do atacado', 80, 'kg'::donation_unit, 80, 180, 300,
         '[{"name":"Batatas","quantity":40,"unit":"kg"},{"name":"Cebolas","quantity":25,"unit":"kg"},{"name":"Abóboras","quantity":15,"unit":"kg"}]'::jsonb),
-      -- Too late for a 09:30 departure: must be picked up by 09:25.
-      (205, 105, 101, 'bakery'::donation_category, 'Doces e salgados da vitrine', 3, 'tray'::donation_unit, 6, -5, 60,
+      -- Too late for a 16:00 departure: must be picked up by 16:02.
+      (205, 105, 101, 'bakery'::donation_category, 'Doces e salgados da vitrine', 3, 'tray'::donation_unit, 6, 2, 60,
         '[{"name":"Salgados assados","quantity":4,"unit":"kg"},{"name":"Doces","quantity":2,"unit":"kg"}]'::jsonb)
   ),
   inserted AS (

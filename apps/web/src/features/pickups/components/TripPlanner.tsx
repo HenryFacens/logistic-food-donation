@@ -22,18 +22,18 @@ interface Place {
   point: GeoPoint | null
 }
 
-// The demo commute: BCG (Faria Lima) to USP, leaving at 09:30.
+// The demo commute: BCG (Faria Lima) to USP, leaving at 16:00.
 const EXAMPLE = {
   origin: { label: 'BCG São Paulo', point: { latitude: -23.5881923, longitude: -46.682234 } },
   destination: {
     label: 'USP · Cidade Universitária',
     point: { latitude: -23.5629763, longitude: -46.7224134 },
   },
-  time: '09:30',
+  time: '16:00',
 }
 
-/** Morning commute departure, the time drivers most often plan ahead. */
-const DEFAULT_DEPARTURE = '09:30'
+/** Afternoon departure, the demo's planned trip. */
+const DEFAULT_DEPARTURE = '16:00'
 
 const clock = (iso: string) =>
   new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -291,7 +291,7 @@ export function TripPlanner({ accepting, onAccept }: TripPlannerProps) {
           }}
           type="button"
         >
-          Usar exemplo: BCG → USP às 9:30
+          Usar exemplo: BCG → USP às 16h
         </button>
       </section>
 

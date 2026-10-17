@@ -49,7 +49,7 @@ Seeded requests (restored by every reset):
 | 9 | NGO | **Aceitar doação** → *Entregas* | The donation is *A caminho* with the NGO's delivery code; the request bar fills on *Solicitações*. |
 | 10 | Driver | Switch to **Motorista** → select it → **Aceitar entregas** | *Minhas entregas* shows the optimized route on the Azure map. The donor's card now says "Ana Souza está a caminho" with a big **Código de retirada**. |
 | 11 | Driver | **Confirmar retirada** with the donor's code, then **Confirmar entrega** with the NGO's code | Wrong codes are refused. The NGO sees the delivery under *Para conferir*. |
-| 11b | Driver | **Meu trajeto** → *Saindo de*: type `bcg`, pick **BCG São Paulo** → *Indo para*: type `usp`, pick **USP · Cidade Universitária** → *Saída às* 09:30 → **Encontrar entregas no caminho** | Direct trip 13 min. Deliveries ranked by minutes added: Hortifruti Butantã +2, Padaria Funchal +9, Empório Pinheiros +19; Doceria Vila Olímpia *Não dá tempo* (pickup by 09:25); Mooca → Santana +72 (wrong direction). The combined route collects both, delivers both, and reaches USP in 26 min (+13) for 52 kg and +122 pts; the map shows it over the dashed direct trip. Tick Empório and the route recomputes. **Aceitar 2 entregas no caminho** → *Minhas* shows the same route ending at USP. |
+| 11b | Driver | **Meu trajeto** → *Saindo de*: type `bcg`, pick **BCG São Paulo** → *Indo para*: type `usp`, pick **USP · Cidade Universitária** → *Saída às* 16:00 → **Encontrar entregas no caminho** | Direct trip 13 min. Deliveries ranked by minutes added: Hortifruti Butantã +2, Padaria Funchal +9, Empório Pinheiros +19; Doceria Vila Olímpia *Não dá tempo* (pickup by 16:02); Mooca → Santana +72 (wrong direction). The combined route collects both, delivers both, and reaches USP in 26 min (+13) for 52 kg and +122 pts; the map shows it over the dashed direct trip. Tick Empório and the route recomputes. **Aceitar 2 entregas no caminho** → *Minhas* shows the same route ending at USP. |
 | 12 | NGO, donor | NGO: **Confirmar recebimento**. Donor: *Impacto* | kg checked by the NGO, estimated meals, and a prompt to rate the driver. The driver's *Prêmios* shows the new points. |
 
 Steps 5–8 are the proof: each one changes a single input and the ranking
@@ -94,7 +94,7 @@ Publishing to a visible ranking takes about 5–8 seconds with Claude.
 `db/migrations/006_sao_paulo_trip_demo.sql` adds five shops and four NGOs
 along the BCG (Faria Lima 3732) → USP road and `reset_trip_demo_pickups()`,
 called by every reset, which recreates the five open deliveries with
-deadlines anchored to the next 09:30 in São Paulo (after 09:35 that is
+deadlines anchored to the next 16:00 in São Paulo (after 16:05 that is
 tomorrow, and the app says *amanhã* next to the time). The São Paulo NGOs
 are inactive for matching, so Campinas donors never see them. Travel times
 come from Azure Maps with live traffic, so minutes vary a little by hour.
