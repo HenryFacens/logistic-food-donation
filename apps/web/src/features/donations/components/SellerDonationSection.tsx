@@ -10,6 +10,7 @@ interface SellerDonationSectionProps {
   compact?: boolean
   limit?: number
   onDonate?(): void
+  presentation?: 'default' | 'mobile'
   showHeading?: boolean
 }
 
@@ -18,28 +19,53 @@ export function SellerDonationSection({
   compact = false,
   limit = compact ? 5 : 50,
   onDonate = () => navigate('/doar'),
+  presentation = 'default',
   showHeading = true,
 }: SellerDonationSectionProps) {
   const donationsQuery = useDonations(apiClient, { limit })
 
   return (
-    <section className="grid gap-5" aria-labelledby="seller-donations-title">
+    <section
+      className={
+        presentation === 'mobile'
+          ? 'resgata-screen producer-donations'
+          : 'grid gap-5'
+      }
+      aria-labelledby="seller-donations-title"
+    >
       {showHeading ? (
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <span className="eyebrow">{donationMessages.listEyebrow}</span>
-            <h1
-              className="mb-2 text-3xl font-black"
-              id="seller-donations-title"
-            >
-              {donationMessages.listTitle}
-            </h1>
-            <p className="mb-0">{donationMessages.listDescription}</p>
+        presentation === 'mobile' ? (
+          <header className="screen-header producer-donations__header">
+            <div>
+              <span className="eyebrow">{donationMessages.listEyebrow}</span>
+              <h1
+                className="screen-header__title"
+                id="seller-donations-title"
+              >
+                {donationMessages.listTitle}
+              </h1>
+            </div>
+            <Button icon="plus" onClick={onDonate} variant="secondary">
+              Nova doação
+            </Button>
+          </header>
+        ) : (
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <span className="eyebrow">{donationMessages.listEyebrow}</span>
+              <h1
+                className="mb-2 text-3xl font-black"
+                id="seller-donations-title"
+              >
+                {donationMessages.listTitle}
+              </h1>
+              <p className="mb-0">{donationMessages.listDescription}</p>
+            </div>
+            <Button icon="donation" onClick={onDonate} variant="primary">
+              Nova doação
+            </Button>
           </div>
-          <Button icon="donation" onClick={onDonate} variant="primary">
-            Nova doação
-          </Button>
-        </div>
+        )
       ) : null}
 
       {donationsQuery.isLoading ? (
@@ -78,12 +104,14 @@ export function SellerDonationSection({
 
       {donationsQuery.data?.items.length ? (
         <div className="grid gap-4">
-          {donationsQuery.data.items.map((donation) => (
+          {donationsQuery.data.items.map((donation, index) => (
             <DonationCard
               apiClient={apiClient}
               compact={compact}
+              defaultExpanded={presentation === 'mobile' && index === 0}
               donation={donation}
               key={donation.id}
+              presentation={presentation}
             />
           ))}
         </div>

@@ -48,12 +48,16 @@ export async function requireActor(
          WHEN 'ngo' THEN ngo.id
          WHEN 'driver' THEN driver.id
          WHEN 'partner' THEN partner.id
+         WHEN 'platform' THEN platform_operator.id
        END AS profile_id
      FROM users AS user_account
      LEFT JOIN sellers AS seller ON seller.user_id = user_account.id
      LEFT JOIN ngos AS ngo ON ngo.user_id = user_account.id
      LEFT JOIN drivers AS driver ON driver.user_id = user_account.id
      LEFT JOIN partners AS partner ON partner.user_id = user_account.id
+     LEFT JOIN platform_operators AS platform_operator
+       ON platform_operator.user_id = user_account.id
+      AND platform_operator.active
      WHERE user_account.demo_key = $1`,
     [demoKey],
   );

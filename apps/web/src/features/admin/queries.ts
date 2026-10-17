@@ -1,4 +1,5 @@
 import {
+  platformDashboardSchema,
   queueDashboardSchema,
   replayDeadLetterResponseSchema,
 } from '@resgata/shared'
@@ -50,7 +51,22 @@ export const adminQueryKeys = {
   all: ['admin'] as const,
   deadLetters: (topic: string) =>
     [...adminQueryKeys.all, 'dead-letters', topic || 'all'] as const,
+  platformDashboard: () =>
+    [...adminQueryKeys.all, 'platform-dashboard'] as const,
   queues: () => [...adminQueryKeys.all, 'queues'] as const,
+}
+
+export const usePlatformDashboardQuery = () => {
+  const api = useApiClient()
+  return useQuery({
+    queryKey: adminQueryKeys.platformDashboard(),
+    queryFn: async () =>
+      platformDashboardSchema.parse(
+        await api.get<unknown>(
+          '/platform/dashboard?includeMonthlySeries=true',
+        ),
+      ),
+  })
 }
 
 export const useQueueDashboardQuery = () => {

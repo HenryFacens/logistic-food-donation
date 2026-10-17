@@ -81,3 +81,29 @@ None from `docs/openapi.yaml` or the API-agent brief.
 - Default queue driver: `servicebus`.
 - Default vision timeout: 5000 ms.
 - Dev reset flag: `ENABLE_DEV_RESET`.
+
+## Metrics extension — API 0.2
+
+### Completed
+
+- Added seller, driver, NGO, and platform dashboard endpoints.
+- Added independent NGO receipt confirmation:
+  `POST /api/pickups/{pickupId}/receipt`.
+- Added seller/NGO driver ratings and seller rating opportunities.
+- Added donation financial inputs and delivery deadlines used by punctuality
+  metrics.
+- Restricted queue administration and dev reset to the `platform` role.
+- Preserved idempotent writes and atomic state validation for receipts and
+  ratings.
+- Dashboard values expose their evidence type. Missing inputs return
+  `unavailable`; the API does not invent a fiscal percentage or CO2e factor.
+
+### Verification
+
+```text
+API typecheck and build: passed
+API tests: 3 files, 5 tests passed
+Live dashboard HTTP checks: seller, driver, NGO, and platform returned 200
+Live authorization check: platform queues 200; seller queues 401
+Live seed counts: 32 receipts and 53 ratings
+```

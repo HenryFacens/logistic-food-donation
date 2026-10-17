@@ -6,7 +6,13 @@ export const nonEmptyTextSchema = z.string().trim().min(1);
 export const idempotencyKeySchema = z.string().trim().min(8).max(128);
 export const correlationIdSchema = z.string().trim().min(8).max(128);
 
-export const roleSchema = z.enum(["seller", "ngo", "driver", "partner"]);
+export const roleSchema = z.enum([
+  "seller",
+  "ngo",
+  "driver",
+  "partner",
+  "platform",
+]);
 export type Role = z.infer<typeof roleSchema>;
 
 export const geoPointSchema = z.object({

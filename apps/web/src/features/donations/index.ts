@@ -20,11 +20,15 @@ export {
   donationUnitLabels,
   eventLabel,
   formatDateTime,
+  formatRemainingTime,
+  formatTime,
+  nextDonationStepLabel,
 } from './model/donationView'
 export {
   buildDonationPublishOperation,
   buildDonationRequest,
   createStableIdempotencyRegistry,
+  parseOptionalBrl,
   type DonationFormValues,
   type DonationPublisher,
   type DonationPublishOperation,

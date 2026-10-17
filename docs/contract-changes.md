@@ -35,3 +35,24 @@
   fields remain top-level; `ngoId`, when provided, must match the authenticated
   demo NGO profile.
 - Status: approved and applied before the final gate.
+
+## Approved: independent receipt, driver ratings, role-scoped dashboards
+
+- Requester: product interface expansion
+- Change: add an independent NGO receipt and triage record, driver ratings
+  authored by the seller or receiving NGO, seller/driver/NGO/platform dashboard
+  contracts, optional declared unit and disposal values, a delivery due
+  timestamp, and a real `platform` role.
+- Reason: a driver-confirmed delivery is not sufficient evidence that the NGO
+  received and accepted the goods. The requested quality, reputation, fiscal,
+  and completion indicators require separate evidence and platform operations
+  must not remain accessible to every demo role.
+- Impact: shared schemas, a forward database migration, deterministic demo
+  seed, API routes, route guards, session entries, and dashboard consumers are
+  updated together. Existing donation, pickup, impact, and partner endpoints
+  remain compatible.
+- Validation boundary: values without a recorded source remain unavailable;
+  straight-line distance, meal conversion, CO2e, forecasts, and seeded history
+  are visibly estimated or `SIMULADO`. Fiscal deductions are not calculated
+  until a configurable tax profile has been validated.
+- Status: approved for contract version 0.2.

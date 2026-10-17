@@ -1,22 +1,22 @@
 import type { Role } from '@resgata/shared'
 import { AppIcon, Button, Card, SimuladoBadge, StatusBadge } from '../../../shared/ui'
-import {
-  roleDescriptions,
-  roleLabels,
-  type SessionIdentity,
-} from '../model/session'
+import { type SessionEntry } from '../model/session'
 
-const roleIcons: Record<Role, 'donation' | 'partner' | 'route' | 'user'> = {
+const roleIcons: Record<
+  Role,
+  'dashboard' | 'donation' | 'partner' | 'route' | 'user'
+> = {
   driver: 'route',
   ngo: 'user',
   partner: 'partner',
+  platform: 'dashboard',
   seller: 'donation',
 }
 
 interface RoleCardProps {
   current: boolean
-  identity: SessionIdentity
-  onSelect(identity: SessionIdentity): void
+  identity: SessionEntry
+  onSelect(identity: SessionEntry): void
 }
 
 export function RoleCard({ current, identity, onSelect }: RoleCardProps) {
@@ -34,22 +34,22 @@ export function RoleCard({ current, identity, onSelect }: RoleCardProps) {
 
       <div className="flex-1">
         <p className="mb-1 text-xs font-extrabold uppercase tracking-wider text-primary">
-          {roleLabels[identity.role]}
+          {identity.label}
         </p>
         <h2 className="mb-2 text-xl font-extrabold text-text">
           {identity.displayName}
         </h2>
-        <p className="mb-0 text-sm">{roleDescriptions[identity.role]}</p>
+        <p className="mb-0 text-sm">{identity.description}</p>
       </div>
 
       <Button
-        aria-label={`Entrar como ${identity.displayName}`}
+        aria-label={`Entrar em ${identity.label} como ${identity.displayName}`}
         className="w-full"
         icon="arrow-right"
         onClick={() => onSelect(identity)}
         variant={current ? 'secondary' : 'primary'}
       >
-        {current ? 'Continuar com este perfil' : `Entrar como ${roleLabels[identity.role]}`}
+        {current ? 'Continuar com este perfil' : `Entrar em ${identity.label}`}
       </Button>
     </Card>
   )

@@ -4,6 +4,8 @@ export const couponMessages = {
   loadError: 'Não foi possível carregar os cupons.',
   redeemError: 'Não foi possível resgatar este cupom.',
   redeemSuccess: 'Cupom emitido. Guarde o código para apresentar ao parceiro.',
+  simulationDescription:
+    'Benefícios, parceiros e resgates desta área pertencem à demonstração.',
 } as const
 
 export const couponErrorMessage = (error: unknown, fallback: string) =>

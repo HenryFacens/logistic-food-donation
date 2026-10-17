@@ -53,7 +53,7 @@ wait_for_health() {
 reset_demo() {
   curl -fsS -X DELETE "$ACS_BASE/outbox" >/dev/null
   curl -fsS -X POST "$API_BASE/dev/reset" \
-    -H 'X-Demo-User: seller-padaria-cambui' \
+    -H 'X-Demo-User: platform-resgata' \
     -H "Idempotency-Key: reset-$RUN_ID-$1" >/dev/null
 }
 
@@ -141,7 +141,7 @@ happy_path_and_idempotency() {
   reset_demo happy
   local key="donation-$RUN_ID-happy"
   local payload first replay donation_id offer_row offer_id ngo_key
-  local pickup pickup_id pickup_code delivery_code final outbox
+  local pickup pickup_id pickup_code delivery_code receipt rating final outbox
 
   payload="$(donation_payload 'Pães do smoke test')"
   first="$(create_donation "$key" "$payload")"
@@ -183,6 +183,20 @@ happy_path_and_idempotency() {
     -H 'X-Demo-User: driver-ana' \
     -H "Idempotency-Key: deliver-$RUN_ID-happy" \
     --data "{\"code\":\"$delivery_code\",\"location\":{\"latitude\":-22.9008,\"longitude\":-47.0606}}" >/dev/null
+  receipt="$(curl -fsS -X POST "$API_BASE/pickups/$pickup_id/receipt" \
+    -H 'Content-Type: application/json' \
+    -H "X-Demo-User: $ngo_key" \
+    -H "Idempotency-Key: receipt-$RUN_ID-happy" \
+    --data '{"condition":"all_good","receivedWeightKg":10,"rejectedWeightKg":0,"rejectionReasons":[]}')"
+  assert_equal "$pickup_id" "$(jq -r '.pickupId' <<<"$receipt")" \
+    "NGO receipt pickup"
+  rating="$(curl -fsS -X POST "$API_BASE/pickups/$pickup_id/driver-rating" \
+    -H 'Content-Type: application/json' \
+    -H 'X-Demo-User: seller-padaria-cambui' \
+    -H "Idempotency-Key: rating-$RUN_ID-happy" \
+    --data '{"rating":5,"tags":["pontualidade","cuidado com a carga"],"comment":"Fluxo smoke 0.2."}')"
+  assert_equal "5" "$(jq -r '.rating' <<<"$rating")" \
+    "seller driver rating"
 
   final="$(curl -fsS "$API_BASE/donations/$donation_id" \
     -H 'X-Demo-User: seller-padaria-cambui')"
@@ -283,4 +297,5 @@ wait_for_health
 happy_path_and_idempotency
 timeout_fallback
 concurrent_acceptance
+reset_demo final
 printf 'SMOKE PASSED\n'

@@ -107,7 +107,8 @@ export const acceptOffer: ApiHandler = async (request) => {
            pickup_code,
            delivery_code,
            pickup_location,
-           delivery_location
+           delivery_location,
+           delivery_due_at
          )
          SELECT
            donation.id,
@@ -115,7 +116,8 @@ export const acceptOffer: ApiHandler = async (request) => {
            lpad((floor(random() * 1000000))::integer::text, 6, '0'),
            lpad((floor(random() * 1000000))::integer::text, 6, '0'),
            donation.pickup_location,
-           ngo.location
+           ngo.location,
+           donation.expires_at
          FROM donations AS donation
          JOIN ngos AS ngo ON ngo.id = $2
          WHERE donation.id = $1

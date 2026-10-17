@@ -1,29 +1,110 @@
 import type { Donation } from '@resgata/shared'
 import { useState } from 'react'
 import type { ApiClient } from '../../../shared/api'
-import { Button, Card, SimuladoBadge, StatusBadge } from '../../../shared/ui'
+import {
+  AppIcon,
+  Button,
+  Card,
+  SimuladoBadge,
+  StatusBadge,
+} from '../../../shared/ui'
 import { donationMessages } from '../messages'
 import {
   donationCategoryLabels,
   donationStatusView,
   donationUnitLabels,
   formatDateTime,
+  formatRemainingTime,
 } from '../model/donationView'
 import { DonationTimeline } from './DonationTimeline'
 
 interface DonationCardProps {
   apiClient: ApiClient
   compact?: boolean
+  defaultExpanded?: boolean
   donation: Donation
+  presentation?: 'default' | 'mobile'
 }
 
 export function DonationCard({
   apiClient,
   compact = false,
+  defaultExpanded = false,
   donation,
+  presentation = 'default',
 }: DonationCardProps) {
-  const [timelineOpen, setTimelineOpen] = useState(false)
+  const [timelineOpen, setTimelineOpen] = useState(defaultExpanded)
   const status = donationStatusView[donation.status]
+  const terminal = ['delivered', 'expired', 'no_destination'].includes(
+    donation.status,
+  )
+  const pickupIdentificationExpected = ['accepted', 'collected'].includes(
+    donation.status,
+  )
+
+  if (presentation === 'mobile') {
+    return (
+      <article className="producer-donation">
+        <section className="screen-card producer-donation__summary">
+          <div>
+            <p>
+              {donation.quantity} {donationUnitLabels[donation.unit]} de
+            </p>
+            <h2>{donation.description}</h2>
+            <span>
+              {donation.estimatedWeightKg.toLocaleString('pt-BR')} kg · retirada
+              até {formatDateTime(donation.expiresAt)}
+            </span>
+          </div>
+          <div className="producer-donation__badges">
+            {!terminal ? (
+              <StatusBadge
+                label={`Atenção · ${formatRemainingTime(donation.expiresAt)}`}
+                tone="warning"
+              />
+            ) : null}
+            <StatusBadge label={status.label} tone={status.tone} />
+            {donation.simulated ? <SimuladoBadge /> : null}
+          </div>
+        </section>
+
+        <section className="screen-card producer-donation__progress">
+          <button
+            aria-expanded={timelineOpen}
+            className="producer-donation__progress-toggle"
+            onClick={() => setTimelineOpen((current) => !current)}
+            type="button"
+          >
+            <span>
+              <small>Andamento real</small>
+              <strong>{status.label}</strong>
+            </span>
+            <span>{timelineOpen ? 'Ocultar' : 'Detalhes'}</span>
+          </button>
+          {timelineOpen ? (
+            <DonationTimeline
+              apiClient={apiClient}
+              donationId={donation.id}
+              presentation="mobile"
+              status={donation.status}
+            />
+          ) : null}
+        </section>
+
+        {pickupIdentificationExpected ? (
+          <section className="screen-card producer-pickup-identification">
+            <span className="producer-pickup-identification__icon">
+              <AppIcon name="scan" size={32} />
+            </span>
+            <div>
+              <strong>{donationMessages.pickupIdentification}</strong>
+              <p>{donationMessages.pickupIdentificationUnavailable}</p>
+            </div>
+          </section>
+        ) : null}
+      </article>
+    )
+  }
 
   return (
     <Card className="grid gap-4">

@@ -73,6 +73,8 @@ export const createDonationRequestSchema = z.object({
   expiresAt: isoDateTimeSchema,
   imageUrl: z.url().optional(),
   classification: classificationSchema.optional(),
+  unitValueBrl: z.number().nonnegative().optional(),
+  disposalCostBrl: z.number().nonnegative().optional(),
 });
 export type CreateDonationRequest = z.infer<
   typeof createDonationRequestSchema
@@ -93,6 +95,8 @@ export const donationSchema = z.object({
   expiresAt: isoDateTimeSchema,
   imageUrl: z.url().nullable(),
   classification: classificationSchema.nullable(),
+  unitValueBrl: z.number().nonnegative().nullable(),
+  disposalCostBrl: z.number().nonnegative().nullable(),
   correlationId: correlationIdSchema,
   version: z.number().int().nonnegative(),
   simulated: z.boolean(),

@@ -2,8 +2,8 @@ import type { Classification, DonationCategory } from '@resgata/shared'
 import { useEffect, useId, useMemo, useState } from 'react'
 import type { ApiClient } from '../../../shared/api'
 import {
+  AppIcon,
   Button,
-  Card,
   LoadingState,
   SimuladoBadge,
   StatusBadge,
@@ -17,6 +17,7 @@ import {
   imageFileToBase64,
   type VisionMode,
 } from '../model/classification'
+import './vision.css'
 
 const categoryLabels: Record<DonationCategory, string> = {
   bakery: 'Padaria',
@@ -52,6 +53,9 @@ export function VisionClassifier({
     [],
   )
   const result = classificationMutation.data || value || null
+  const freshnessHours = result
+    ? Math.max(1, Math.round(result.perishabilityMinutes / 60))
+    : null
 
   useEffect(
     () => () => {
@@ -87,122 +91,112 @@ export function VisionClassifier({
   }
 
   return (
-    <Card className="grid gap-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <span className="eyebrow">{visionMessages.eyebrow}</span>
-          <h2 className="mb-2 text-xl font-extrabold">{visionMessages.title}</h2>
-          <p className="mb-0 text-sm">{visionMessages.description}</p>
-        </div>
-        <SimuladoBadge />
-      </div>
-
-      <fieldset
-        className="grid grid-cols-1 gap-2 sm:grid-cols-3"
+    <div className="vision-classifier">
+      <section
+        className="screen-card vision-capture"
+        aria-labelledby="vision-capture-title"
       >
-        <legend className="sr-only">Forma de identificar o alimento</legend>
-        {(
-          [
-            ['camera', visionMessages.camera],
-            ['upload', visionMessages.upload],
-            ['manual', visionMessages.manual],
-          ] as const
-        ).map(([itemMode, label]) => (
-          <Button
-            aria-pressed={mode === itemMode}
-            disabled={disabled || classificationMutation.isPending}
-            key={itemMode}
-            onClick={() => setMode(itemMode)}
-            variant={mode === itemMode ? 'primary' : 'secondary'}
-          >
-            {label}
-          </Button>
-        ))}
-      </fieldset>
-
-      {mode === 'camera' ? (
-        <div className="grid gap-3">
-          <input
-            accept="image/*"
-            capture="environment"
-            className="sr-only"
-            disabled={disabled}
-            id={cameraInputId}
-            onChange={(event) =>
-              void handleFile(event.target.files?.[0], 'camera')
-            }
-            type="file"
+        {previewUrl ? (
+          <img
+            alt="Prévia do alimento selecionado"
+            className="vision-capture__preview"
+            src={previewUrl}
           />
-          <label
-            className="button button--primary min-h-12 cursor-pointer"
-            htmlFor={cameraInputId}
-          >
-            {visionMessages.camera}
-          </label>
-          {!supportsCapture ? (
-            <p className="mb-0 text-sm">{visionMessages.cameraFallback}</p>
+        ) : null}
+
+        <div className="vision-capture__content">
+          <div className="vision-capture__heading">
+            <AppIcon name="camera" size={28} />
+            <div>
+              <h2 id="vision-capture-title">{visionMessages.eyebrow}</h2>
+              <p>{visionMessages.description}</p>
+            </div>
+          </div>
+
+          <div className="vision-capture__sources">
+            <input
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              disabled={disabled}
+              id={cameraInputId}
+              onChange={(event) =>
+                void handleFile(event.target.files?.[0], 'camera')
+              }
+              type="file"
+            />
+            <label className="screen-chip" htmlFor={cameraInputId}>
+              <AppIcon name="camera" />
+              {previewUrl ? visionMessages.retry : visionMessages.camera}
+            </label>
+
+            <input
+              accept="image/*"
+              className="sr-only"
+              disabled={disabled}
+              id={uploadInputId}
+              onChange={(event) =>
+                void handleFile(event.target.files?.[0], 'upload')
+              }
+              type="file"
+            />
+            <label className="screen-chip" htmlFor={uploadInputId}>
+              {visionMessages.upload}
+            </label>
+
+            <button
+              aria-pressed={mode === 'manual'}
+              className="screen-chip"
+              disabled={disabled || classificationMutation.isPending}
+              onClick={() => setMode('manual')}
+              type="button"
+            >
+              {visionMessages.manual}
+            </button>
+          </div>
+
+          {mode === 'camera' && !supportsCapture ? (
+            <p className="vision-capture__fallback">
+              {visionMessages.cameraFallback}
+            </p>
+          ) : null}
+
+          {mode === 'manual' ? (
+            <form
+              className="vision-manual"
+              onSubmit={(event) => {
+                event.preventDefault()
+                void classify(
+                  createManualClassificationRequest(manualDescription),
+                )
+              }}
+            >
+              <label htmlFor="vision-description">
+                {visionMessages.manualLabel}
+              </label>
+              <textarea
+                disabled={disabled || classificationMutation.isPending}
+                id="vision-description"
+                onChange={(event) => setManualDescription(event.target.value)}
+                placeholder={visionMessages.manualPlaceholder}
+                required
+                value={manualDescription}
+              />
+              <Button
+                disabled={
+                  disabled ||
+                  classificationMutation.isPending ||
+                  !manualDescription.trim()
+                }
+                type="submit"
+                variant="primary"
+              >
+                {visionMessages.classify}
+              </Button>
+            </form>
           ) : null}
         </div>
-      ) : null}
-
-      {mode === 'upload' ? (
-        <div>
-          <input
-            accept="image/*"
-            className="block min-h-12 w-full cursor-pointer rounded-control border border-border bg-surface p-3 text-sm"
-            disabled={disabled}
-            id={uploadInputId}
-            onChange={(event) =>
-              void handleFile(event.target.files?.[0], 'upload')
-            }
-            type="file"
-          />
-        </div>
-      ) : null}
-
-      {mode === 'manual' ? (
-        <form
-          className="grid gap-3"
-          onSubmit={(event) => {
-            event.preventDefault()
-            void classify(
-              createManualClassificationRequest(manualDescription),
-            )
-          }}
-        >
-          <label className="grid gap-2 font-bold" htmlFor="vision-description">
-            {visionMessages.manualLabel}
-            <textarea
-              className="min-h-28 rounded-control border border-border bg-surface p-3 font-normal text-text"
-              disabled={disabled || classificationMutation.isPending}
-              id="vision-description"
-              onChange={(event) => setManualDescription(event.target.value)}
-              placeholder={visionMessages.manualPlaceholder}
-              required
-              value={manualDescription}
-            />
-          </label>
-          <Button
-            disabled={
-              disabled ||
-              classificationMutation.isPending ||
-              !manualDescription.trim()
-            }
-            type="submit"
-            variant="primary"
-          >
-            {visionMessages.classify}
-          </Button>
-        </form>
-      ) : null}
-
-      {previewUrl ? (
-        <img
-          alt="Prévia do alimento selecionado"
-          className="max-h-64 w-full rounded-card object-cover"
-          src={previewUrl}
-        />
-      ) : null}
+      </section>
 
       {classificationMutation.isPending ? (
         <LoadingState label={visionMessages.classifying} />
@@ -220,24 +214,53 @@ export function VisionClassifier({
       ) : null}
 
       {result ? (
-        <output
-          className="grid gap-3 rounded-card border border-primary/25 bg-primary/5 p-4"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <strong>{visionMessages.result}</strong>
+        <section className="screen-card vision-result">
+          <div className="vision-result__heading">
+            <div>
+              <span>{visionMessages.result}</span>
+              <h2>{result.description.replace(/\s+—\s+SIMULADO$/u, '')}</h2>
+            </div>
+            {result.simulated ? <SimuladoBadge /> : null}
+          </div>
+
+          <div className="vision-result__chips">
+            <span className="screen-chip">
+              {categoryLabels[result.category]}
+            </span>
             <StatusBadge
-              label={`${Math.round(result.confidence * 100)}% ${visionMessages.confidence.toLocaleLowerCase('pt-BR')}`}
-              tone="info"
+              label={`Folga · bom por ~${freshnessHours}h`}
+              tone="success"
             />
           </div>
-          <div>
-            <p className="mb-1 font-extrabold text-text">
-              {categoryLabels[result.category]}
-            </p>
-            <p className="mb-0 text-sm">{result.description}</p>
+
+          <div className="vision-result__confidence">
+            <span aria-hidden="true">
+              {[0.25, 0.5, 0.75, 0.9].map((threshold) => (
+                <i
+                  className={
+                    result.confidence >= threshold
+                      ? 'vision-result__dot vision-result__dot--active'
+                      : 'vision-result__dot'
+                  }
+                  key={threshold}
+                />
+              ))}
+            </span>
+            <span>
+              {visionMessages.confidence}:{' '}
+              {Math.round(result.confidence * 100)}%
+            </span>
           </div>
-        </output>
+
+          <button
+            className="vision-result__edit"
+            onClick={() => setMode('manual')}
+            type="button"
+          >
+            {visionMessages.editSuggestion}
+          </button>
+        </section>
       ) : null}
-    </Card>
+    </div>
   )
 }

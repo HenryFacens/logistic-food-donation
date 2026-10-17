@@ -1,17 +1,32 @@
+import type { DonationStatus } from '@resgata/shared'
 import type { ApiClient } from '../../../shared/api'
-import { EmptyState, LoadingState, StatusBadge } from '../../../shared/ui'
+import {
+  AppIcon,
+  EmptyState,
+  LoadingState,
+  StatusBadge,
+} from '../../../shared/ui'
 import { useDonationEvents } from '../api/donations'
 import { donationMessages } from '../messages'
-import { eventLabel, formatDateTime } from '../model/donationView'
+import {
+  eventLabel,
+  formatDateTime,
+  formatTime,
+  nextDonationStepLabel,
+} from '../model/donationView'
 
 interface DonationTimelineProps {
   apiClient: ApiClient
   donationId: string
+  presentation?: 'default' | 'mobile'
+  status?: DonationStatus
 }
 
 export function DonationTimeline({
   apiClient,
   donationId,
+  presentation = 'default',
+  status,
 }: DonationTimelineProps) {
   const eventsQuery = useDonationEvents(apiClient, donationId)
 
@@ -34,6 +49,39 @@ export function DonationTimeline({
         icon="donation"
         title="Histórico em processamento"
       />
+    )
+  }
+
+  if (presentation === 'mobile') {
+    const nextStep = status ? nextDonationStepLabel(status) : null
+
+    return (
+      <div className="producer-timeline">
+        <ol>
+          {eventsQuery.data.map((event) => (
+            <li key={event.id}>
+              <span className="producer-timeline__marker">
+                <AppIcon name="check" size={17} />
+              </span>
+              <div>
+                <strong>{eventLabel(event.eventType, event.toStatus)}</strong>
+                <time dateTime={event.occurredAt}>
+                  {formatTime(event.occurredAt)}
+                </time>
+              </div>
+            </li>
+          ))}
+          {nextStep ? (
+            <li className="producer-timeline__next">
+              <span className="producer-timeline__marker" />
+              <div>
+                <small>{donationMessages.nextStep}</small>
+                <strong>{nextStep}</strong>
+              </div>
+            </li>
+          ) : null}
+        </ol>
+      </div>
     )
   }
 

@@ -5,6 +5,7 @@ import {
   pageInfoSchema,
   uuidSchema,
 } from "./common.js";
+import { deliveryReceiptSchema } from "./receipts.js";
 
 export const pickupStatusSchema = z.enum([
   "awaiting_driver",
@@ -20,6 +21,8 @@ export type PickupStatus = z.infer<typeof pickupStatusSchema>;
 export const pickupSchema = z.object({
   id: uuidSchema,
   donationId: uuidSchema,
+  donationDescription: z.string().trim().min(1),
+  estimatedWeightKg: z.number().positive(),
   ngoId: uuidSchema,
   driverId: uuidSchema.nullable(),
   status: pickupStatusSchema,
@@ -29,7 +32,9 @@ export const pickupSchema = z.object({
   deliveryLocation: geoPointSchema,
   assignedAt: isoDateTimeSchema.nullable(),
   collectedAt: isoDateTimeSchema.nullable(),
+  deliveryDueAt: isoDateTimeSchema.nullable(),
   deliveredAt: isoDateTimeSchema.nullable(),
+  receipt: deliveryReceiptSchema.nullable(),
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
 });

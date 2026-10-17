@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildCategoryRows,
   buildImpactCards,
+  buildImpactSnapshot,
   formatDateRange,
   formatMetricValue,
 } from './view-model'
@@ -34,11 +35,30 @@ describe('impact view model', () => {
       ])[0]?.formattedValue,
     ).toBe('8,3 kg')
     expect(
+      buildImpactCards([
+        { key: 'meals', label: 'Refeições', unit: 'refeições', value: 16 },
+      ])[0]?.evidence,
+    ).toBe('estimated')
+    expect(
       formatDateRange(
         '2026-01-01T00:00:00.000Z',
         '2026-01-31T00:00:00.000Z',
       ),
     ).toContain('2026')
   })
-})
 
+  it('builds a snapshot without inventing missing metrics', () => {
+    expect(
+      buildImpactSnapshot([
+        { key: 'donations', label: 'Doações', unit: 'doações', value: 3 },
+        { key: 'weight', label: 'Peso', unit: 'kg', value: 42 },
+      ]),
+    ).toEqual({
+      co2Kg: 0,
+      donations: 3,
+      meals: 0,
+      proofCoverageLabel: '3 entregas concluídas',
+      weightKg: 42,
+    })
+  })
+})

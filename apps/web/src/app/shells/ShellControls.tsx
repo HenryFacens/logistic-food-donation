@@ -22,6 +22,7 @@ export function SessionControl() {
   if (!user) return null
   return (
     <Button
+      aria-label="Trocar perfil"
       icon="user"
       onClick={() => {
         clearUser()
@@ -44,4 +45,3 @@ export function LiveStatus() {
   }
   return <StatusBadge icon="offline" label="Sem atualização ao vivo" tone="neutral" />
 }
-

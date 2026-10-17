@@ -10,6 +10,7 @@ export interface DonationFormValues {
   category: string
   description: string
   district: string
+  disposalCostBrl: string
   estimatedWeightKg: string
   expiresAt: string
   line1: string
@@ -17,6 +18,7 @@ export interface DonationFormValues {
   postalCode: string
   quantity: string
   unit: string
+  unitValueBrl: string
 }
 
 export interface DonationPublishOperation {
@@ -37,15 +39,54 @@ export type DonationPublisher = (
 
 const localDateToIso = (value: string) => new Date(value).toISOString()
 
+export const parseOptionalBrl = (rawValue: string) => {
+  const value = rawValue
+    .trim()
+    .replace(/\u00a0/gu, ' ')
+    .replace(/^R\$\s*/iu, '')
+    .replace(/\s+/gu, '')
+
+  if (!value) return undefined
+  if (!/^\d+(?:[.,]\d+)*$/u.test(value)) {
+    throw new Error('Invalid BRL value')
+  }
+
+  let normalized: string
+  if (value.includes(',')) {
+    const ptBrCurrency =
+      /^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/u
+    if (!ptBrCurrency.test(value)) {
+      throw new Error('Invalid BRL value')
+    }
+    normalized = value.replace(/\./gu, '').replace(',', '.')
+  } else if (/^\d{1,3}(?:\.\d{3})+$/u.test(value)) {
+    normalized = value.replace(/\./gu, '')
+  } else if (/^\d+(?:\.\d{1,2})?$/u.test(value)) {
+    normalized = value
+  } else {
+    throw new Error('Invalid BRL value')
+  }
+
+  const amount = Number(normalized)
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new Error('Invalid BRL value')
+  }
+  return Math.round((amount + Number.EPSILON) * 100) / 100
+}
+
 export const buildDonationRequest = (
   values: DonationFormValues,
   classification?: Classification | null,
-) =>
-  createDonationRequestSchema.parse({
+) => {
+  const disposalCostBrl = parseOptionalBrl(values.disposalCostBrl)
+  const unitValueBrl = parseOptionalBrl(values.unitValueBrl)
+
+  return createDonationRequestSchema.parse({
     availableFrom: localDateToIso(values.availableFrom),
     category: values.category || classification?.category,
     classification: classification || undefined,
     description: values.description,
+    ...(disposalCostBrl === undefined ? {} : { disposalCostBrl }),
     estimatedWeightKg: Number(values.estimatedWeightKg),
     expiresAt: localDateToIso(values.expiresAt),
     perishabilityMinutes: Number(values.perishabilityMinutes),
@@ -62,7 +103,9 @@ export const buildDonationRequest = (
     },
     quantity: Number(values.quantity),
     unit: values.unit,
+    ...(unitValueBrl === undefined ? {} : { unitValueBrl }),
   })
+}
 
 export const buildDonationPublishOperation = (
   body: CreateDonationRequest,

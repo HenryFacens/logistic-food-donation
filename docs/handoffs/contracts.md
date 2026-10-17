@@ -143,3 +143,32 @@ None.
 - Product data marked as simulated carries `simulated: true` and the visible
   label `SIMULADO`.
 - No root package manifest or lockfile change is part of this handoff.
+
+## Metrics extension — contract 0.2
+
+### Completed
+
+- Added the independent `platform` role and platform operator profile.
+- Added declared unit value, avoided disposal cost, and pickup delivery
+  deadline fields.
+- Added independent NGO delivery receipts with condition, accepted/rejected
+  weights, reasons, optional photo, notes, and idempotency.
+- Added post-receipt driver ratings by the seller or NGO.
+- Added evidence-aware dashboard contracts for seller, driver, NGO, and
+  platform metrics. Unsupported fiscal values remain unavailable instead of
+  being inferred.
+- Added migration `003_metrics_receipts_ratings.sql` and repeatable metrics
+  seed `002_metrics_seed.sql`, with all fictional records marked `SIMULADO`.
+- Updated the OpenAPI contract to version `0.2.0`.
+
+### Verification
+
+```text
+Shared typecheck: passed
+Shared tests: 4 files, 15 tests passed
+OpenAPI YAML: parsed, version 0.2.0, 33 paths
+Clean PostGIS gate: 6|5|4|3|1|8|40|32|53
+```
+
+The final count represents sellers, NGOs, drivers, partners, platform
+operators, coupons, donations, receipts, and ratings.

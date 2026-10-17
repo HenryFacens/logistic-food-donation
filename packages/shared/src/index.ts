@@ -9,3 +9,5 @@ export * from "./schemas/donations.js";
 export * from "./schemas/messaging.js";
 export * from "./schemas/offers.js";
 export * from "./schemas/pickups.js";
+export * from "./schemas/ratings.js";
+export * from "./schemas/receipts.js";

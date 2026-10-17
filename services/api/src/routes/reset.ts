@@ -20,7 +20,7 @@ export const resetDemo: ApiHandler = async (request) => {
   const authClient = await getPool().connect();
   let actor;
   try {
-    actor = await requireActor(authClient, request);
+    actor = await requireActor(authClient, request, ["platform"]);
   } finally {
     authClient.release();
   }
@@ -31,6 +31,23 @@ export const resetDemo: ApiHandler = async (request) => {
     actor,
     {},
     async (client) => {
+      await client.query(
+        `DELETE FROM driver_ratings
+         WHERE NOT (
+           simulated
+           AND (
+             id::text LIKE '39000000-0000-4000-8000-%'
+             OR id::text LIKE '39100000-0000-4000-8000-%'
+           )
+         )`,
+      );
+      await client.query(
+        `DELETE FROM delivery_receipts
+         WHERE NOT (
+           simulated
+           AND id::text LIKE '38000000-0000-4000-8000-%'
+         )`,
+      );
       await client.query(
         `DELETE FROM pickups
          WHERE donation_id NOT IN (

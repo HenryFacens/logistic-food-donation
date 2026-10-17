@@ -32,18 +32,22 @@ export function RouterProvider({
   routeElements?: RouteElements
 }) {
   const pathname = usePathname()
-  const { role } = useSession()
+  const { role, user } = useSession()
   const route = routeByPath(pathname)
 
   useEffect(() => {
+    window.scrollTo({ behavior: 'auto', left: 0, top: 0 })
+  }, [pathname])
+
+  useEffect(() => {
     if (pathname === '/') {
-      navigate(defaultPathForRole(role), true)
+      navigate(user?.defaultPath || defaultPathForRole(role), true)
       return
     }
-    if (route && route.id !== 'login' && !role) {
+    if (route && route.shell !== 'public' && !role) {
       navigate('/entrar', true)
     }
-  }, [pathname, role, route])
+  }, [pathname, role, route, user?.defaultPath])
 
   if (pathname === '/') return null
 
@@ -52,7 +56,12 @@ export function RouterProvider({
       <PublicShell>
         <EmptyState
           action={
-            <Button icon="home" onClick={() => navigate(defaultPathForRole(role))}>
+            <Button
+              icon="home"
+              onClick={() =>
+                navigate(user?.defaultPath || defaultPathForRole(role))
+              }
+            >
               Voltar ao início
             </Button>
           }
@@ -64,8 +73,12 @@ export function RouterProvider({
     )
   }
 
-  if (route.id === 'login') {
-    return renderShell(route, routeElements.login || <RolePickerPage />)
+  if (route.shell === 'public') {
+    return renderShell(
+      route,
+      routeElements[route.id] ||
+        (route.id === 'login' ? <RolePickerPage /> : <FoundationDemoPage route={route} />),
+    )
   }
 
   if (!role) return null
@@ -77,7 +90,9 @@ export function RouterProvider({
         action={
           <Button
             icon="arrow-right"
-            onClick={() => navigate(defaultPathForRole(role))}
+            onClick={() =>
+              navigate(user?.defaultPath || defaultPathForRole(role))
+            }
           >
             Ir para meu início
           </Button>
@@ -94,4 +109,3 @@ export function RouterProvider({
     routeElements[route.id] || <FoundationDemoPage route={route} />,
   )
 }
-

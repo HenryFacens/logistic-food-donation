@@ -4,7 +4,7 @@ import { AppIcon, AppLink } from '../../shared/ui'
 import { navigationForRole } from '../router/contract'
 import { useSession } from '../providers'
 import { OfflineBanner, SyncQueueBadge } from './OfflineIndicators'
-import { SessionControl, ThemeToggle } from './ShellControls'
+import { SessionControl } from './ShellControls'
 
 interface MobileShellProps {
   children: ReactNode
@@ -17,18 +17,17 @@ export function MobileShell({ children, route }: MobileShellProps) {
 
   return (
     <div className="mobile-shell">
-      <header className="mobile-shell__header">
-        <div>
-          <span className="eyebrow">{user?.displayName}</span>
-          <h1>{route.title}</h1>
-        </div>
-        <ThemeToggle />
-      </header>
       <OfflineBanner />
       <div className="mobile-shell__queue">
         <SyncQueueBadge />
       </div>
-      <main className="mobile-shell__content">{children}</main>
+      <main
+        className="mobile-shell__content"
+        data-route={route.id}
+        data-user={user?.displayName}
+      >
+        {children}
+      </main>
       <footer className="mobile-shell__footer">
         <nav aria-label="Navegação principal">
           {navigation.map((item) => (
@@ -48,4 +47,3 @@ export function MobileShell({ children, route }: MobileShellProps) {
     </div>
   )
 }
-

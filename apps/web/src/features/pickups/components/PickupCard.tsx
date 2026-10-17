@@ -1,20 +1,33 @@
-import type { Pickup } from '@resgata/shared'
+import type {
+  CreateDeliveryReceiptRequest,
+  DeliveryReceipt,
+  Pickup,
+} from '@resgata/shared'
 import { useState } from 'react'
-import { Button, Card, SimuladoBadge, StatusBadge } from '../../../shared/ui'
+import { AppIcon, Button, Card, StatusBadge } from '../../../shared/ui'
 import { pickupErrorMessage, pickupMessages } from '../messages'
 import {
   coordinateLabel,
   nextPickupAction,
+  pickupProgress,
+  pickupShortId,
   pickupStatusLabels,
 } from '../viewModels'
 import { PickupConfirmation } from './PickupConfirmation'
+import { DeliveryReceiptPanel } from './DeliveryReceiptPanel'
+import { RoutePreview } from './RoutePreview'
 
 interface PickupCardProps {
   audience: 'driver' | 'ngo'
   assigning: boolean
   confirming: boolean
+  creatingReceipt: boolean
   onAssign(pickupId: string): Promise<unknown>
   onConfirm: React.ComponentProps<typeof PickupConfirmation>['onConfirm']
+  onCreateReceipt(input: {
+    pickupId: string
+    receipt: CreateDeliveryReceiptRequest
+  }): Promise<DeliveryReceipt>
   pickup: Pickup
 }
 
@@ -29,13 +42,17 @@ export function PickupCard({
   audience,
   assigning,
   confirming,
+  creatingReceipt,
   onAssign,
   onConfirm,
+  onCreateReceipt,
   pickup,
 }: PickupCardProps) {
   const [confirmation, setConfirmation] = useState<'collect' | 'deliver' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const action = nextPickupAction(pickup)
+  const progress = pickupProgress(pickup.status)
+  const isActive = action === 'collect' || action === 'deliver'
 
   const assign = async () => {
     setError(null)
@@ -47,49 +64,92 @@ export function PickupCard({
   }
 
   return (
-    <Card className="grid gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <Card className={`pickup-card ${isActive ? 'pickup-card--active' : ''}`}>
+      <div className="pickup-card__heading">
         <div>
-          <span className="eyebrow">Doação {pickup.donationId.slice(0, 8)}</span>
-          <h2 className="mb-1 text-xl">
-            {audience === 'ngo' ? 'Recebimento programado' : 'Rota solidária'}
+          <span className="eyebrow">Doação {pickupShortId(pickup)}</span>
+          <h2>
+            {audience === 'ngo'
+              ? 'Recebimento em acompanhamento'
+              : isActive
+                ? action === 'collect' ? 'Chegue ao produtor' : 'Leve para a entidade'
+                : 'Rota solidária'}
           </h2>
-          <p className="mb-0">Atualizada em {new Date(pickup.updatedAt).toLocaleString('pt-BR')}</p>
+          <p className="pickup-card__description">{pickup.donationDescription}</p>
+          <p>
+            {pickup.estimatedWeightKg.toLocaleString('pt-BR')} kg estimados ·
+            atualizada em {new Date(pickup.updatedAt).toLocaleString('pt-BR')}
+          </p>
         </div>
-        <div className="grid justify-items-end gap-2">
-          <SimuladoBadge />
+        <div className="pickup-card__status">
           <StatusBadge label={pickupStatusLabels[pickup.status]} tone={statusTone(pickup.status)} />
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-2xl bg-[rgb(var(--color-primary)/0.07)] p-4 sm:grid-cols-2">
-        <div>
-          <span className="block text-xs font-bold uppercase text-[rgb(var(--color-muted))]">Retirada</span>
-          <strong>{coordinateLabel(pickup.pickupLocation)}</strong>
+      <details className="pickup-card__details">
+        <summary>
+          <span>
+            <AppIcon name="route" size={18} />
+            {pickupMessages.detailsToggle}
+          </span>
+          <AppIcon name="arrow-right" size={18} />
+        </summary>
+        <div className="pickup-card__details-content">
+          <ol className="pickup-card__timeline" aria-label="Etapas da coleta">
+            {progress.map((step) => (
+              <li
+                className={step.complete ? 'is-complete' : step.current ? 'is-current' : ''}
+                key={step.key}
+              >
+                <span>{step.complete ? <AppIcon name="check" size={16} /> : null}</span>
+                <small>{step.label}</small>
+              </li>
+            ))}
+          </ol>
+
+          <RoutePreview pickup={pickup} />
+
+          <div className="pickup-card__locations">
+            <div>
+              <span>Retirada cadastrada</span>
+              <strong>{coordinateLabel(pickup.pickupLocation)}</strong>
+            </div>
+            <div>
+              <span>Entrega cadastrada</span>
+              <strong>{coordinateLabel(pickup.deliveryLocation)}</strong>
+            </div>
+          </div>
         </div>
-        <div>
-          <span className="block text-xs font-bold uppercase text-[rgb(var(--color-muted))]">Entrega</span>
-          <strong>{coordinateLabel(pickup.deliveryLocation)}</strong>
-        </div>
-      </div>
+      </details>
 
       {audience === 'ngo' ? (
-        <div className="rounded-2xl border border-dashed border-[rgb(var(--color-primary))] p-4">
-          <span className="block text-xs font-bold uppercase text-[rgb(var(--color-muted))]">Código para confirmar entrega</span>
-          <strong className="text-3xl tracking-[0.22em]">{pickup.deliveryCode}</strong>
-          <p className="mb-0 mt-1 text-sm">Informe este código ao motorista somente quando os alimentos chegarem.</p>
+        <div className="pickup-card__ngo-panel">
+          {pickup.status !== 'delivered' && pickup.status !== 'cancelled' ? (
+            <div className="pickup-card__delivery-code">
+              <span>Código real para confirmar a entrega</span>
+              <strong>{pickup.deliveryCode}</strong>
+              <p>Informe ao coletador somente depois de conferir os alimentos no local.</p>
+            </div>
+          ) : null}
+          {pickup.status !== 'cancelled' ? (
+            <DeliveryReceiptPanel
+              busy={creatingReceipt}
+              onCreate={onCreateReceipt}
+              pickup={pickup}
+            />
+          ) : null}
         </div>
       ) : null}
 
       {error ? <p className="mb-0 text-sm font-bold text-[rgb(var(--color-danger))]" role="alert">{error}</p> : null}
 
       {audience === 'driver' && action === 'assign' ? (
-        <Button disabled={assigning} icon="route" onClick={() => void assign()} variant="primary">
+        <Button className="pickup-card__primary-action" disabled={assigning} icon="route" onClick={() => void assign()} variant="primary">
           Assumir coleta
         </Button>
       ) : null}
       {audience === 'driver' && (action === 'collect' || action === 'deliver') && !confirmation ? (
-        <Button icon="check" onClick={() => setConfirmation(action)} variant="primary">
+        <Button className="pickup-card__primary-action" icon="check" onClick={() => setConfirmation(action)} variant="primary">
           {action === 'collect' ? 'Confirmar retirada' : 'Confirmar entrega'}
         </Button>
       ) : null}

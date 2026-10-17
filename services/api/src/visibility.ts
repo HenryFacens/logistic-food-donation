@@ -34,5 +34,7 @@ export function donationVisibility(
         )`,
         params: [actor.profileId],
       };
+    case "platform":
+      return { sql: "TRUE", params: [] };
   }
 }

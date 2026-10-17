@@ -1,3 +1,8 @@
+import type {
+  DashboardSection,
+  MetricEvidence,
+} from '@resgata/shared'
+
 export interface QueueInput {
   deadLetter: number
   name: string
@@ -38,6 +43,83 @@ export const summarizeQueues = (queues: QueueInput[]) =>
     { deadLetter: 0, inFlight: 0, pending: 0 },
   )
 
+export const buildQueueHealth = (queues: QueueInput[]) => {
+  const summary = summarizeQueues(queues)
+  const healthyQueues = queues.filter(({ deadLetter }) => deadLetter === 0).length
+  const healthRate =
+    queues.length === 0 ? 0 : Math.round((healthyQueues / queues.length) * 100)
+  const maximumState = Math.max(
+    summary.pending,
+    summary.inFlight,
+    summary.deadLetter,
+    1,
+  )
+
+  return {
+    activity: [
+      {
+        key: 'pending',
+        label: 'Pendentes ou agendadas',
+        value: summary.pending,
+        width: (summary.pending / maximumState) * 100,
+      },
+      {
+        key: 'in-flight',
+        label: 'Em processamento',
+        value: summary.inFlight,
+        width: (summary.inFlight / maximumState) * 100,
+      },
+      {
+        key: 'dead-letter',
+        label: 'Dead-letter',
+        value: summary.deadLetter,
+        width: (summary.deadLetter / maximumState) * 100,
+      },
+    ],
+    healthRate,
+    healthyQueues,
+    totalQueues: queues.length,
+    totalVisibleMessages:
+      summary.pending + summary.inFlight + summary.deadLetter,
+  }
+}
+
+const platformEvidenceOrder: MetricEvidence[] = [
+  'recorded',
+  'calculated',
+  'estimated',
+  'unavailable',
+]
+
+export const collectPlatformEvidence = (
+  sections: DashboardSection[],
+): MetricEvidence[] => {
+  const evidence = new Set<MetricEvidence>()
+
+  sections.forEach((section) => {
+    section.metrics.forEach((metric) => evidence.add(metric.evidence))
+    section.monthlySeries.forEach((series) => evidence.add(series.evidence))
+  })
+
+  return platformEvidenceOrder.filter((item) => evidence.has(item))
+}
+
+export const formatPlatformDashboardPeriod = (
+  periodStart: string,
+  periodEnd: string,
+) => {
+  const formatter = new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    timeZone: 'UTC',
+    year: 'numeric',
+  })
+
+  return `${formatter.format(new Date(periodStart))} a ${formatter.format(
+    new Date(periodEnd),
+  )}`
+}
+
 export const createReplayIdempotencyKey = (messageIds: string[]) => {
   const input = [...messageIds].sort().join('|')
   let hash = 2_166_136_261
@@ -47,4 +129,3 @@ export const createReplayIdempotencyKey = (messageIds: string[]) => {
   }
   return `admin-replay-${(hash >>> 0).toString(16).padStart(8, '0')}`
 }
-

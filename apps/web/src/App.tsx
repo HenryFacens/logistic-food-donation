@@ -6,8 +6,12 @@ import {
   useSession,
 } from './app/providers'
 import { RouterProvider } from './app/router'
-import { adminRouteElement } from './features/admin'
+import {
+  adminRouteElement,
+  PlatformDashboardPage,
+} from './features/admin'
 import { couponRouteElements } from './features/coupons'
+import { CommunityTodayPage } from './features/community'
 import {
   createOnlineDonationPublisher,
   DonatePage,
@@ -15,14 +19,18 @@ import {
   SellerDonationSection,
   type DonationPublisher,
 } from './features/donations'
-import { ImpactPage } from './features/impact'
+import { ImpactPage, SellerMetricsPage } from './features/impact'
 import {
   enqueueDonationPublication,
   offlineQueueBridge,
 } from './features/offline'
 import { offersRouteElements } from './features/offers'
 import { partnerRouteElement } from './features/partner'
-import { pickupRouteElements } from './features/pickups'
+import {
+  DriverDashboardPage,
+  NgoDashboardPage,
+  pickupRouteElements,
+} from './features/pickups'
 import { LoginPage } from './features/session'
 import { ReloadPrompt } from './pwa/ReloadPrompt'
 import { ApiClientError } from './shared/api'
@@ -70,8 +78,10 @@ function AppRoutes() {
     <RouterProvider
       routeElements={{
         admin: adminRouteElement,
+        community: <CommunityTodayPage />,
         ...couponRouteElements,
         donate: <DonatePage apiClient={apiClient} publisher={publisher} />,
+        'driver-dashboard': <DriverDashboardPage />,
         impact: (
           <div className="grid gap-6">
             <ImpactPage />
@@ -82,14 +92,18 @@ function AppRoutes() {
           <LoginPage
             apiClient={apiClient}
             currentDemoKey={user?.demoKey}
+            currentEntryPoint={user?.entryPoint}
             fallbackUsers={DEMO_IDENTITIES}
             onSelectUser={selectUser}
           />
         ),
         ...offersRouteElements,
+        'ngo-dashboard': <NgoDashboardPage />,
         partner: partnerRouteElement,
+        'platform-dashboard': <PlatformDashboardPage />,
         ...pickupRouteElements,
         'seller-donations': <SellerDonationsPage apiClient={apiClient} />,
+        'seller-metrics': <SellerMetricsPage />,
       }}
     />
   )

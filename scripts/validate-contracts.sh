@@ -46,16 +46,25 @@ docker exec "${container_name}" psql \
   -f /work/db/migrations/002_messaging_and_atomic_operations.sql >/dev/null
 docker exec "${container_name}" psql \
   -U resgata -d resgata -v ON_ERROR_STOP=1 \
+  -f /work/db/migrations/003_metrics_receipts_ratings.sql >/dev/null
+docker exec "${container_name}" psql \
+  -U resgata -d resgata -v ON_ERROR_STOP=1 \
   -f /work/db/seed/001_demo_seed.sql >/dev/null
 docker exec "${container_name}" psql \
   -U resgata -d resgata -v ON_ERROR_STOP=1 \
   -f /work/db/seed/001_demo_seed.sql >/dev/null
+docker exec "${container_name}" psql \
+  -U resgata -d resgata -v ON_ERROR_STOP=1 \
+  -f /work/db/seed/002_metrics_seed.sql >/dev/null
+docker exec "${container_name}" psql \
+  -U resgata -d resgata -v ON_ERROR_STOP=1 \
+  -f /work/db/seed/002_metrics_seed.sql >/dev/null
 
 actual_counts="$(
   docker exec "${container_name}" psql -U resgata -d resgata -Atc \
-    "SELECT (SELECT count(*) FROM sellers),(SELECT count(*) FROM ngos),(SELECT count(*) FROM drivers),(SELECT count(*) FROM partners),(SELECT count(*) FROM coupons),(SELECT count(*) FROM donations);"
+    "SELECT (SELECT count(*) FROM sellers),(SELECT count(*) FROM ngos),(SELECT count(*) FROM drivers),(SELECT count(*) FROM partners),(SELECT count(*) FROM platform_operators),(SELECT count(*) FROM coupons),(SELECT count(*) FROM donations),(SELECT count(*) FROM delivery_receipts),(SELECT count(*) FROM driver_ratings);"
 )"
-readonly expected_counts="6|5|4|3|8|40"
+readonly expected_counts="6|5|4|3|1|8|40|32|53"
 
 if [[ "${actual_counts}" != "${expected_counts}" ]]; then
   echo "Unexpected seed counts: ${actual_counts}" >&2

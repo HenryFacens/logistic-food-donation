@@ -5,15 +5,20 @@ export type ShellKind = 'desktop' | 'mobile' | 'public'
 
 export type RouteId =
   | 'admin'
+  | 'community'
   | 'coupons'
   | 'donate'
+  | 'driver-dashboard'
   | 'driver-pickups'
   | 'impact'
   | 'login'
+  | 'ngo-dashboard'
   | 'ngo-offers'
   | 'ngo-pickups'
   | 'partner'
+  | 'platform-dashboard'
   | 'seller-donations'
+  | 'seller-metrics'
 
 export interface AppRoute {
   allowedRoles: readonly Role[] | 'any'
@@ -28,6 +33,17 @@ export interface AppRoute {
 }
 
 export const APP_ROUTES: readonly AppRoute[] = [
+  {
+    allowedRoles: 'any',
+    features: ['community'],
+    icon: 'location',
+    id: 'community',
+    label: 'Hoje',
+    navigation: false,
+    path: '/hoje',
+    shell: 'public',
+    title: 'Hoje perto de você',
+  },
   {
     allowedRoles: 'any',
     features: ['session'],
@@ -62,6 +78,17 @@ export const APP_ROUTES: readonly AppRoute[] = [
     title: 'Minhas doações',
   },
   {
+    allowedRoles: ['seller'],
+    features: ['impact'],
+    icon: 'dashboard',
+    id: 'seller-metrics',
+    label: 'Métricas',
+    navigation: true,
+    path: '/metricas',
+    shell: 'mobile',
+    title: 'Métricas do doador',
+  },
+  {
     allowedRoles: ['ngo'],
     features: ['offers'],
     icon: 'donation',
@@ -82,6 +109,17 @@ export const APP_ROUTES: readonly AppRoute[] = [
     path: '/ong/recebimentos',
     shell: 'mobile',
     title: 'Recebimentos',
+  },
+  {
+    allowedRoles: ['ngo'],
+    features: ['pickups'],
+    icon: 'dashboard',
+    id: 'ngo-dashboard',
+    label: 'Métricas',
+    navigation: true,
+    path: '/ong/painel',
+    shell: 'desktop',
+    title: 'Métricas da entidade',
   },
   {
     allowedRoles: ['driver'],
@@ -106,12 +144,34 @@ export const APP_ROUTES: readonly AppRoute[] = [
     title: 'Carteira de cupons',
   },
   {
+    allowedRoles: ['driver'],
+    features: ['pickups'],
+    icon: 'dashboard',
+    id: 'driver-dashboard',
+    label: 'Métricas',
+    navigation: true,
+    path: '/motorista/metricas',
+    shell: 'mobile',
+    title: 'Métricas do transportador',
+  },
+  {
+    allowedRoles: ['driver'],
+    features: ['pickups'],
+    icon: 'dashboard',
+    id: 'driver-dashboard',
+    label: 'Métricas',
+    navigation: false,
+    path: '/motorista/painel',
+    shell: 'mobile',
+    title: 'Métricas do transportador',
+  },
+  {
     allowedRoles: ['seller'],
     features: ['impact', 'donations'],
     icon: 'dashboard',
     id: 'impact',
     label: 'Painel',
-    navigation: true,
+    navigation: false,
     path: '/painel',
     shell: 'desktop',
     title: 'Painel de impacto',
@@ -121,14 +181,36 @@ export const APP_ROUTES: readonly AppRoute[] = [
     features: ['partner'],
     icon: 'partner',
     id: 'partner',
-    label: 'Parceiro',
+    label: 'Patrocinador',
     navigation: true,
-    path: '/parceiro',
+    path: '/patrocinador',
     shell: 'desktop',
-    title: 'Painel do parceiro',
+    title: 'Painel do patrocinador',
   },
   {
-    allowedRoles: 'any',
+    allowedRoles: ['partner'],
+    features: ['partner'],
+    icon: 'partner',
+    id: 'partner',
+    label: 'Patrocinador',
+    navigation: false,
+    path: '/parceiro',
+    shell: 'desktop',
+    title: 'Painel do patrocinador',
+  },
+  {
+    allowedRoles: ['platform'],
+    features: ['admin'],
+    icon: 'dashboard',
+    id: 'platform-dashboard',
+    label: 'Plataforma',
+    navigation: true,
+    path: '/plataforma',
+    shell: 'desktop',
+    title: 'Saúde da operação',
+  },
+  {
+    allowedRoles: ['platform'],
     features: ['admin'],
     icon: 'admin',
     id: 'admin',
@@ -144,7 +226,7 @@ export const routeByPath = (path: string) =>
   APP_ROUTES.find((route) => route.path === path)
 
 export const canAccessRoute = (route: AppRoute, role: Role | null) => {
-  if (route.id === 'login') return true
+  if (route.shell === 'public') return true
   if (!role) return false
   return route.allowedRoles === 'any' || route.allowedRoles.includes(role)
 }
@@ -153,7 +235,8 @@ export const defaultPathForRole = (role: Role | null) => {
   if (role === 'seller') return '/doar'
   if (role === 'ngo') return '/ong/ofertas'
   if (role === 'driver') return '/coleta'
-  if (role === 'partner') return '/parceiro'
+  if (role === 'partner') return '/patrocinador'
+  if (role === 'platform') return '/plataforma'
   return '/entrar'
 }
 
@@ -164,4 +247,3 @@ export const navigationForRole = (role: Role, shell: ShellKind) =>
       route.shell === shell &&
       (route.allowedRoles === 'any' || route.allowedRoles.includes(role)),
   )
-
