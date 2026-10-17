@@ -538,6 +538,206 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /auth/code:
+    post:
+      tags: [Auth]
+      operationId: requestLoginCode
+      security: []
+      description: >-
+        Sends a 6-digit sign-in code through the notification channel
+        (WhatsApp). Unknown numbers get the same response. `devCode` is only
+        returned when ENABLE_DEV_LOGIN_CODES=true.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string, example: "+5519999990001" }
+      responses:
+        "200":
+          description: "Code sent (or silently ignored)."
+        "429":
+          description: "Too many codes requested."
+  /auth/verify:
+    post:
+      tags: [Auth]
+      operationId: verifyLoginCode
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, code]
+              properties:
+                phone: { type: string }
+                code: { type: string, pattern: "^\\d{6}$" }
+      responses:
+        "200":
+          description: Bearer session token and the signed-in user.
+        "401":
+          description: "Invalid or expired code."
+  /auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      responses:
+        "200":
+          description: "Session revoked."
+  /photos/{photoId}:
+    get:
+      tags: [Vision]
+      operationId: getPhoto
+      security: []
+      description: Analyzed donation photo; the random id acts as a capability link.
+      parameters:
+        - { name: photoId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Image bytes.
+          content:
+            image/jpeg: {}
+            image/png: {}
+            image/webp: {}
+        "404": { $ref: "#/components/responses/NotFound" }
+  /geo/cep/{cep}:
+    get:
+      tags: [Locations]
+      operationId: getCepAddress
+      description: ViaCEP address plus Nominatim coordinates; SIMULADO fallback offline.
+      parameters:
+        - { name: cep, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: "GeocodeResult with address, source, and simulated flag."
+        "404":
+          description: "CEP or location not found."
+  /geo/reverse:
+    get:
+      tags: [Locations]
+      operationId: getReverseAddress
+      parameters:
+        - { name: lat, in: query, required: true, schema: { type: number } }
+        - { name: lon, in: query, required: true, schema: { type: number } }
+      responses:
+        "200":
+          description: "GeocodeResult for a GPS position."
+  /sellers/me:
+    get:
+      tags: [Locations]
+      operationId: getSellerProfile
+      responses:
+        "200":
+          description: "Seller id, legal name, and registered pickup address."
+    post:
+      tags: [Locations]
+      operationId: updateSellerProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [address]
+              properties:
+                address: { $ref: "#/components/schemas/Address" }
+      responses:
+        "200":
+          description: "Updated seller profile."
+  /drivers/me:
+    get:
+      tags: [Pickups]
+      operationId: getDriverStatus
+      responses:
+        "200":
+          description: "Availability, vehicle capacity, and last location."
+    post:
+      tags: [Pickups]
+      operationId: updateDriverStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [available]
+              properties:
+                available: { type: boolean }
+                location: { $ref: "#/components/schemas/GeoPoint" }
+      responses:
+        "200":
+          description: "Updated driver status."
+  /needs:
+    get:
+      tags: [Needs]
+      operationId: listNearbyNeeds
+      description: Seller view of open NGO needs whose service area covers the shop.
+      responses:
+        "200":
+          description: "Up to 12 open needs with NGO name and distance."
+  /ngo/needs:
+    get:
+      tags: [Needs]
+      operationId: listMyNeeds
+      responses:
+        "200":
+          description: "The NGO's needs, open first."
+    post:
+      tags: [Needs]
+      operationId: createNeed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category, quantityKg, neededBy]
+              properties:
+                category: { $ref: "#/components/schemas/DonationCategory" }
+                quantityKg: { type: number, exclusiveMinimum: 0 }
+                neededBy: { type: string, format: date-time }
+                notes: { type: string, maxLength: 300 }
+      responses:
+        "201":
+          description: "Need created."
+  /ngo/needs/{needId}/cancel:
+    post:
+      tags: [Needs]
+      operationId: cancelNeed
+      parameters:
+        - { name: needId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: "Need closed."
+  /ngo/availability:
+    get:
+      tags: [Needs]
+      operationId: getNgoAvailability
+      responses:
+        "200":
+          description: "Receiving window and free capacity today."
+    post:
+      tags: [Needs]
+      operationId: updateNgoAvailability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [receivingStart, receivingEnd, availableCapacityKg]
+              properties:
+                receivingStart: { type: string, example: "08:00" }
+                receivingEnd: { type: string, example: "20:00" }
+                availableCapacityKg: { type: number, minimum: 0 }
+      responses:
+        "200":
+          description: "Updated availability."
+
   /admin/queues:
     get:
       tags: [Admin]
@@ -633,6 +833,10 @@ components:
       in: header
       name: X-Demo-User
       description: Seeded demo user key. This is not production authentication.
+    BearerSession:
+      type: http
+      scheme: bearer
+      description: Session token from /auth/verify (phone sign-in).
 
   parameters:
     IdempotencyKey:

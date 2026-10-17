@@ -1,5 +1,6 @@
 import { Button, EmptyState, LoadingState } from '../../../shared/ui'
 import { usePickupActions, usePickups } from '../api/usePickups'
+import { DriverAvailability } from '../components/DriverAvailability'
 import { PickupCard } from '../components/PickupCard'
 import { pickupMessages } from '../messages'
 
@@ -58,5 +59,14 @@ export function NgoPickupsPage() {
 }
 
 export function DriverPickupsPage() {
+  return (
+    <div className="grid gap-4">
+      <DriverAvailability />
+      <DriverPickupList />
+    </div>
+  )
+}
+
+function DriverPickupList() {
   return <PickupListPage audience="driver" />
 }

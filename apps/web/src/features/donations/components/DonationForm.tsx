@@ -1,6 +1,7 @@
 import {
   donationCategorySchema,
   donationUnitSchema,
+  type Address,
   type Classification,
 } from '@resgata/shared'
 import { useEffect, useRef, useState } from 'react'
@@ -8,12 +9,14 @@ import type { ApiClient } from '../../../shared/api'
 import { createIdempotencyKey } from '../../../shared/api'
 import { Button, Card, SimuladoBadge, StatusBadge } from '../../../shared/ui'
 import { usePublishDonation } from '../api/donations'
+import { PickupLocation } from './PickupLocation'
 import { donationMessages } from '../messages'
 import {
   donationCategoryLabels,
   donationUnitLabels,
 } from '../model/donationView'
 import {
+  applyAddress,
   applyClassification,
   buildDonationPublishOperation,
   buildDonationRequest,
@@ -25,7 +28,7 @@ import {
   type DonationPublishOutcome,
 } from '../model/publish'
 
-const createInitialValues = (): DonationFormValues => {
+const createInitialValues = (shopAddress?: Address | null): DonationFormValues => {
   const available = new Date()
   available.setMinutes(available.getMinutes() + 15)
   const expires = new Date(available)
@@ -33,15 +36,21 @@ const createInitialValues = (): DonationFormValues => {
   return {
     availableFrom: toLocalInput(available),
     category: '',
+    // Replaced by the shop's registered address as soon as it loads.
+    city: 'Campinas',
     description: '',
     district: 'Cambuí',
     estimatedWeightKg: '5',
     expiresAt: toLocalInput(expires),
+    latitude: '-22.8974',
     line1: 'Rua Coronel Quirino, 900',
+    longitude: '-47.051',
     perishabilityMinutes: '360',
     postalCode: '13025-001',
     quantity: '10',
+    state: 'SP',
     unit: 'unit',
+    ...(shopAddress ? applyAddress({} as DonationFormValues, shopAddress) : {}),
   }
 }
 
@@ -50,6 +59,8 @@ interface DonationFormProps {
   classification?: Classification | null
   onPublished?(outcome: DonationPublishOutcome): void
   publisher?: DonationPublisher
+  /** The shop's registered address, used as the default pickup point. */
+  shopAddress?: Address | null
 }
 
 export function DonationForm({
@@ -57,8 +68,9 @@ export function DonationForm({
   classification,
   onPublished,
   publisher,
+  shopAddress,
 }: DonationFormProps) {
-  const [values, setValues] = useState(createInitialValues)
+  const [values, setValues] = useState(() => createInitialValues(shopAddress))
   const [formError, setFormError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const appliedClassification = useRef<string | null>(null)
@@ -213,49 +225,18 @@ export function DonationForm({
           </label>
         </div>
 
+        <PickupLocation
+          apiClient={apiClient}
+          fromShop={Boolean(shopAddress)}
+          setValues={setValues}
+          values={values}
+        />
+
         <details className="rounded-card border border-border p-4">
           <summary className="cursor-pointer font-extrabold">
-            {donationMessages.pickupDetails}
-            <span className="block text-sm font-normal">
-              {values.line1} · {values.district}
-            </span>
+            {donationMessages.moreOptions}
           </summary>
-          <div className="mt-4 grid gap-4">
-            <label className="grid gap-2 font-bold">
-              Endereço
-              <input
-                className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
-                onChange={(event) => update('line1', event.target.value)}
-                required
-                value={values.line1}
-              />
-            </label>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2 font-bold">
-                Bairro
-                <input
-                  className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
-                  onChange={(event) => update('district', event.target.value)}
-                  required
-                  value={values.district}
-                />
-              </label>
-              <label className="grid gap-2 font-bold">
-                CEP
-                <input
-                  className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
-                  inputMode="numeric"
-                  onChange={(event) => update('postalCode', event.target.value)}
-                  pattern="[0-9]{5}-?[0-9]{3}"
-                  required
-                  value={values.postalCode}
-                />
-              </label>
-            </div>
-            <p className="mb-0 text-xs">
-              Campinas/SP · coordenadas de demonstração do Cambuí.
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2 font-bold">
                 Disponível a partir de
                 <input
@@ -280,7 +261,6 @@ export function DonationForm({
                   value={values.perishabilityMinutes}
                 />
               </label>
-            </div>
           </div>
         </details>
 

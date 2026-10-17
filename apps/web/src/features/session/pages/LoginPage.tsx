@@ -7,6 +7,7 @@ import {
   StatusBadge,
 } from '../../../shared/ui'
 import { useDemoUsers } from '../api/demoUsers'
+import { PhoneLogin } from '../components/PhoneLogin'
 import { RoleCard } from '../components/RoleCard'
 import {
   groupSessionIdentities,
@@ -47,6 +48,10 @@ export function LoginPage({
         </h1>
         <p className="mb-0 text-base sm:text-lg">{sessionMessages.description}</p>
       </header>
+
+      <PhoneLogin apiClient={apiClient} onSignedIn={selectIdentity} />
+
+      <h2 className="mb-0 text-lg font-extrabold">{sessionMessages.demoTitle}</h2>
 
       {usersQuery.isLoading ? (
         <LoadingState label={sessionMessages.loading} />

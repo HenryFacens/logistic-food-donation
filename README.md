@@ -113,6 +113,50 @@ The `/entrar` screen selects a fictional identity and sends its key through
 - `driver-ana`;
 - `partner-cafe-local`.
 
+## Donation loop
+
+The full loop from the product flowchart runs end to end:
+
+1. **Sign in.** `/entrar` offers phone sign-in: a 6-digit code is sent through
+   the notification channel (WhatsApp in production) and exchanged for a bearer
+   session. Demo profiles stay available while `ENABLE_DEMO_LOGIN=true`.
+2. **Photo analysis.** The vendor taps *Tirar foto*. Claude
+   (`ANTHROPIC_MODEL`, default `claude-sonnet-5-5`) identifies the food,
+   quantity, weight, shelf life, and condition, and prefills the form. The photo
+   is kept in blob storage and shown to NGOs. The API rejects donations whose
+   analysis is `unsafe` or not food.
+3. **Pickup location.** The shop's registered address is the default. *Estou em
+   outro local* uses phone GPS (HTTPS only) with OpenStreetMap reverse
+   geocoding; typing a CEP fills the address through ViaCEP. Vendors can save a
+   new address as the shop address.
+4. **NGO demand.** NGOs publish needs (category, kg, deadline) and their daily
+   receiving window and free capacity under *Pedidos*. Vendors see nearby needs
+   on the donation screen.
+5. **Matching.** Candidates within each NGO's service radius are scored on road
+   distance and ETA (OSRM), free capacity, shelf life, and live needs. NGOs that
+   cannot receive before the food spoils are rejected, and food flagged
+   *attention* weighs distance more. Unanswered offers fall back to the next NGO
+   after `OFFER_TIMEOUT_SECONDS`.
+6. **Acceptance and delivery.** Accepting fills the NGO's matching needs, uses
+   today's capacity, notifies the seller, and alerts the three nearest available
+   drivers whose vehicle fits the load. Drivers go online/offline, share their
+   location, and see open pickups nearest first.
+
+### External services
+
+| Concern | Default | Production setting |
+|---|---|---|
+| Image analysis | Claude when `ANTHROPIC_API_KEY` is set, SIMULADO otherwise | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` |
+| Addresses | ViaCEP + public Nominatim, SIMULADO fallback | Self-hosted Nominatim (`NOMINATIM_URL`) or `GEO_PROVIDER=simulated` |
+| Road ETAs | Public OSRM demo server, straight-line fallback | Self-hosted OSRM (`OSRM_URL`) or `ROUTING_PROVIDER=none` |
+| Messages | Local ACS mock (`:4003/outbox`) | `NOTIFICATION_PROVIDER=whatsapp` with `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, and an approved `WHATSAPP_TEMPLATE_NAME` |
+| Sign-in | Demo profiles plus phone codes echoed on screen | `ENABLE_DEMO_LOGIN=false`, `ENABLE_DEV_LOGIN_CODES=false` |
+
+The public OSRM and Nominatim servers are for light testing only; their usage
+policies forbid production traffic. WhatsApp business-initiated messages need
+an approved template with one body variable (`{{1}}`), which receives the
+message text.
+
 ## Three-minute demo
 
 1. Open `/entrar`, choose **Padaria Cambuí**, classify or describe surplus,

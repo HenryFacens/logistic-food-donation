@@ -10,6 +10,7 @@ export type RouteId =
   | 'driver-pickups'
   | 'impact'
   | 'login'
+  | 'ngo-needs'
   | 'ngo-offers'
   | 'ngo-pickups'
   | 'partner'
@@ -71,6 +72,17 @@ export const APP_ROUTES: readonly AppRoute[] = [
     path: '/ong/ofertas',
     shell: 'mobile',
     title: 'Ofertas para a ONG',
+  },
+  {
+    allowedRoles: ['ngo'],
+    features: ['needs'],
+    icon: 'coupon',
+    id: 'ngo-needs',
+    label: 'Pedidos',
+    navigation: true,
+    path: '/ong/pedidos',
+    shell: 'mobile',
+    title: 'Pedidos e recebimento',
   },
   {
     allowedRoles: ['ngo'],

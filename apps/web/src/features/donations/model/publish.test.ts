@@ -1,8 +1,10 @@
 import type { Classification, CreateDonationRequest } from '@resgata/shared'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  applyAddress,
   applyClassification,
   buildDonationPublishOperation,
+  buildDonationRequest,
   createStableIdempotencyRegistry,
   isUnsafeClassification,
   type DonationFormValues,
@@ -50,14 +52,18 @@ describe('applyClassification', () => {
   const values: DonationFormValues = {
     availableFrom: '2026-10-16T12:00',
     category: '',
+    city: 'Campinas',
     description: '',
     district: 'Cambuí',
     estimatedWeightKg: '5',
     expiresAt: '2026-10-16T18:00',
+    latitude: '-22.8974',
     line1: 'Rua Coronel Quirino, 900',
+    longitude: '-47.051',
     perishabilityMinutes: '360',
     postalCode: '13025-001',
     quantity: '10',
+    state: 'SP',
     unit: 'unit',
   }
   const classification: Classification = {
@@ -103,5 +109,41 @@ describe('applyClassification', () => {
   it('flags unsafe food', () => {
     expect(isUnsafeClassification({ ...classification, condition: 'unsafe' })).toBe(true)
     expect(isUnsafeClassification(classification)).toBe(false)
+  })
+})
+
+describe('pickup address', () => {
+  it('uses the GPS or profile coordinates instead of a fixed point', () => {
+    const values = applyAddress(
+      {
+        availableFrom: '2026-10-16T12:00',
+        category: 'bakery',
+        city: 'Campinas',
+        description: 'Pães',
+        district: 'Cambuí',
+        estimatedWeightKg: '2',
+        expiresAt: '2026-10-16T18:00',
+        latitude: '-22.8974',
+        line1: 'Rua Coronel Quirino, 900',
+        longitude: '-47.051',
+        perishabilityMinutes: '360',
+        postalCode: '13025-001',
+        quantity: '10',
+        state: 'SP',
+        unit: 'unit',
+      },
+      {
+        city: 'Valinhos',
+        district: 'Centro',
+        line1: 'Rua Treze de Maio, 10',
+        location: { latitude: -22.97, longitude: -46.996 },
+        postalCode: '13270-000',
+        state: 'SP',
+      },
+    )
+    expect(buildDonationRequest(values).pickupAddress).toMatchObject({
+      city: 'Valinhos',
+      location: { latitude: -22.97, longitude: -46.996 },
+    })
   })
 })

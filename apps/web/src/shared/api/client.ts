@@ -21,6 +21,9 @@ interface CreateApiClientOptions {
   baseUrl: string
   fetcher?: typeof fetch
   getDemoKey: () => string | null
+  getAuthToken?: () => string | null
+  /** Called when the server rejects the bearer session. */
+  onUnauthorized?: () => void
 }
 
 const isJsonBody = (body: ApiRequestOptions['body']): body is object =>
@@ -38,6 +41,8 @@ export const createApiClient = ({
   baseUrl,
   fetcher = fetch,
   getDemoKey,
+  getAuthToken = () => null,
+  onUnauthorized,
 }: CreateApiClientOptions): ApiClient => {
   const request = async <T,>(
     path: string,
@@ -52,9 +57,11 @@ export const createApiClient = ({
     } = options
     const headers = new Headers(customHeaders)
     const demoKey = getDemoKey()
+    const authToken = getAuthToken()
 
     headers.set('Accept', 'application/json')
-    if (demoKey) headers.set('X-Demo-User', demoKey)
+    if (authToken) headers.set('Authorization', `Bearer ${authToken}`)
+    else if (demoKey) headers.set('X-Demo-User', demoKey)
     if (correlationId) headers.set('X-Correlation-Id', correlationId)
     if (idempotencyKey) headers.set('Idempotency-Key', idempotencyKey)
 
@@ -67,6 +74,7 @@ export const createApiClient = ({
         body: normalizedBody,
         headers,
       })
+      if (response.status === 401 && authToken) onUnauthorized?.()
       if (!response.ok) throw await normalizeResponseError(response)
       if (response.status === 204) return undefined as T
       return (await response.json()) as T

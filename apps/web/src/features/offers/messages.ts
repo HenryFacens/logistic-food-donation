@@ -1,4 +1,6 @@
 export const offerMessages = {
+  conditionGood: 'Foto analisada: bom para doação',
+  conditionAttention: 'Foto analisada: receber com atenção',
   acceptError: 'Não foi possível aceitar esta oferta.',
   acceptSuccess: 'Oferta aceita. O recebimento já foi criado.',
   emptyDescription: 'Novas oportunidades compatíveis aparecerão aqui.',

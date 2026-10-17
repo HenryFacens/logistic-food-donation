@@ -20,6 +20,7 @@ import {
   enqueueDonationPublication,
   offlineQueueBridge,
 } from './features/offline'
+import { NearbyNeedsPanel, needsRouteElements } from './features/needs'
 import { offersRouteElements } from './features/offers'
 import { partnerRouteElement } from './features/partner'
 import { pickupRouteElements } from './features/pickups'
@@ -53,6 +54,7 @@ function AppRoutes() {
       }
       const endpoint = `${env.apiBaseUrl.replace(/\/+$/, '')}/${operation.path.replace(/^\/+/, '')}`
       const queued = await enqueueDonationPublication({
+        authToken: user.token,
         demoUser: user.demoKey,
         endpoint,
         idempotencyKey: operation.idempotencyKey,
@@ -71,7 +73,12 @@ function AppRoutes() {
       routeElements={{
         admin: adminRouteElement,
         ...couponRouteElements,
-        donate: <DonatePage apiClient={apiClient} publisher={publisher} />,
+        donate: (
+          <div className="grid gap-5">
+            <DonatePage apiClient={apiClient} publisher={publisher} />
+            <NearbyNeedsPanel />
+          </div>
+        ),
         impact: (
           <div className="grid gap-6">
             <ImpactPage />
@@ -86,6 +93,7 @@ function AppRoutes() {
             onSelectUser={selectUser}
           />
         ),
+        ...needsRouteElements,
         ...offersRouteElements,
         partner: partnerRouteElement,
         ...pickupRouteElements,

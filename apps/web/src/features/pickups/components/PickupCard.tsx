@@ -54,6 +54,19 @@ export function PickupCard({
           <h2 className="mb-1 text-xl">
             {audience === 'ngo' ? 'Recebimento programado' : 'Rota solidária'}
           </h2>
+          {pickup.donationDescription ? (
+            <p className="mb-1 font-bold">
+              {pickup.donationDescription}
+              {pickup.donationWeightKg !== undefined
+                ? ` · ${pickup.donationWeightKg.toLocaleString('pt-BR')} kg`
+                : ''}
+            </p>
+          ) : null}
+          {pickup.distanceKm !== undefined ? (
+            <p className="mb-1 text-sm font-bold">
+              {pickup.distanceKm.toLocaleString('pt-BR')} km de você
+            </p>
+          ) : null}
           <p className="mb-0">Atualizada em {new Date(pickup.updatedAt).toLocaleString('pt-BR')}</p>
         </div>
         <div className="grid justify-items-end gap-2">

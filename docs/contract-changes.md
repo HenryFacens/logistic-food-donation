@@ -48,3 +48,20 @@
   fields. `/vision/classify` calls Claude when `ANTHROPIC_API_KEY` is set and
   falls back to the deterministic SIMULADO classifier otherwise.
 - Status: applied.
+
+## Applied: needs, locations, photos, drivers, and phone sign-in
+
+- Requester: full donation loop
+- Change: migration `003_needs_photos_login.sql` adds `ngo_needs`, NGO
+  receiving hours, `photos`, `donations.photo_id`, `login_codes`, and
+  `sessions`. New endpoints: `/auth/*`, `/photos/{id}`, `/geo/*`,
+  `/sellers/me`, `/drivers/me`, `/needs`, `/ngo/needs`, `/ngo/availability`.
+  `Address.city`/`state` accept any Brazilian city; `Donation.imageUrl` may be
+  an API-relative photo path; offers carry `distanceKm`/`etaMinutes` and their
+  donation; driver pickup listings carry distance and load.
+- Reason: real donor locations, NGO demand, explainable matching, and
+  production sign-in.
+- Impact: backward compatible for existing clients; `X-Demo-User` keeps working
+  while `ENABLE_DEMO_LOGIN=true`. Existing databases need the migration applied
+  once (it is mounted for fresh volumes).
+- Status: applied.

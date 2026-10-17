@@ -62,7 +62,18 @@ export const listPickups: ApiHandler = async (request) => {
        JOIN donations AS donation ON donation.id = pickup.donation_id
        ${isDriver ? "JOIN drivers AS me ON me.id = $1" : ""}
        WHERE ${filters.join(" AND ")}
-       ORDER BY ${isDriver ? "(pickup.driver_id IS NULL), distance_km," : ""}
+       ORDER BY ${
+         isDriver
+           ? `CASE
+                WHEN pickup.driver_id = $1 AND pickup.status NOT IN ('delivered', 'cancelled') THEN 0
+                WHEN pickup.driver_id IS NULL THEN 1
+                ELSE 2
+              END,
+              CASE WHEN pickup.driver_id IS NULL
+                THEN ST_Distance(me.current_location, pickup.pickup_location)
+              END,`
+           : ""
+       }
                 pickup.created_at DESC, pickup.id DESC
        LIMIT $${values.length}`,
       values,

@@ -240,7 +240,9 @@ export const createOfflineDonationQueue = ({
           'Content-Type': 'application/json',
           'Idempotency-Key': item.idempotencyKey,
           'X-Correlation-Id': item.correlationId,
-          'X-Demo-User': item.demoUser,
+          ...(item.authToken
+            ? { Authorization: `Bearer ${item.authToken}` }
+            : { 'X-Demo-User': item.demoUser }),
         },
         method: 'POST',
       })
@@ -338,6 +340,7 @@ export const createOfflineDonationQueue = ({
 
       const enqueuedAt = now().toISOString()
       const item: OfflineDonationPublication = {
+        ...(input.authToken ? { authToken: input.authToken } : {}),
         completedAt: null,
         correlationId: input.correlationId ?? createCorrelationId(),
         demoUser,

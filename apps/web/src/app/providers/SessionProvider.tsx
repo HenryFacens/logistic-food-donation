@@ -7,9 +7,13 @@ import {
   useState,
 } from 'react'
 
-const STORAGE_KEY = 'resgata.demo-user'
+const STORAGE_KEY = 'resgata.session'
+const LEGACY_STORAGE_KEY = 'resgata.demo-user'
 
-export type DemoIdentity = Pick<DemoUser, 'demoKey' | 'displayName' | 'role'>
+export type DemoIdentity = Pick<DemoUser, 'demoKey' | 'displayName' | 'role'> & {
+  /** Bearer token from phone sign-in; absent for demo profiles. */
+  token?: string
+}
 
 export const DEMO_IDENTITIES: readonly DemoIdentity[] = [
   {
@@ -45,7 +49,12 @@ const SessionContext = createContext<SessionContextValue | null>(null)
 
 const restoreIdentity = (): DemoIdentity | null => {
   try {
-    const demoKey = localStorage.getItem(STORAGE_KEY)
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored) as DemoIdentity
+      if (parsed?.demoKey && parsed.role && parsed.displayName) return parsed
+    }
+    const demoKey = localStorage.getItem(LEGACY_STORAGE_KEY)
     return DEMO_IDENTITIES.find((identity) => identity.demoKey === demoKey) || null
   } catch {
     return null
@@ -60,6 +69,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       clearUser() {
         try {
           localStorage.removeItem(STORAGE_KEY)
+          localStorage.removeItem(LEGACY_STORAGE_KEY)
         } catch {
           // Storage can be unavailable in private browsing.
         }
@@ -68,7 +78,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       role: user?.role || null,
       selectUser(identity) {
         try {
-          localStorage.setItem(STORAGE_KEY, identity.demoKey)
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(identity))
         } catch {
           // The in-memory session remains usable.
         }

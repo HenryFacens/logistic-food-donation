@@ -20,7 +20,16 @@ export const useDemoUsers = (
     queryKey: sessionKeys.demoUsers(),
     queryFn: async () => {
       const response = await apiClient.get<DemoUsersResponse>('/demo/users')
-      return demoUserSchema.array().parse(response.items)
+      return demoUserSchema
+        .array()
+        .parse(response.items)
+        .map(
+          ({ demoKey, displayName, role }): SessionIdentity => ({
+            demoKey,
+            displayName,
+            role,
+          }),
+        )
     },
     initialData: fallbackUsers.length ? [...fallbackUsers] : undefined,
     staleTime: 60_000,

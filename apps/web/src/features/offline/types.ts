@@ -18,6 +18,8 @@ export interface OfflineRetryMetadata {
 }
 
 export interface OfflineDonationPublication {
+  /** Session token for phone sign-in; demo profiles use demoUser only. */
+  authToken?: string
   completedAt: string | null
   correlationId: string
   demoUser: string
@@ -32,6 +34,7 @@ export interface OfflineDonationPublication {
 }
 
 export interface EnqueueDonationPublicationInput {
+  authToken?: string
   correlationId?: string
   demoUser: string
   endpoint?: string

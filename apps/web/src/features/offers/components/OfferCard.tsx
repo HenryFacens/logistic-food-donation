@@ -95,6 +95,42 @@ export function OfferCard({ deciding, offer, onDecision }: OfferCardProps) {
         </div>
       </div>
 
+      {offer.donation?.imageUrl ? (
+        <img
+          alt={`Foto de ${offerTitle(offer)}`}
+          className="max-h-64 w-full rounded-card object-cover"
+          loading="lazy"
+          src={offer.donation.imageUrl}
+        />
+      ) : null}
+
+      {offer.donation?.classification?.condition ? (
+        <div
+          className={`grid gap-1 rounded-control border p-3 text-sm ${
+            offer.donation.classification.condition === 'good'
+              ? 'border-success/30 bg-success/10'
+              : 'border-warning/30 bg-warning/10'
+          }`}
+        >
+          <strong>
+            {offer.donation.classification.condition === 'good'
+              ? offerMessages.conditionGood
+              : offerMessages.conditionAttention}
+          </strong>
+          {offer.donation.classification.conditionNotes ? (
+            <span>{offer.donation.classification.conditionNotes}</span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {offer.distanceKm !== undefined ? (
+        <p className="mb-0 flex items-center gap-2 text-sm font-bold">
+          <AppIcon name="route" size={18} />
+          {offer.distanceKm.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km
+          {offer.etaMinutes !== undefined ? ` · ~${offer.etaMinutes} min até vocês` : ''}
+        </p>
+      ) : null}
+
       {offer.donation ? (
         <div className="grid gap-2 text-sm sm:grid-cols-2">
           <span><strong>Retirada:</strong> {offer.donation.pickupAddress.district}, {offer.donation.pickupAddress.city}</span>

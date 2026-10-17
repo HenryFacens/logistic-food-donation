@@ -16,7 +16,7 @@ import {
   type ApiHandler,
 } from "../http.js";
 import { idempotentTransaction } from "../idempotency.js";
-import { mapOffer } from "../mappers.js";
+import { mapDonation, mapOffer } from "../mappers.js";
 import { decodeCursor, pageFrom } from "../pagination.js";
 
 export const listOffers: ApiHandler = async (request) => {
@@ -60,7 +60,26 @@ export const listOffers: ApiHandler = async (request) => {
        LIMIT $${values.length}`,
       values,
     );
-    return json(200, pageFrom(result.rows.map(mapOffer), query.limit));
+    // NGOs decide from the donation itself: photo, analysis, amounts.
+    const donationIds = [...new Set(result.rows.map((row) => row.donation_id))];
+    const donations = donationIds.length
+      ? await client.query("SELECT * FROM donations WHERE id = ANY($1::uuid[])", [
+          donationIds,
+        ])
+      : { rows: [] };
+    const donationById = new Map(
+      donations.rows.map((row) => [row.id as string, mapDonation(row)]),
+    );
+    return json(
+      200,
+      pageFrom(
+        result.rows.map((row) => ({
+          ...mapOffer(row),
+          donation: donationById.get(row.donation_id),
+        })),
+        query.limit,
+      ),
+    );
   } finally {
     client.release();
   }

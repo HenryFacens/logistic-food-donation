@@ -1,4 +1,5 @@
 import {
+  type Address,
   createDonationRequestSchema,
   type Classification,
   type CreateDonationRequest,
@@ -8,16 +9,47 @@ import {
 export interface DonationFormValues {
   availableFrom: string
   category: string
+  city: string
   description: string
   district: string
   estimatedWeightKg: string
   expiresAt: string
+  latitude: string
   line1: string
+  longitude: string
   perishabilityMinutes: string
   postalCode: string
   quantity: string
+  state: string
   unit: string
 }
+
+/** Pickup address fields taken from a profile, CEP lookup, or GPS. */
+export const applyAddress = (
+  values: DonationFormValues,
+  address: Address,
+): DonationFormValues => ({
+  ...values,
+  city: address.city,
+  district: address.district,
+  latitude: String(address.location.latitude),
+  line1: address.line1,
+  longitude: String(address.location.longitude),
+  postalCode: address.postalCode,
+  state: address.state,
+})
+
+export const addressFromValues = (values: DonationFormValues): Address => ({
+  city: values.city,
+  district: values.district,
+  line1: values.line1,
+  location: {
+    latitude: Number(values.latitude),
+    longitude: Number(values.longitude),
+  },
+  postalCode: values.postalCode,
+  state: values.state,
+})
 
 export interface DonationPublishOperation {
   body: CreateDonationRequest
@@ -90,17 +122,7 @@ export const buildDonationRequest = (
     estimatedWeightKg: Number(values.estimatedWeightKg),
     expiresAt: localDateToIso(values.expiresAt),
     perishabilityMinutes: Number(values.perishabilityMinutes),
-    pickupAddress: {
-      city: 'Campinas',
-      district: values.district,
-      line1: values.line1,
-      location: {
-        latitude: -22.8974,
-        longitude: -47.051,
-      },
-      postalCode: values.postalCode,
-      state: 'SP',
-    },
+    pickupAddress: addressFromValues(values),
     quantity: Number(values.quantity),
     unit: values.unit,
   })

@@ -3,7 +3,7 @@ import type { DemoUser, Role } from '@resgata/shared'
 export type SessionIdentity = Pick<
   DemoUser,
   'demoKey' | 'displayName' | 'role'
->
+> & { token?: string }
 
 export const roleLabels: Record<Role, string> = {
   driver: 'Motorista',

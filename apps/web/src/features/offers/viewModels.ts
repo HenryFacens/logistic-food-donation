@@ -1,4 +1,9 @@
-import type { MatchingScore, Offer, OfferStatus } from '@resgata/shared'
+import type {
+  Donation,
+  MatchingScore,
+  Offer,
+  OfferStatus,
+} from '@resgata/shared'
 
 const dateTime = new Intl.DateTimeFormat('pt-BR', {
   dateStyle: 'short',
@@ -73,11 +78,19 @@ export const mapOfferDecision = (
 export const offerTitle = (offer: Offer) =>
   offer.donation?.description || `Doação ${offer.donationId.slice(0, 8)}`
 
+const unitLabels: Record<Donation['unit'], [string, string]> = {
+  box: ['caixa', 'caixas'],
+  kg: ['kg', 'kg'],
+  tray: ['bandeja', 'bandejas'],
+  unit: ['unidade', 'unidades'],
+}
+
 export const offerSummary = (offer: Offer) => {
   const donation = offer.donation
   if (!donation) return 'Detalhes da doação serão exibidos após a sincronização.'
   const category = donation.category
     ? categoryLabels[donation.category] || donation.category
     : 'Categoria pendente'
-  return `${category} · ${donation.quantity} ${donation.unit} · ${donation.estimatedWeightKg} kg estimados`
+  const unit = unitLabels[donation.unit][donation.quantity === 1 ? 0 : 1]
+  return `${category} · ${donation.quantity} ${unit} · ${donation.estimatedWeightKg} kg estimados`
 }
