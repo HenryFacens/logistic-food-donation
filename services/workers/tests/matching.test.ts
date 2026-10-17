@@ -52,7 +52,6 @@ const ngo = (id: string, overrides: Record<string, unknown> = {}) => ({
   service_radius_km: "20",
   accepted_categories: ["bakery" as const],
   category_need: "0.5",
-  open_need_kg: null,
   receiving_start_min: 8 * 60,
   receiving_end_min: 20 * 60,
   ...overrides,
@@ -63,14 +62,31 @@ const bread = {
   perishability_minutes: 240,
 };
 
-test("published needs outrank the static category profile", () => {
-  const ranked = matchingInternals.rankCandidates(bread, [
-    ngo("22000000-0000-4000-8000-00000000000a", { category_need: "1" }),
-    ngo("22000000-0000-4000-8000-00000000000b", { open_need_kg: "20" }),
-  ]);
+const breadRequest = (fit: number) => ({
+  needId: "40000000-0000-4000-8000-000000000001",
+  item: "Pão francês",
+  fit,
+  coveredQuantity: 25,
+  unit: "unit" as const,
+  remainingQuantity: 60,
+  reason: "Pão francês do dia atende o pedido.",
+  source: "claude" as const,
+});
+
+test("a matching request outranks the static category profile", () => {
+  const ranked = matchingInternals.rankCandidates(
+    bread,
+    [
+      ngo("22000000-0000-4000-8000-00000000000a", { category_need: "1" }),
+      ngo("22000000-0000-4000-8000-00000000000b"),
+    ],
+    { needMatches: new Map([["22000000-0000-4000-8000-00000000000b", breadRequest(0.95)]]) },
+  );
   assert.equal(ranked[0]?.ngoId, "22000000-0000-4000-8000-00000000000b");
-  assert.equal(matchingInternals.categoryNeedScore(20, 10, 0), 1);
-  assert.equal(matchingInternals.categoryNeedScore(0, 10, 1), 0.5);
+  assert.equal(ranked[0]?.score.needMatch?.item, "Pão francês");
+  assert.equal(ranked[1]?.score.needMatch, undefined);
+  assert.equal(matchingInternals.needSignal(undefined, 1), 0.5);
+  assert.equal(matchingInternals.needSignal(breadRequest(0.2), 1), 0.2);
 });
 
 test("NGOs closed until after the food spoils are rejected", () => {
@@ -99,11 +115,13 @@ test("food needing attention weighs distance more", () => {
   const needy = "22000000-0000-4000-8000-00000000000f";
   const rows = [
     ngo(near, { distance_km: "1", category_need: "0" }),
-    ngo(needy, { distance_km: "6", open_need_kg: "50" }),
+    ngo(needy, { distance_km: "15" }),
   ];
-  assert.equal(matchingInternals.rankCandidates(bread, rows)[0]?.ngoId, needy);
+  const needMatches = new Map([[needy, breadRequest(1)]]);
+  assert.equal(matchingInternals.rankCandidates(bread, rows, { needMatches })[0]?.ngoId, needy);
   assert.equal(
-    matchingInternals.rankCandidates({ ...bread, condition: "attention" }, rows)[0]?.ngoId,
+    matchingInternals.rankCandidates({ ...bread, condition: "attention" }, rows, { needMatches })[0]
+      ?.ngoId,
     near,
   );
 });

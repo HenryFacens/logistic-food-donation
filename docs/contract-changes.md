@@ -65,3 +65,16 @@
   while `ENABLE_DEMO_LOGIN=true`. Existing databases need the migration applied
   once (it is mounted for fresh volumes).
 - Status: applied.
+
+## Applied: item-level NGO requests and Claude request matching
+
+- Requester: hackathon matching quality
+- Change: `ngo_needs` stores `item`, `quantity`, `unit`, and
+  `remaining_quantity` instead of kilograms only; `CreateNgoNeedRequest` and
+  `NgoNeed` follow. `MatchingScore` and the matching explanation carry an
+  optional `needMatch` (request, fit, covered amount, reason, source).
+- Reason: NGOs ask for specific items; matching must route a cake to the NGO
+  asking for cake, not to the nearest bakery request.
+- Impact: replaces the kg-only need contract introduced on the same branch
+  before release; no deployed clients depend on it.
+- Status: applied.

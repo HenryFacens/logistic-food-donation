@@ -1,4 +1,8 @@
 export const offerMessages = {
+  matchesRequest: 'Atende seu pedido:',
+  covers: 'cobre',
+  of: 'de',
+  unitLabels: { box: 'caixas', kg: 'kg', tray: 'bandejas', unit: 'unidades' },
   conditionGood: 'Foto analisada: bom para doação',
   conditionAttention: 'Foto analisada: receber com atenção',
   acceptError: 'Não foi possível aceitar esta oferta.',

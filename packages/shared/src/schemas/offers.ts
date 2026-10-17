@@ -23,6 +23,21 @@ export const scoreComponentSchema = z.object({
   contribution: z.number().min(0).max(100),
 });
 
+/** How a donation fits one specific NGO request. */
+export const needMatchSchema = z.object({
+  needId: uuidSchema,
+  item: z.string().min(1),
+  /** 0-1 fit between the donation and the request. */
+  fit: z.number().min(0).max(1),
+  /** Estimated amount of the request covered, in the request's unit. */
+  coveredQuantity: z.number().nonnegative().nullable(),
+  unit: z.enum(["kg", "unit", "box", "tray"]),
+  remainingQuantity: z.number().nonnegative(),
+  reason: z.string(),
+  source: z.enum(["claude", "rules"]),
+});
+export type NeedMatch = z.infer<typeof needMatchSchema>;
+
 export const matchingScoreSchema = z.object({
   total: z.number().min(0).max(100),
   eligible: z.boolean(),
@@ -33,6 +48,7 @@ export const matchingScoreSchema = z.object({
     perishability: scoreComponentSchema,
     categoryNeed: scoreComponentSchema,
   }),
+  needMatch: needMatchSchema.optional(),
 });
 export type MatchingScore = z.infer<typeof matchingScoreSchema>;
 
@@ -94,6 +110,7 @@ export const matchingCandidateViewSchema = z.object({
   needScore: z.number().min(0).max(1),
   rejectionReasons: z.array(z.string()),
   offerStatus: offerStatusSchema.nullable(),
+  needMatch: needMatchSchema.optional(),
 });
 export type MatchingCandidateView = z.infer<typeof matchingCandidateViewSchema>;
 

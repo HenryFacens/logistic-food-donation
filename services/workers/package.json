@@ -12,10 +12,12 @@
     "start": "func start"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
     "@azure/functions": "^4.7.2",
     "@azure/service-bus": "7.9.5",
     "@resgata/shared": "workspace:*",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

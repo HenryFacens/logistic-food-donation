@@ -146,6 +146,9 @@ importers:
 
   services/workers:
     dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.135.0
+        version: 0.135.0(zod@4.6.7)
       '@azure/functions':
         specifier: ^4.7.2
         version: 4.16.5
@@ -158,6 +161,9 @@ importers:
       pg:
         specifier: ^8.16.3
         version: 8.23.1
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: ^24.13.3

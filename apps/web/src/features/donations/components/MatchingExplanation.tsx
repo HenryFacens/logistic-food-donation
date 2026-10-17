@@ -1,6 +1,7 @@
 import type { DonationStatus, OfferStatus } from '@resgata/shared'
 import type { ApiClient } from '../../../shared/api'
 import { LoadingState, StatusBadge, type StatusTone } from '../../../shared/ui'
+import { formatQuantity } from '../../needs'
 import { useDonationMatching } from '../api/donations'
 import { donationMessages } from '../messages'
 
@@ -77,8 +78,36 @@ export function MatchingExplanation({
               </div>
               <span className="text-sm">
                 {km(candidate.distanceKm)} · ~{candidate.etaMinutes} min de carro
-                {candidate.needScore >= 0.6 ? ` · ${donationMessages.openNeed}` : ''}
               </span>
+              {candidate.needMatch ? (
+                <span className="grid gap-0.5 rounded-control bg-primary/5 px-2 py-1 text-sm">
+                  <span>
+                    <strong>
+                      {donationMessages.request} {candidate.needMatch.item}
+                    </strong>{' '}
+                    · {donationMessages.fit} {Math.round(candidate.needMatch.fit * 100)}%
+                    {candidate.needMatch.coveredQuantity !== null
+                      ? ` · ${donationMessages.covers} ~${formatQuantity(
+                          candidate.needMatch.coveredQuantity,
+                          candidate.needMatch.unit,
+                        )} ${donationMessages.of} ${formatQuantity(
+                          candidate.needMatch.remainingQuantity,
+                          candidate.needMatch.unit,
+                        )}`
+                      : ''}
+                  </span>
+                  <span>
+                    {candidate.needMatch.reason}{' '}
+                    <em className="text-xs">
+                      ({candidate.needMatch.source === 'claude'
+                        ? donationMessages.byClaude
+                        : donationMessages.byRules})
+                    </em>
+                  </span>
+                </span>
+              ) : candidate.eligible ? (
+                <span className="text-sm">{donationMessages.noOpenRequest}</span>
+              ) : null}
               {candidate.rejectionReasons.length ? (
                 <span className="text-sm font-bold text-danger">
                   {donationMessages.excluded}{' '}

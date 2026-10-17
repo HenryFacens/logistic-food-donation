@@ -1,4 +1,9 @@
-import { donationCategorySchema, type DonationCategory } from '@resgata/shared'
+import {
+  donationCategorySchema,
+  donationUnitSchema,
+  type DonationCategory,
+  type DonationUnit,
+} from '@resgata/shared'
 import { useState } from 'react'
 import {
   Button,
@@ -12,9 +17,10 @@ import { needMessages } from '../messages'
 import {
   defaultNeedDeadline,
   formatDeadline,
-  formatKg,
+  formatQuantity,
   needCategoryLabels,
   needProgress,
+  needUnitLabels,
 } from '../model/needs'
 
 const inputClass =
@@ -119,7 +125,9 @@ function AvailabilityCard() {
 function NewNeedForm() {
   const { create } = useNeedMutations()
   const [category, setCategory] = useState<DonationCategory>('bakery')
-  const [quantityKg, setQuantityKg] = useState('20')
+  const [item, setItem] = useState('')
+  const [quantity, setQuantity] = useState('')
+  const [unit, setUnit] = useState<DonationUnit>('unit')
   const [neededBy, setNeededBy] = useState(() => toLocalDate(defaultNeedDeadline()))
   const [today] = useState(() => toLocalDate(new Date()))
   const [notes, setNotes] = useState('')
@@ -139,11 +147,19 @@ function NewNeedForm() {
           create.mutate(
             {
               category,
+              item: item.trim(),
               neededBy: deadline.toISOString(),
               notes: notes.trim() || undefined,
-              quantityKg: Number(quantityKg),
+              quantity: Number(quantity),
+              unit,
             },
-            { onSuccess: () => setNotes('') },
+            {
+              onSuccess: () => {
+                setItem('')
+                setQuantity('')
+                setNotes('')
+              },
+            },
           )
         }}
       >
@@ -163,19 +179,48 @@ function NewNeedForm() {
           </div>
         </fieldset>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="grid gap-2 font-bold">
-            {needMessages.howMuch}
+          <label className="grid gap-2 font-bold sm:col-span-2">
+            {needMessages.item}
             <input
               className={inputClass}
-              inputMode="decimal"
-              min="1"
-              onChange={(event) => setQuantityKg(event.target.value)}
+              maxLength={120}
+              minLength={2}
+              onChange={(event) => setItem(event.target.value)}
+              placeholder={needMessages.itemPlaceholder}
               required
-              step="1"
-              type="number"
-              value={quantityKg}
+              value={item}
             />
           </label>
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <label className="grid gap-2 font-bold">
+              {needMessages.howMuch}
+              <input
+                className={inputClass}
+                inputMode="decimal"
+                min="0.1"
+                onChange={(event) => setQuantity(event.target.value)}
+                placeholder="60"
+                required
+                step="0.1"
+                type="number"
+                value={quantity}
+              />
+            </label>
+            <label className="grid gap-2 font-bold">
+              {needMessages.unit}
+              <select
+                className={inputClass}
+                onChange={(event) => setUnit(event.target.value as DonationUnit)}
+                value={unit}
+              >
+                {donationUnitSchema.options.map((option) => (
+                  <option key={option} value={option}>
+                    {needUnitLabels[option][1]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <label className="grid gap-2 font-bold">
             {needMessages.until}
             <input
@@ -238,15 +283,19 @@ export function NgoNeedsPage() {
         {needs.data?.map((need) => (
           <Card className="grid gap-2" key={need.id}>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <strong>{needCategoryLabels[need.category]}</strong>
+              <span>
+                <strong>{need.item}</strong>{' '}
+                <span className="text-sm">· {needCategoryLabels[need.category]}</span>
+              </span>
               <StatusBadge
                 label={needMessages.status[need.status]}
                 tone={need.status === 'open' ? 'info' : need.status === 'fulfilled' ? 'success' : 'neutral'}
               />
             </div>
             <p className="mb-0 text-sm">
-              {formatKg(need.quantityKg - need.remainingKg)} {needMessages.of}{' '}
-              {formatKg(need.quantityKg)} · {needMessages.until.toLowerCase()}{' '}
+              {formatQuantity(need.quantity - need.remainingQuantity, need.unit)}{' '}
+              {needMessages.of} {formatQuantity(need.quantity, need.unit)} ·{' '}
+              {needMessages.until.toLowerCase()}{' '}
               {formatDeadline(need.neededBy)}
             </p>
             <div className="h-2 overflow-hidden rounded-full bg-border">

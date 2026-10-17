@@ -20,6 +20,9 @@ export interface WorkersConfig {
   };
   /** OSRM base URL for road ETAs; undefined uses straight-line estimates. */
   osrmUrl?: string;
+  /** Claude item-level request matching; rules only when the key is absent. */
+  anthropicApiKey?: string;
+  matchingModel: string;
 }
 
 function positiveInteger(name: string, fallback: number): number {
@@ -87,6 +90,11 @@ export function loadConfig(): WorkersConfig {
     acsMockUrl: process.env.ACS_MOCK_URL,
     notificationProvider,
     whatsapp,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY?.trim() || undefined,
+    matchingModel:
+      process.env.MATCHING_MODEL?.trim() ||
+      process.env.ANTHROPIC_MODEL?.trim() ||
+      "claude-sonnet-5-5",
     osrmUrl:
       process.env.ROUTING_PROVIDER === "none"
         ? undefined

@@ -32,6 +32,10 @@ import {
   type NotificationSender,
 } from "./notifications/notification-sender.js";
 import {
+  ClaudeNeedMatcher,
+  FallbackNeedMatcher,
+} from "./matching/need-matcher.js";
+import {
   NoRoutingProvider,
   OsrmRoutingProvider,
   type RouteEtaProvider,
@@ -103,6 +107,14 @@ export class WorkersRuntime {
     const notificationSender: NotificationSender = config.whatsapp
       ? new WhatsAppCloudSender(config.whatsapp)
       : new AcsNotificationSender(config.acsSender, config.acsMockUrl);
+    const needMatcher = new FallbackNeedMatcher(
+      config.anthropicApiKey
+        ? new ClaudeNeedMatcher({
+            apiKey: config.anthropicApiKey,
+            model: config.matchingModel,
+          })
+        : undefined,
+    );
     const routing: RouteEtaProvider = config.osrmUrl
       ? new OsrmRoutingProvider(config.osrmUrl)
       : new NoRoutingProvider();
@@ -123,6 +135,7 @@ export class WorkersRuntime {
             transaction,
             config.offerTimeoutSeconds,
             routing,
+            needMatcher,
           ),
         ),
       ],

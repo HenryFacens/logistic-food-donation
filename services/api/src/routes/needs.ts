@@ -14,8 +14,10 @@ const needSelect = `
   need.ngo_id,
   ngo.name AS ngo_name,
   need.category::text AS category,
-  need.quantity_kg::float8 AS quantity_kg,
-  need.remaining_kg::float8 AS remaining_kg,
+  need.item,
+  need.quantity::float8 AS quantity,
+  need.unit::text AS unit,
+  need.remaining_quantity::float8 AS remaining_quantity,
   need.needed_by,
   need.notes,
   need.status::text AS status,
@@ -26,8 +28,10 @@ type NeedRow = {
   ngo_id: string;
   ngo_name: string;
   category: string;
-  quantity_kg: number;
-  remaining_kg: number;
+  item: string;
+  quantity: number;
+  unit: string;
+  remaining_quantity: number;
   needed_by: Date;
   notes: string | null;
   status: string;
@@ -41,8 +45,10 @@ const mapNeed = (row: NeedRow) =>
     ngoId: row.ngo_id,
     ngoName: row.ngo_name,
     category: row.category,
-    quantityKg: row.quantity_kg,
-    remainingKg: row.remaining_kg,
+    item: row.item,
+    quantity: row.quantity,
+    unit: row.unit,
+    remainingQuantity: row.remaining_quantity,
     neededBy: row.needed_by.toISOString(),
     notes: row.notes,
     status: row.status,
@@ -107,10 +113,19 @@ export const createNeed: ApiHandler = async (request) => {
       );
     }
     const inserted = await client.query<{ id: string }>(
-      `INSERT INTO ngo_needs (ngo_id, category, quantity_kg, remaining_kg, needed_by, notes)
-       VALUES ($1, $2, $3, $3, $4, $5)
+      `INSERT INTO ngo_needs (
+         ngo_id, category, item, quantity, unit, remaining_quantity, needed_by, notes
+       ) VALUES ($1, $2, $3, $4, $5, $4, $6, $7)
        RETURNING id`,
-      [ngoId, body.category, body.quantityKg, body.neededBy, body.notes ?? null],
+      [
+        ngoId,
+        body.category,
+        body.item,
+        body.quantity,
+        body.unit,
+        body.neededBy,
+        body.notes ?? null,
+      ],
     );
     const result = await client.query<NeedRow>(
       `SELECT ${needSelect}
@@ -178,7 +193,7 @@ export const listNearbyNeeds: ApiHandler = async (request) =>
        JOIN ngos AS ngo ON ngo.id = need.ngo_id AND ngo.active
        JOIN sellers AS seller ON seller.id = $1
        WHERE need.status = 'open'
-         AND need.remaining_kg > 0
+         AND need.remaining_quantity > 0
          AND ST_DWithin(ngo.location, seller.location, ngo.service_radius_km * 1000)
        ORDER BY need.needed_by, distance_km
        LIMIT 12`,

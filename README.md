@@ -129,15 +129,23 @@ The full loop from the product flowchart runs end to end:
    outro local* uses phone GPS (HTTPS only) with OpenStreetMap reverse
    geocoding; typing a CEP fills the address through ViaCEP. Vendors can save a
    new address as the shop address.
-4. **NGO demand.** NGOs publish needs (category, kg, deadline) and their daily
-   receiving window and free capacity under *Pedidos*. Vendors see nearby needs
-   on the donation screen.
-5. **Matching.** Candidates within each NGO's service radius are scored on road
-   distance and ETA (OSRM), free capacity, shelf life, and live needs. NGOs that
-   cannot receive before the food spoils are rejected, and food flagged
-   *attention* weighs distance more. Unanswered offers fall back to the next NGO
-   after `OFFER_TIMEOUT_SECONDS`.
-6. **Acceptance and delivery.** Accepting fills the NGO's matching needs, uses
+4. **NGO demand.** NGOs publish specific requests under *Pedidos*: the item
+   ("Pão francês"), quantity and unit (kg, unidades, caixas, bandejas),
+   deadline, and notes, plus their daily receiving window and free capacity.
+   Vendors see nearby requests on the donation screen.
+5. **Matching.** Rules decide who *can* receive: service radius, road ETA
+   (OSRM) against shelf life, receiving hours, free capacity, accepted
+   categories, and food safety. Claude (`MATCHING_MODEL`, default
+   `claude-sonnet-5-5`) then compares the donation, including the photo
+   analysis, with each eligible NGO's open requests and returns a fit, the
+   covered amount in the request's unit, and a reason. Request fit weighs 35%,
+   distance 30%, shelf life 20%, capacity 15% (food flagged *attention* weighs
+   distance more). Without a key, or if Claude fails, a rule matcher (category,
+   shared words, comparable units) is used. Unanswered offers fall back to the
+   next NGO after `OFFER_TIMEOUT_SECONDS`.
+6. **Acceptance and delivery.** Accepting fills the matched request by the
+   estimated amount when it is a real match (fit ≥ 0.7; substitutes leave the
+   request open), uses
    today's capacity, notifies the seller, and alerts the three nearest available
    drivers whose vehicle fits the load. Drivers go online/offline, share their
    location, and see open pickups nearest first.

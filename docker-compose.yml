@@ -11,6 +11,7 @@ x-app-environment: &app-environment
   OPENAI_API_KEY: local-simulated-key
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5-5}
+  MATCHING_MODEL: ${MATCHING_MODEL:-claude-sonnet-5-5}
   # Sign-in: demo profiles stay available locally; dev codes are echoed in
   # the API response only when ENABLE_DEV_LOGIN_CODES=true.
   ENABLE_DEMO_LOGIN: ${ENABLE_DEMO_LOGIN:-true}

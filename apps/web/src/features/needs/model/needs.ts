@@ -1,4 +1,4 @@
-import type { DonationCategory, NgoNeed } from '@resgata/shared'
+import type { DonationCategory, DonationUnit, NgoNeed } from '@resgata/shared'
 
 export const needCategoryLabels: Record<DonationCategory, string> = {
   bakery: 'Pães e padaria',
@@ -9,9 +9,18 @@ export const needCategoryLabels: Record<DonationCategory, string> = {
   produce: 'Frutas e verduras',
 }
 
-const kg = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
+const amount = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
 
-export const formatKg = (value: number) => `${kg.format(value)} kg`
+export const needUnitLabels: Record<DonationUnit, [singular: string, plural: string]> = {
+  box: ['caixa', 'caixas'],
+  kg: ['kg', 'kg'],
+  tray: ['bandeja', 'bandejas'],
+  unit: ['unidade', 'unidades'],
+}
+
+/** "25 unidades", "1 caixa", "3,5 kg". */
+export const formatQuantity = (value: number, unit: DonationUnit) =>
+  `${amount.format(value)} ${needUnitLabels[unit][value === 1 ? 0 : 1]}`
 
 /** "hoje", "amanhã" or a short date, for need deadlines. */
 export const formatDeadline = (iso: string, now = new Date()) => {
@@ -24,9 +33,9 @@ export const formatDeadline = (iso: string, now = new Date()) => {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 
-export const needProgress = (need: Pick<NgoNeed, 'quantityKg' | 'remainingKg'>) =>
-  need.quantityKg > 0
-    ? Math.round(((need.quantityKg - need.remainingKg) / need.quantityKg) * 100)
+export const needProgress = (need: Pick<NgoNeed, 'quantity' | 'remainingQuantity'>) =>
+  need.quantity > 0
+    ? Math.round(((need.quantity - need.remainingQuantity) / need.quantity) * 100)
     : 0
 
 /** Default deadline for a new need: end of the day after tomorrow. */

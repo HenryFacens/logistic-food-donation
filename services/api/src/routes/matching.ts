@@ -17,6 +17,7 @@ type CandidateRow = {
       perishability: { raw: number };
       categoryNeed: { raw: number };
     };
+    needMatch?: unknown;
   };
   rejection_reasons: string[];
   offer_status: string | null;
@@ -103,6 +104,7 @@ export const getDonationMatching: ApiHandler = async (request) => {
           needScore: row.score_breakdown.components.categoryNeed.raw,
           rejectionReasons: row.rejection_reasons,
           offerStatus: row.offer_status,
+          needMatch: row.score_breakdown.needMatch,
         })),
         outOfRange: outOfRange.rows.map((row) => ({
           ngoName: row.ngo_name,

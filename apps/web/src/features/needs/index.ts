@@ -10,9 +10,10 @@ export { needMessages } from './messages'
 export {
   defaultNeedDeadline,
   formatDeadline,
-  formatKg,
+  formatQuantity,
   needCategoryLabels,
   needProgress,
+  needUnitLabels,
 } from './model/needs'
 export { NgoNeedsPage } from './pages/NgoNeedsPage'
 export { needsRouteElements } from './route'

@@ -123,6 +123,18 @@ export function OfferCard({ deciding, offer, onDecision }: OfferCardProps) {
         </div>
       ) : null}
 
+      {offer.score.needMatch ? (
+        <div className="grid gap-1 rounded-control border border-primary/30 bg-primary/10 p-3 text-sm">
+          <strong>
+            {offerMessages.matchesRequest} {offer.score.needMatch.item}
+            {offer.score.needMatch.coveredQuantity !== null
+              ? ` — ${offerMessages.covers} ~${offer.score.needMatch.coveredQuantity.toLocaleString('pt-BR')} ${offerMessages.of} ${offer.score.needMatch.remainingQuantity.toLocaleString('pt-BR')} ${offerMessages.unitLabels[offer.score.needMatch.unit]}`
+              : ''}
+          </strong>
+          <span>{offer.score.needMatch.reason}</span>
+        </div>
+      ) : null}
+
       {offer.distanceKm !== undefined ? (
         <p className="mb-0 flex items-center gap-2 text-sm font-bold">
           <AppIcon name="route" size={18} />

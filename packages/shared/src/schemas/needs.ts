@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isoDateTimeSchema, uuidSchema } from "./common.js";
-import { donationCategorySchema } from "./donations.js";
+import { donationCategorySchema, donationUnitSchema } from "./donations.js";
 
 export const ngoNeedStatusSchema = z.enum(["open", "fulfilled", "cancelled"]);
 export type NgoNeedStatus = z.infer<typeof ngoNeedStatusSchema>;
@@ -10,8 +10,10 @@ export const ngoNeedSchema = z.object({
   ngoId: uuidSchema,
   ngoName: z.string().optional(),
   category: donationCategorySchema,
-  quantityKg: z.number().positive(),
-  remainingKg: z.number().nonnegative(),
+  item: z.string().min(1),
+  quantity: z.number().positive(),
+  unit: donationUnitSchema,
+  remainingQuantity: z.number().nonnegative(),
   neededBy: isoDateTimeSchema,
   notes: z.string().nullable(),
   status: ngoNeedStatusSchema,
@@ -22,7 +24,10 @@ export type NgoNeed = z.infer<typeof ngoNeedSchema>;
 
 export const createNgoNeedRequestSchema = z.object({
   category: donationCategorySchema,
-  quantityKg: z.number().positive().max(10_000),
+  /** What exactly is needed, e.g. "Pão francês" or "Leite integral". */
+  item: z.string().trim().min(2).max(120),
+  quantity: z.number().positive().max(100_000),
+  unit: donationUnitSchema,
   neededBy: isoDateTimeSchema,
   notes: z.string().trim().max(300).optional(),
 });

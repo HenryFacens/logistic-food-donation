@@ -1,7 +1,7 @@
 import { Card } from '../../../shared/ui'
 import { useNearbyNeeds } from '../api/needs'
 import { needMessages } from '../messages'
-import { formatDeadline, formatKg, needCategoryLabels } from '../model/needs'
+import { formatDeadline, formatQuantity } from '../model/needs'
 
 /** Seller view: what NGOs near the shop are asking for right now. */
 export function NearbyNeedsPanel() {
@@ -21,8 +21,8 @@ export function NearbyNeedsPanel() {
             key={need.id}
           >
             <span>
-              <strong>{needCategoryLabels[need.category]}</strong> ·{' '}
-              {formatKg(need.remainingKg)}
+              <strong>{need.item}</strong> ·{' '}
+              {formatQuantity(need.remainingQuantity, need.unit)}
             </span>
             <span className="text-sm">
               {need.ngoName?.replace(/\s+SIMULADO$/u, '')}

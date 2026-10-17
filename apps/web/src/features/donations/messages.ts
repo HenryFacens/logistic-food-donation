@@ -45,7 +45,13 @@ export const donationMessages = {
     `${ranked} ONG${ranked === 1 ? '' : 's'} avaliada${ranked === 1 ? '' : 's'}${
       outside ? `, ${outside} fora do raio` : ''
     } · ranking calculado às`,
-  openNeed: 'tem pedido aberto',
+  request: 'Pedido:',
+  fit: 'aderência',
+  covers: 'cobre',
+  of: 'de',
+  byClaude: 'avaliado pelo Claude',
+  byRules: 'avaliado por regras',
+  noOpenRequest: 'Sem pedido aberto compatível',
   excluded: 'Descartada:',
   outOfRange: 'Fora do raio:',
   hideTimeline: 'Ocultar histórico',

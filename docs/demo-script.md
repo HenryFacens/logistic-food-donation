@@ -23,6 +23,16 @@ choice.
 Demo NGO hours: every NGO receives around the clock except **Casa Acolhedora
 (08:00–18:00)**, which shows the receiving-window rule outside those hours.
 
+Seeded requests (restored by every reset):
+
+| NGO | Requests |
+|---|---|
+| Prato Solidário (1.4 km from the bakery) | 60 French rolls; 30 kg soup vegetables |
+| Casa Acolhedora (08:00–18:00) | 15 sliced-bread loaves; 40 yogurts |
+| Mesa para Todos | 6 kg cake or sweets for a party; 25 kg bananas |
+| Rede Barra de Alimentos | 50 kg rice and beans; 40 French rolls |
+| Sementes do Amanhã | 40 L whole milk; 15 kg snack fruit |
+
 ## Story (about 4 minutes)
 
 | Step | Who | Do | What the audience sees |
@@ -41,6 +51,13 @@ Demo NGO hours: every NGO receives around the clock except **Casa Acolhedora
 Steps 5–8 are the proof: each one changes a single input and the ranking
 changes for the stated reason.
 
+**Item-level matching (the strongest moment).** From the bakery, post a cake
+(*Sem foto? Descreva o alimento* → "bolo de chocolate inteiro", or a photo).
+It goes to **Mesa para Todos** (10 km, asked for cake for a party) instead of
+Prato Solidário (1.4 km, asked for French rolls). The panel shows Claude's
+reason for every NGO, e.g. "Bolo não substitui pão francês no café da manhã".
+Then post French rolls: they go to Prato Solidário.
+
 ## Verified outcomes (2026-10-17, against the running stack)
 
 Fresh posts made through the API produced these first choices:
@@ -56,10 +73,23 @@ Fresh posts made through the API produced these first choices:
 | Prato Solidário publishes a dairy need, yogurt posted | Prato Solidário, 95.6 | Now accepts dairy and has an open need |
 | Bread posted at CEP 13083-970 | Rede Barra de Alimentos, 97.9 | 0.6 km road |
 
+### Item-level results (verified 2026-10-17, Claude Sonnet 5.5)
+
+| Post from the bakery | Goes to | Matched request | Fit |
+|---|---|---|---|
+| 25 French rolls | Prato Solidário (1.4 km) | Pão francês, covers 25 of 60 | 0.90 |
+| Chocolate cake, 2 kg | Mesa para Todos (10.1 km) | Bolo ou doces para festa | 0.95 |
+| Bananas, 12 kg | Mesa para Todos (10.1 km) | Banana, covers 12 of 25 kg | 0.95 |
+| Carrots and potatoes, 8 kg | Prato Solidário (1.4 km) | Legumes para sopa | 0.95 |
+| Rice, 5 kg | Rede Barra de Alimentos | Arroz e feijão | — |
+
+Publishing to a visible ranking takes about 5–8 seconds with Claude.
+
 ## If something goes wrong
 
-- **No photo analysis**: without `ANTHROPIC_API_KEY` the result is labeled
-  SIMULADO; the rest of the flow still works.
+- **No photo analysis or request matching**: without `ANTHROPIC_API_KEY` the
+  photo result is labeled SIMULADO and requests are matched by rules
+  (*avaliado por regras* in the panel); the rest of the flow still works.
 - **Every NGO excluded**: check the clock against NGO hours on *Pedidos*, or run
   the reset again.
 - **Offer expired before the NGO clicked**: raise `OFFER_TIMEOUT_SECONDS` and

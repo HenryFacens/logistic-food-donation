@@ -2,12 +2,19 @@ import {
   calculateMatchingScore,
   estimateEtaMinutes,
   type DonationCategory,
+  type DonationUnit,
   type MatchingScore,
   type MatchingWeights,
+  type NeedMatch,
   type MessageEnvelope,
 } from "@resgata/shared";
 import type { QueryResultRow } from "pg";
 import type { SqlExecutor } from "../infrastructure/database.js";
+import {
+  FallbackNeedMatcher,
+  type NeedMatcher,
+  type OpenNeed,
+} from "../matching/need-matcher.js";
 import {
   NoRoutingProvider,
   type RoadRoute,
@@ -28,6 +35,10 @@ interface DonationRow extends QueryResultRow {
   condition?: string | null;
   pickup_latitude?: number;
   pickup_longitude?: number;
+  description?: string;
+  quantity?: string;
+  unit?: DonationUnit;
+  photo_items?: string[] | null;
 }
 
 interface NgoCandidateRow extends QueryResultRow {
@@ -37,8 +48,6 @@ interface NgoCandidateRow extends QueryResultRow {
   service_radius_km: string;
   accepted_categories: DonationCategory[];
   category_need: string | null;
-  /** Kilograms still requested in open, unexpired needs for the category. */
-  open_need_kg?: string | null;
   receiving_start_min?: number;
   receiving_end_min?: number;
   latitude?: number;
@@ -55,25 +64,33 @@ export interface RankingContext {
   nowMinuteOfDay?: number;
   /** Road routes keyed by NGO id; straight-line estimates are used otherwise. */
   roadRoutes?: Map<string, RoadRoute>;
+  /** Best-fitting open request per NGO id. */
+  needMatches?: Map<string, NeedMatch>;
 }
+
+// NGO requests name the exact item, so fit with a request is the largest
+// single factor; distance still decides between NGOs that want the food.
+const REQUEST_WEIGHTS: MatchingWeights = {
+  distance: 0.3,
+  capacity: 0.15,
+  perishability: 0.2,
+  categoryNeed: 0.35,
+};
 
 // Food flagged for attention by the photo analysis goes to closer NGOs.
 const ATTENTION_WEIGHTS: MatchingWeights = {
-  distance: 0.5,
-  capacity: 0.2,
+  distance: 0.45,
+  capacity: 0.1,
   perishability: 0.2,
-  categoryNeed: 0.1,
+  categoryNeed: 0.25,
 };
 
-/** Live published needs dominate; the static profile is a weak prior. */
-export function categoryNeedScore(
-  openNeedKg: number,
-  donationWeightKg: number,
-  staticNeed: number,
-): number {
-  if (openNeedKg > 0) {
-    return 0.6 + 0.4 * Math.min(1, openNeedKg / donationWeightKg);
-  }
+/**
+ * Need signal for scoring: the fit with the NGO's best open request when it
+ * has one; otherwise half of the static category profile as a weak prior.
+ */
+export function needSignal(match: NeedMatch | undefined, staticNeed: number): number {
+  if (match) return Math.min(1, Math.max(0, match.fit));
   return 0.5 * Math.min(1, Math.max(0, staticNeed));
 }
 
@@ -103,7 +120,7 @@ export function rankCandidates(
   }
   const weightKg = Number(donation.estimated_weight_kg);
   const weights =
-    donation.condition === "attention" ? ATTENTION_WEIGHTS : undefined;
+    donation.condition === "attention" ? ATTENTION_WEIGHTS : REQUEST_WEIGHTS;
   return rows
     .map((candidate) => {
       const road = context.roadRoutes?.get(candidate.id);
@@ -116,9 +133,8 @@ export function rankCandidates(
         donationWeightKg: weightKg,
         perishabilityMinutes: donation.perishability_minutes,
         etaMinutes,
-        categoryNeed: categoryNeedScore(
-          Number(candidate.open_need_kg ?? 0),
-          weightKg,
+        categoryNeed: needSignal(
+          context.needMatches?.get(candidate.id),
           Number(candidate.category_need ?? 0),
         ),
         acceptsCategory: candidate.accepted_categories.includes(
@@ -141,6 +157,8 @@ export function rankCandidates(
           score.rejectionReasons.push("outside_receiving_hours");
         }
       }
+      const needMatch = context.needMatches?.get(candidate.id);
+      if (needMatch) score.needMatch = needMatch;
       return { ngoId: candidate.id, score };
     })
     .sort(
@@ -202,11 +220,91 @@ async function finishWithoutDestination(
   );
 }
 
+const MAX_MATCHED_NEEDS = 30;
+
+async function matchOpenNeeds(
+  transaction: SqlExecutor,
+  donation: DonationRow,
+  ngoIds: string[],
+  matcher: NeedMatcher,
+): Promise<Map<string, NeedMatch>> {
+  const matches = new Map<string, NeedMatch>();
+  if (!ngoIds.length || !donation.category) return matches;
+  const result = await transaction.query<{
+    id: string;
+    ngo_id: string;
+    category: DonationCategory;
+    item: string;
+    remaining_quantity: string;
+    unit: DonationUnit;
+    needed_by: Date;
+    notes: string | null;
+  }>(
+    `SELECT id, ngo_id, category, item, remaining_quantity, unit, needed_by, notes
+     FROM ngo_needs
+     WHERE ngo_id = ANY($1::uuid[])
+       AND status = 'open'
+       AND remaining_quantity > 0
+       AND needed_by > now()
+     ORDER BY needed_by, id
+     LIMIT ${MAX_MATCHED_NEEDS}`,
+    [ngoIds],
+  );
+  const needs: OpenNeed[] = result.rows.map((row) => ({
+    id: row.id,
+    ngoId: row.ngo_id,
+    category: row.category,
+    item: row.item,
+    remainingQuantity: Number(row.remaining_quantity),
+    unit: row.unit,
+    neededBy: row.needed_by,
+    notes: row.notes,
+  }));
+  const fits = await matcher.match(
+    {
+      description: donation.description ?? "",
+      category: donation.category,
+      quantity: Number(donation.quantity ?? 0),
+      unit: donation.unit ?? "kg",
+      weightKg: Number(donation.estimated_weight_kg),
+      condition: donation.condition,
+      items: donation.photo_items ?? undefined,
+      shelfLifeMinutes: donation.perishability_minutes,
+    },
+    needs,
+  );
+  const needById = new Map(needs.map((need) => [need.id, need]));
+  for (const fit of fits) {
+    const need = needById.get(fit.needId);
+    if (!need) continue;
+    const current = matches.get(need.ngoId);
+    if (
+      current &&
+      (current.fit > fit.fit ||
+        (current.fit === fit.fit && (current.coveredQuantity ?? 0) >= (fit.coveredQuantity ?? 0)))
+    ) {
+      continue;
+    }
+    matches.set(need.ngoId, {
+      needId: need.id,
+      item: need.item,
+      fit: fit.fit,
+      coveredQuantity: fit.coveredQuantity,
+      unit: need.unit,
+      remainingQuantity: need.remainingQuantity,
+      reason: fit.reason,
+      source: fit.source,
+    });
+  }
+  return matches;
+}
+
 export async function handleMatching(
   message: MessageEnvelope,
   transaction: SqlExecutor,
   offerTimeoutSeconds: number,
   routing: RouteEtaProvider = new NoRoutingProvider(),
+  needMatcher: NeedMatcher = new FallbackNeedMatcher(),
 ): Promise<void> {
   const donationResult = await transaction.query<DonationRow>(
     `
@@ -219,7 +317,13 @@ export async function handleMatching(
         expires_at,
         classification ->> 'condition' AS condition,
         ST_Y(pickup_location::geometry) AS pickup_latitude,
-        ST_X(pickup_location::geometry) AS pickup_longitude
+        ST_X(pickup_location::geometry) AS pickup_longitude,
+        description,
+        quantity,
+        unit,
+        ARRAY(
+          SELECT jsonb_array_elements_text(coalesce(classification -> 'items', '[]'::jsonb))
+        ) AS photo_items
       FROM donations
       WHERE id = $1
       FOR UPDATE
@@ -254,14 +358,6 @@ export async function handleMatching(
         ngo.service_radius_km,
         ngo.accepted_categories::text[] AS accepted_categories,
         ngo.category_needs ->> donation.category::text AS category_need,
-        (
-          SELECT sum(need.remaining_kg)
-          FROM ngo_needs AS need
-          WHERE need.ngo_id = ngo.id
-            AND need.category = donation.category
-            AND need.status = 'open'
-            AND need.needed_by > now()
-        ) AS open_need_kg,
         (extract(epoch FROM ngo.receiving_start) / 60)::int AS receiving_start_min,
         (extract(epoch FROM ngo.receiving_end) / 60)::int AS receiving_end_min,
         ST_Y(ngo.location::geometry) AS latitude,
@@ -293,10 +389,21 @@ export async function handleMatching(
       if (route) roadRoutes.set(nearest[index]!.id, route);
     });
   }
-  const candidates = rankCandidates(donation, candidateResult.rows, {
+  const context: RankingContext = {
     nowMinuteOfDay: clock.rows[0]?.minute,
     roadRoutes,
-  });
+  };
+  // Rules decide who can receive; then requests decide who needs it most.
+  const eligibleIds = rankCandidates(donation, candidateResult.rows, context)
+    .filter((candidate) => candidate.score.eligible)
+    .map((candidate) => candidate.ngoId);
+  context.needMatches = await matchOpenNeeds(
+    transaction,
+    donation,
+    eligibleIds,
+    needMatcher,
+  );
+  const candidates = rankCandidates(donation, candidateResult.rows, context);
 
   const runResult = await transaction.query<{ id: string }>(
     `
@@ -429,7 +536,7 @@ export async function handleMatching(
 }
 
 export const matchingInternals = {
-  categoryNeedScore,
+  needSignal,
   minutesUntilReceiving,
   rankCandidates,
 };

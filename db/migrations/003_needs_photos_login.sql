@@ -13,9 +13,12 @@ CREATE TABLE ngo_needs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   ngo_id uuid NOT NULL REFERENCES ngos(id) ON DELETE CASCADE,
   category donation_category NOT NULL,
-  quantity_kg numeric(10, 2) NOT NULL CHECK (quantity_kg > 0),
-  remaining_kg numeric(10, 2) NOT NULL
-    CHECK (remaining_kg >= 0 AND remaining_kg <= quantity_kg),
+  -- What exactly the NGO needs, in its own words and unit.
+  item text NOT NULL CHECK (length(trim(item)) > 0),
+  quantity numeric(10, 2) NOT NULL CHECK (quantity > 0),
+  unit donation_unit NOT NULL,
+  remaining_quantity numeric(10, 2) NOT NULL
+    CHECK (remaining_quantity >= 0 AND remaining_quantity <= quantity),
   needed_by timestamptz NOT NULL,
   notes text,
   status ngo_need_status NOT NULL DEFAULT 'open',
@@ -26,23 +29,51 @@ CREATE INDEX ngo_needs_open_idx
   ON ngo_needs (ngo_id, category, needed_by)
   WHERE status = 'open';
 
--- Demo needs so matching has live demand right after a reset.
+-- Demo needs so matching has live, item-level demand right after a reset.
+-- Each NGO asks for different items so request matching visibly matters.
 CREATE OR REPLACE FUNCTION seed_ngo_needs() RETURNS void
 LANGUAGE sql
 AS $$
   DELETE FROM ngo_needs;
-  INSERT INTO ngo_needs (ngo_id, category, quantity_kg, remaining_kg, needed_by, notes)
-  SELECT ngo.id, need.category, need.kg, need.kg,
-         now() + need.horizon, need.notes
-  FROM ngos AS ngo
-  CROSS JOIN LATERAL (
+  INSERT INTO ngo_needs (
+    ngo_id, category, item, quantity, unit, remaining_quantity, needed_by, notes
+  )
+  SELECT need.ngo_id, need.category, need.item, need.quantity, need.unit,
+         need.quantity, now() + need.horizon, need.notes
+  FROM (
     VALUES
-      ('bakery'::donation_category, 20::numeric, interval '2 days',
-       'Café da manhã das crianças atendidas (SIMULADO)'),
-      ('produce'::donation_category, 40::numeric, interval '4 days',
-       'Hortifruti para a cozinha comunitária (SIMULADO)')
-  ) AS need(category, kg, horizon, notes)
-  WHERE ngo.active AND need.category = ANY (ngo.accepted_categories);
+      ('22000000-0000-4000-8000-000000000002'::uuid, 'bakery'::donation_category,
+       'Pão francês', 60::numeric, 'unit'::donation_unit, interval '2 days',
+       'Café da manhã de 30 crianças (SIMULADO)'),
+      ('22000000-0000-4000-8000-000000000002'::uuid, 'produce'::donation_category,
+       'Legumes para sopa (cenoura, batata, abóbora)', 30::numeric, 'kg'::donation_unit,
+       interval '4 days', 'Sopa comunitária (SIMULADO)'),
+      ('22000000-0000-4000-8000-000000000004'::uuid, 'bakery'::donation_category,
+       'Pão de forma', 15::numeric, 'unit'::donation_unit, interval '3 days',
+       'Lanche do abrigo (SIMULADO)'),
+      ('22000000-0000-4000-8000-000000000004'::uuid, 'dairy'::donation_category,
+       'Iogurte', 40::numeric, 'unit'::donation_unit, interval '2 days',
+       'Sobremesa dos idosos (SIMULADO)'),
+      ('22000000-0000-4000-8000-000000000003'::uuid, 'bakery'::donation_category,
+       'Bolo ou doces para festa', 6::numeric, 'kg'::donation_unit, interval '3 days',
+       'Festa de aniversariantes do mês (SIMULADO)'),
+      ('22000000-0000-4000-8000-000000000003'::uuid, 'produce'::donation_category,
+       'Banana', 25::numeric, 'kg'::donation_unit, interval '4 days',
+       'Lanche escolar (SIMULADO)'),
+      ('22000000-0000-4000-8000-000000000001'::uuid, 'pantry'::donation_category,
+       'Arroz e feijão', 50::numeric, 'kg'::donation_unit, interval '7 days',
+       'Cestas básicas (SIMULADO)'),
+      ('22000000-0000-4000-8000-000000000001'::uuid, 'bakery'::donation_category,
+       'Pão francês', 40::numeric, 'unit'::donation_unit, interval '2 days',
+       'Café comunitário (SIMULADO)'),
+      ('22000000-0000-4000-8000-000000000005'::uuid, 'dairy'::donation_category,
+       'Leite integral', 40::numeric, 'unit'::donation_unit, interval '3 days',
+       'Litros para o lanche da creche (SIMULADO)'),
+      ('22000000-0000-4000-8000-000000000005'::uuid, 'produce'::donation_category,
+       'Frutas para lanche (maçã, banana, laranja)', 15::numeric, 'kg'::donation_unit,
+       interval '3 days', 'Lanche da creche (SIMULADO)')
+  ) AS need(ngo_id, category, item, quantity, unit, horizon, notes)
+  JOIN ngos AS ngo ON ngo.id = need.ngo_id AND ngo.active;
 $$;
 SELECT seed_ngo_needs();
 

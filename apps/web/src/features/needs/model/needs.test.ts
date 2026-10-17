@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { defaultNeedDeadline, formatDeadline, needProgress } from './needs'
+import {
+  defaultNeedDeadline,
+  formatDeadline,
+  formatQuantity,
+  needProgress,
+} from './needs'
 
 describe('needs view model', () => {
   const now = new Date(2026, 9, 16, 10, 0)
@@ -11,7 +16,13 @@ describe('needs view model', () => {
   })
 
   it('reports how much of a need has been covered', () => {
-    expect(needProgress({ quantityKg: 20, remainingKg: 15 })).toBe(25)
+    expect(needProgress({ quantity: 60, remainingQuantity: 45 })).toBe(25)
+  })
+
+  it('formats amounts in the request unit', () => {
+    expect(formatQuantity(1, 'box')).toBe('1 caixa')
+    expect(formatQuantity(25, 'unit')).toBe('25 unidades')
+    expect(formatQuantity(3.5, 'kg')).toBe('3,5 kg')
   })
 
   it('defaults new needs to the evening after tomorrow', () => {

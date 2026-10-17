@@ -85,47 +85,81 @@ export const listOffers: ApiHandler = async (request) => {
   }
 };
 
-// An accepted donation fills the NGO's matching open needs (earliest deadline
-// first) and uses up part of today's receiving capacity.
+// Amount of a request a donation covers when units are directly comparable.
+export function comparableCoverage(
+  donation: { quantity: number; unit: string; weightKg: number },
+  need: { remaining: number; unit: string },
+): number | null {
+  if (need.unit === donation.unit) return Math.min(donation.quantity, need.remaining);
+  if (need.unit === "kg") return Math.min(donation.weightKg, need.remaining);
+  return null;
+}
+
+// Below this fit a donation is a substitute: it is welcome, but the NGO still
+// needs the requested item, so the request stays open.
+export const REQUEST_FILL_MIN_FIT = 0.7;
+
+// An accepted donation fills the request the matcher picked (or the earliest
+// comparable one in the category) and uses part of today's capacity.
 async function reserveNgoCapacity(
   client: import("pg").PoolClient,
+  offerId: string,
   donationId: string,
   ngoId: string,
 ): Promise<void> {
-  const donation = await client.query<{ category: string | null; weight: string }>(
-    "SELECT category::text AS category, estimated_weight_kg AS weight FROM donations WHERE id = $1",
-    [donationId],
+  const donation = await client.query<{
+    category: string | null;
+    quantity: number;
+    unit: string;
+    weight: number;
+    need_match: { needId?: string; coveredQuantity?: number | null; fit?: number } | null;
+  }>(
+    `SELECT donation.category::text AS category,
+            donation.quantity::float8 AS quantity,
+            donation.unit::text AS unit,
+            donation.estimated_weight_kg::float8 AS weight,
+            offer.score_breakdown -> 'needMatch' AS need_match
+     FROM donations AS donation
+     JOIN offers AS offer ON offer.id = $2
+     WHERE donation.id = $1`,
+    [donationId, offerId],
   );
   const row = donation.rows[0];
   if (!row) return;
-  let remaining = Number(row.weight);
   await client.query(
     `UPDATE ngos
      SET current_load_kg = least(capacity_kg, current_load_kg + $2)
      WHERE id = $1`,
-    [ngoId, remaining],
+    [ngoId, row.weight],
   );
-  if (!row.category) return;
-  const needs = await client.query<{ id: string; remaining_kg: string }>(
-    `SELECT id, remaining_kg FROM ngo_needs
-     WHERE ngo_id = $1 AND category = $2::donation_category AND status = 'open'
+
+  if (row.need_match?.needId && (row.need_match.fit ?? 0) < REQUEST_FILL_MIN_FIT) return;
+  const needs = await client.query<{ id: string; remaining: number; unit: string }>(
+    `SELECT id, remaining_quantity::float8 AS remaining, unit::text AS unit
+     FROM ngo_needs
+     WHERE ngo_id = $1 AND status = 'open'
+       AND (id = $2::uuid OR ($2::uuid IS NULL AND category::text = $3))
      ORDER BY needed_by, id
+     LIMIT 1
      FOR UPDATE`,
-    [ngoId, row.category],
+    [ngoId, row.need_match?.needId ?? null, row.category],
   );
-  for (const need of needs.rows) {
-    if (remaining <= 0) break;
-    const used = Math.min(remaining, Number(need.remaining_kg));
-    remaining -= used;
-    await client.query(
-      `UPDATE ngo_needs
-       SET remaining_kg = remaining_kg - $2,
-           status = CASE WHEN remaining_kg - $2 <= 0 THEN 'fulfilled'::ngo_need_status ELSE status END,
-           updated_at = now()
-       WHERE id = $1`,
-      [need.id, used],
-    );
-  }
+  const need = needs.rows[0];
+  if (!need) return;
+  const estimated = row.need_match?.needId === need.id ? row.need_match.coveredQuantity : null;
+  const covered = Math.min(
+    need.remaining,
+    estimated ?? comparableCoverage({ quantity: row.quantity, unit: row.unit, weightKg: row.weight }, need) ?? 0,
+  );
+  if (covered <= 0) return;
+  await client.query(
+    `UPDATE ngo_needs
+     SET remaining_quantity = greatest(0, remaining_quantity - $2),
+         status = CASE WHEN remaining_quantity - $2 <= 0 THEN 'fulfilled'::ngo_need_status ELSE status END,
+         updated_at = now()
+     WHERE id = $1`,
+    [need.id, covered],
+  );
 }
 
 const NOTIFIED_DRIVERS = 3;
@@ -252,7 +286,7 @@ export const acceptOffer: ApiHandler = async (request) => {
          ON CONFLICT (donation_id) DO NOTHING`,
         [offer.donationId, actor.profileId],
       );
-      await reserveNgoCapacity(client, offer.donationId, actor.profileId);
+      await reserveNgoCapacity(client, offerId, offer.donationId, actor.profileId);
       await notifyAcceptance(client, offer.donationId, correlationId);
       return {
         status: 200,

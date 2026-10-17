@@ -711,10 +711,12 @@ paths:
           application/json:
             schema:
               type: object
-              required: [category, quantityKg, neededBy]
+              required: [category, item, quantity, unit, neededBy]
               properties:
                 category: { $ref: "#/components/schemas/DonationCategory" }
-                quantityKg: { type: number, exclusiveMinimum: 0 }
+                item: { type: string, minLength: 2, maxLength: 120, example: "Pão francês" }
+                quantity: { type: number, exclusiveMinimum: 0 }
+                unit: { $ref: "#/components/schemas/DonationUnit" }
                 neededBy: { type: string, format: date-time }
                 notes: { type: string, maxLength: 300 }
       responses:
