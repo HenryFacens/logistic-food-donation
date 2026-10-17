@@ -223,6 +223,13 @@ export function DonationForm({
   return (
     <form
       className="producer-confirm-form"
+      // A required field inside a folded section would block publishing
+      // silently: unfold it and say what to check.
+      onInvalidCapture={(event) => {
+        const details = (event.target as HTMLElement).closest('details')
+        if (details) details.open = true
+        setFormError(donationMessages.invalidForm)
+      }}
       onSubmit={(event) => {
         event.preventDefault()
         submit()
@@ -249,7 +256,7 @@ export function DonationForm({
             min={values.unit === 'kg' ? '0.5' : '1'}
             onChange={(event) => setQuantity(event.target.value)}
             required
-            step={values.unit === 'kg' ? '0.5' : '1'}
+            step="any"
             type="number"
             value={values.quantity}
           />
@@ -289,7 +296,7 @@ export function DonationForm({
               min="0.1"
               onChange={(event) => update('estimatedWeightKg', event.target.value)}
               required
-              step="0.1"
+              step="any"
               type="number"
               value={values.estimatedWeightKg}
             />
@@ -485,7 +492,7 @@ export function DonationForm({
                 )
               }
               required
-              step="0.5"
+              step="any"
               type="number"
               value={shelfLifeHours}
             />
