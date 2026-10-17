@@ -1,5 +1,10 @@
 import type { GeoPoint, Pickup } from '@resgata/shared'
 import { useCallback, useState } from 'react'
+import {
+  BrowserLocationError,
+  browserLocationMessage,
+  readBrowserLocation,
+} from '../../../shared/maps'
 import { Button } from '../../../shared/ui'
 import { pickupErrorMessage, pickupMessages } from '../messages'
 import {
@@ -40,26 +45,17 @@ export function PickupConfirmation({
   }, [])
 
   const locate = () => {
-    if (!navigator.geolocation) {
-      setLocationMessage('GPS indisponível. Será usado o ponto cadastrado.')
-      return
-    }
     setLocationMessage('Obtendo localização…')
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        const location = {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-        }
+    readBrowserLocation()
+      .then((location) => {
         setCurrentLocation(location)
         setLocationMessage(`Localização capturada: ${coordinateLabel(location)}`)
-      },
-      () => {
+      })
+      .catch((caught: unknown) => {
         setCurrentLocation(null)
-        setLocationMessage('GPS não autorizado. Será usado o ponto cadastrado.')
-      },
-      { enableHighAccuracy: true, maximumAge: 30_000, timeout: 8_000 },
-    )
+        const reason = caught instanceof BrowserLocationError ? caught.reason : 'unavailable'
+        setLocationMessage(browserLocationMessage(reason))
+      })
   }
 
   const submit = async () => {

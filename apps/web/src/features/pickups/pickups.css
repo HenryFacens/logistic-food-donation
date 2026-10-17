@@ -383,9 +383,16 @@
   white-space: nowrap;
 }
 
+.delivery-card__body {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
 .delivery-card__distances {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 0.25rem 1rem;
   color: rgb(var(--color-muted));

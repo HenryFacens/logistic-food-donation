@@ -2,7 +2,9 @@ import type { CreateDonationRequest } from '@resgata/shared'
 import { describe, expect, it, vi } from 'vitest'
 import {
   buildDonationPublishOperation,
+  buildDonationRequest,
   createStableIdempotencyRegistry,
+  type DonationFormValues,
 } from './publish'
 
 const body = {
@@ -31,6 +33,38 @@ describe('donation publication', () => {
     expect(registry.keyFor(body)).toBe('stable-key')
     expect(registry.keyFor(body)).toBe('stable-key')
     expect(createKey).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses the selected place coordinates and falls back to the demo point', () => {
+    const values: DonationFormValues = {
+      availableFrom: '2026-10-16T12:00',
+      category: 'produce',
+      city: 'Campinas',
+      description: 'Bananas',
+      district: 'Centro',
+      estimatedWeightKg: '8',
+      expiresAt: '2026-10-16T18:00',
+      latitude: '',
+      line1: 'Avenida Francisco Glicério, 650',
+      longitude: '',
+      perishabilityMinutes: '360',
+      postalCode: '13012-100',
+      quantity: '12',
+      state: 'SP',
+      unit: 'kg',
+    }
+
+    expect(buildDonationRequest(values).pickupAddress.location).toEqual({
+      latitude: -22.8974,
+      longitude: -47.051,
+    })
+    expect(
+      buildDonationRequest({
+        ...values,
+        latitude: '-22.9071',
+        longitude: '-47.0612',
+      }).pickupAddress.location,
+    ).toEqual({ latitude: -22.9071, longitude: -47.0612 })
   })
 
   it('publishes an attachable offline-safe operation', () => {

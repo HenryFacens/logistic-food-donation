@@ -16,6 +16,7 @@ import {
   shortAddress,
 } from '../viewModels'
 import { PickupItems } from './PickupItems'
+import { useDriverRoute } from './DriverRoute'
 
 interface AvailablePickupCardProps {
   disabled: boolean
@@ -38,6 +39,12 @@ export function AvailablePickupCard({
   const urgency = pickupUrgency(summary?.expiresAt, now)
   const deadline = deliveryDeadline(summary?.deliverBy, now)
   const inputId = `select-pickup-${pickup.id}`
+  const route = useDriverRoute(
+    pickup.pickupLocation,
+    pickup.deliveryLocation,
+    summary?.routeDistanceKm ?? 0,
+    summary !== undefined,
+  )
   const style = {
     '--stagger': Math.min(index, 8),
     // Lets the browser morph cards between positions when the sort changes.
@@ -45,14 +52,14 @@ export function AvailablePickupCard({
   } as CSSProperties
 
   return (
-    <label
+    <div
       className="delivery-card"
       data-disabled={disabled}
       data-selected={selected}
       data-urgency={urgency?.tone ?? 'none'}
-      htmlFor={inputId}
       style={style}
     >
+      <label className="delivery-card__body" htmlFor={inputId}>
       <div className="delivery-card__top">
         <StatusBadge
           icon="package"
@@ -115,7 +122,7 @@ export function AvailablePickupCard({
           <div className="delivery-card__distances">
             <span>
               <AppIcon name="route" size={16} />
-              Rota <span className="metric-value">{formatKm(summary.routeDistanceKm)}</span>
+              Rota <span className="metric-value">{formatKm(route.distanceKm)}</span>
             </span>
             {summary.distanceToPickupKm !== null ? (
               <span>
@@ -123,6 +130,7 @@ export function AvailablePickupCard({
                 a <span className="metric-value">{formatKm(summary.distanceToPickupKm)}</span> de você
               </span>
             ) : null}
+            {route.toggle}
           </div>
         </>
       ) : null}
@@ -151,7 +159,9 @@ export function AvailablePickupCard({
           </span>
         </span>
       </div>
-    </label>
+      </label>
+      {route.panel}
+    </div>
   )
 }
 

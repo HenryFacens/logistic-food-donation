@@ -21,6 +21,7 @@ import {
   type DonationPublisher,
   type DonationPublishOutcome,
 } from '../model/publish'
+import { AddressAutocomplete } from './AddressAutocomplete'
 
 const toLocalInput = (date: Date) => {
   const offset = date.getTimezoneOffset() * 60_000
@@ -35,14 +36,18 @@ const createInitialValues = (): DonationFormValues => {
   return {
     availableFrom: toLocalInput(available),
     category: '',
+    city: 'Campinas',
     description: '',
     district: 'Cambuí',
     estimatedWeightKg: '5',
     expiresAt: toLocalInput(expires),
+    latitude: '',
     line1: 'Rua Coronel Quirino, 900',
+    longitude: '',
     perishabilityMinutes: '360',
     postalCode: '13025-001',
     quantity: '10',
+    state: 'SP',
     unit: 'unit',
   }
 }
@@ -220,12 +225,34 @@ export function DonationForm({
 
         <fieldset className="grid gap-4 rounded-card border border-border p-4">
           <legend className="px-2 font-extrabold">Local de retirada</legend>
-          <label className="grid gap-2 font-bold">
+          <label className="grid gap-2 font-bold" htmlFor="donation-pickup-address">
             Endereço
-            <input
-              className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
-              onChange={(event) => update('line1', event.target.value)}
-              required
+            <AddressAutocomplete
+              id="donation-pickup-address"
+              onChange={(line1) => {
+                setFormError(null)
+                setSuccessMessage(null)
+                setValues((current) => ({
+                  ...current,
+                  latitude: '',
+                  line1,
+                  longitude: '',
+                }))
+              }}
+              onPlace={(place) => {
+                setFormError(null)
+                setSuccessMessage(null)
+                setValues((current) => ({
+                  ...current,
+                  city: place.city || current.city,
+                  district: place.district || current.district,
+                  latitude: String(place.location.latitude),
+                  line1: place.line1,
+                  longitude: String(place.location.longitude),
+                  postalCode: place.postalCode || current.postalCode,
+                  state: place.state || current.state,
+                }))
+              }}
               value={values.line1}
             />
           </label>
@@ -252,7 +279,9 @@ export function DonationForm({
             </label>
           </div>
           <p className="mb-0 text-xs">
-            Campinas/SP · coordenadas de demonstração do Cambuí.
+            {values.latitude
+              ? `Coordenadas do endereço selecionado (${Number(values.latitude).toFixed(5)}, ${Number(values.longitude).toFixed(5)}).`
+              : 'Campinas/SP · sem sugestão selecionada, usamos as coordenadas de demonstração do Cambuí.'}
           </p>
         </fieldset>
 

@@ -15,12 +15,14 @@
   "dependencies": {
     "@resgata/shared": "workspace:*",
     "@tanstack/react-query": "5.104.3",
+    "leaflet": "^1.9.4",
     "lottie-web": "5.12.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "workbox-window": "^7.3.0"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.22",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",

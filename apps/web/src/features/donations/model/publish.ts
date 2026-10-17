@@ -8,15 +8,35 @@ import {
 export interface DonationFormValues {
   availableFrom: string
   category: string
+  city: string
   description: string
   district: string
   estimatedWeightKg: string
   expiresAt: string
+  latitude: string
   line1: string
+  longitude: string
   perishabilityMinutes: string
   postalCode: string
   quantity: string
+  state: string
   unit: string
+}
+
+const demoPickupLocation = { latitude: -22.8974, longitude: -47.051 }
+
+const selectedLocation = (values: DonationFormValues) => {
+  const latitude = Number(values.latitude)
+  const longitude = Number(values.longitude)
+  if (
+    values.latitude.trim() === '' ||
+    values.longitude.trim() === '' ||
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude)
+  ) {
+    return demoPickupLocation
+  }
+  return { latitude, longitude }
 }
 
 export interface DonationPublishOperation {
@@ -50,15 +70,12 @@ export const buildDonationRequest = (
     expiresAt: localDateToIso(values.expiresAt),
     perishabilityMinutes: Number(values.perishabilityMinutes),
     pickupAddress: {
-      city: 'Campinas',
+      city: values.city || 'Campinas',
       district: values.district,
       line1: values.line1,
-      location: {
-        latitude: -22.8974,
-        longitude: -47.051,
-      },
+      location: selectedLocation(values),
       postalCode: values.postalCode,
-      state: 'SP',
+      state: values.state || 'SP',
     },
     quantity: Number(values.quantity),
     unit: values.unit,

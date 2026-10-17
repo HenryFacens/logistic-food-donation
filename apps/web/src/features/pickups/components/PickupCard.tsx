@@ -20,6 +20,7 @@ import {
   pickupUrgency,
   shortAddress,
 } from '../viewModels'
+import { useDriverRoute } from './DriverRoute'
 import { PickupConfirmation } from './PickupConfirmation'
 import { PickupItems } from './PickupItems'
 import { PickupProgress } from './PickupProgress'
@@ -60,6 +61,12 @@ export function PickupCard({
   const showDeadlines = isDriver && now !== undefined
   const pickupDeadline = showDeadlines && action === 'collect' ? pickupUrgency(summary?.expiresAt, now) : null
   const deliverDeadline = showDeadlines && action ? deliveryDeadline(summary?.deliverBy, now) : null
+  const route = useDriverRoute(
+    pickup.pickupLocation,
+    pickup.deliveryLocation,
+    summary?.routeDistanceKm ?? 0,
+    isDriver,
+  )
 
   const assign = async () => {
     setError(null)
@@ -131,8 +138,11 @@ export function PickupCard({
               <strong className="block">{displayName(summary.ngoName)}</strong>
               <span className="text-sm text-muted">
                 {shortAddress(summary.deliveryAddress)} · rota{' '}
-                <span className="metric-value">{formatKm(summary.routeDistanceKm)}</span>
+                <span className="metric-value">
+                  {formatKm(isDriver ? route.distanceKm : summary.routeDistanceKm)}
+                </span>
               </span>
+              {isDriver ? <div className="mt-2">{route.toggle}</div> : null}
               {deliverDeadline ? (
                 <span className="mt-2 block">
                   <StatusBadge
@@ -148,6 +158,8 @@ export function PickupCard({
           )}
         </div>
       </div>
+
+      {isDriver ? route.panel : null}
 
       {audience === 'ngo' && pickup.deliveryCode ? (
         <div className="rounded-2xl border border-dashed border-border-strong p-4">
