@@ -841,6 +841,10 @@ components:
         profileId:
           type: string
           format: uuid
+        capacityKg:
+          type: number
+          exclusiveMinimum: 0
+          description: Vehicle capacity; returned only for drivers.
 
     Classification:
       type: object
@@ -1210,8 +1214,6 @@ components:
         - ngoId
         - driverId
         - status
-        - pickupCode
-        - deliveryCode
         - pickupLocation
         - deliveryLocation
         - assignedAt
@@ -1237,9 +1239,15 @@ components:
         pickupCode:
           type: string
           pattern: '^\d{6}$'
+          description: >-
+            Collection proof code. Returned to the NGO; omitted from every
+            driver response because the seller informs it on site.
         deliveryCode:
           type: string
           pattern: '^\d{6}$'
+          description: >-
+            Delivery proof code. Returned to the NGO; omitted from every
+            driver response because the NGO informs it on arrival.
         pickupLocation:
           $ref: "#/components/schemas/GeoPoint"
         deliveryLocation:
@@ -1259,6 +1267,71 @@ components:
         updatedAt:
           type: string
           format: date-time
+        summary:
+          $ref: "#/components/schemas/PickupSummary"
+    PickupSummary:
+      type: object
+      additionalProperties: false
+      description: >-
+        Driver decision data joined from the donation, seller, and NGO.
+        Returned by GET /pickups; other pickup responses may omit it.
+      required:
+        - category
+        - description
+        - estimatedWeightKg
+        - quantity
+        - unit
+        - expiresAt
+        - sellerName
+        - pickupAddress
+        - ngoName
+        - deliveryAddress
+        - routeDistanceKm
+        - distanceToPickupKm
+        - rewardPoints
+      properties:
+        category:
+          oneOf:
+            - $ref: "#/components/schemas/DonationCategory"
+            - type: "null"
+        description:
+          type: string
+        estimatedWeightKg:
+          type: number
+          exclusiveMinimum: 0
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          $ref: "#/components/schemas/DonationUnit"
+        expiresAt:
+          type: string
+          format: date-time
+        sellerName:
+          type: string
+        pickupAddress:
+          $ref: "#/components/schemas/Address"
+        ngoName:
+          type: string
+        deliveryAddress:
+          $ref: "#/components/schemas/Address"
+        routeDistanceKm:
+          type: number
+          minimum: 0
+          description: Straight-line pickup-to-delivery distance, one decimal.
+        distanceToPickupKm:
+          type: [number, "null"]
+          minimum: 0
+          description: >-
+            Distance from the requesting driver's current location to the
+            pickup point; null for other roles.
+        rewardPoints:
+          type: integer
+          minimum: 0
+          description: >-
+            Points earned for completing the pickup: 25 on collection plus
+            10 + round(estimatedWeightKg) on delivery. The API credits the
+            same values (calculateRewardPoints in @resgata/shared).
     PickupList:
       type: object
       additionalProperties: false

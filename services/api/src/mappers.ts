@@ -1,4 +1,5 @@
 import {
+  calculateTotalRewardPoints,
   couponRedemptionSchema,
   couponSchema,
   demoUserSchema,
@@ -84,15 +85,55 @@ export function mapOffer(row: Row) {
   });
 }
 
-export function mapPickup(row: Row) {
+function nullableNumber(value: unknown): number | null {
+  return value === null || value === undefined ? null : number(value);
+}
+
+function roundKm(value: unknown): number | null {
+  const km = nullableNumber(value);
+  return km === null ? null : Math.round(km * 10) / 10;
+}
+
+function mapPickupSummary(row: Row) {
+  if (row.summary_seller_name === undefined) return undefined;
+  const weightKg = number(row.summary_weight_kg);
+  return {
+    category: row.summary_category ?? null,
+    description: row.summary_description,
+    estimatedWeightKg: weightKg,
+    quantity: number(row.summary_quantity),
+    unit: row.summary_unit,
+    expiresAt: iso(row.summary_expires_at),
+    sellerName: row.summary_seller_name,
+    pickupAddress: row.summary_pickup_address,
+    ngoName: row.summary_ngo_name,
+    deliveryAddress: row.summary_delivery_address,
+    routeDistanceKm: roundKm(row.summary_route_distance_km) ?? 0,
+    distanceToPickupKm: roundKm(row.summary_distance_to_pickup_km),
+    rewardPoints: calculateTotalRewardPoints(weightKg),
+  };
+}
+
+/**
+ * `includeCodes` is false for drivers: the seller and the NGO inform the
+ * proof codes on site, so the driver must never receive them from the API.
+ */
+export function mapPickup(
+  row: Row,
+  { includeCodes = true }: { includeCodes?: boolean } = {},
+) {
   return pickupSchema.parse({
     id: row.id,
     donationId: row.donation_id,
     ngoId: row.ngo_id,
     driverId: row.driver_id,
     status: row.status,
-    pickupCode: String(row.pickup_code).trim(),
-    deliveryCode: String(row.delivery_code).trim(),
+    ...(includeCodes
+      ? {
+          pickupCode: String(row.pickup_code).trim(),
+          deliveryCode: String(row.delivery_code).trim(),
+        }
+      : {}),
     pickupLocation: {
       latitude: number(row.pickup_latitude),
       longitude: number(row.pickup_longitude),
@@ -106,6 +147,7 @@ export function mapPickup(row: Row) {
     deliveredAt: nullableIso(row.delivered_at),
     createdAt: iso(row.created_at),
     updatedAt: iso(row.updated_at),
+    summary: mapPickupSummary(row),
   });
 }
 
@@ -158,3 +200,38 @@ export const pickupSelect = `
   pickup.created_at,
   pickup.updated_at
 `;
+
+/**
+ * `pickupSelect` plus the driver decision summary. Use with
+ * `pickupSummaryJoins`; distances are meters from PostGIS geography.
+ */
+export const pickupSummarySelect = `${pickupSelect},
+  donation.category AS summary_category,
+  donation.description AS summary_description,
+  donation.estimated_weight_kg AS summary_weight_kg,
+  donation.quantity AS summary_quantity,
+  donation.unit AS summary_unit,
+  donation.expires_at AS summary_expires_at,
+  donation.pickup_address AS summary_pickup_address,
+  seller.legal_name AS summary_seller_name,
+  ngo.name AS summary_ngo_name,
+  ngo.address AS summary_delivery_address,
+  ST_Distance(pickup.pickup_location, pickup.delivery_location) / 1000
+    AS summary_route_distance_km,
+  ST_Distance(viewer_driver.current_location, pickup.pickup_location) / 1000
+    AS summary_distance_to_pickup_km
+`;
+
+/**
+ * Joins for `pickupSummarySelect`. `viewerDriverParam` is the SQL parameter
+ * holding the requesting driver id, or null when the viewer is not a driver.
+ */
+export function pickupSummaryJoins(viewerDriverParam: string | null): string {
+  return `
+  JOIN donations AS donation ON donation.id = pickup.donation_id
+  JOIN sellers AS seller ON seller.id = donation.seller_id
+  JOIN ngos AS ngo ON ngo.id = pickup.ngo_id
+  LEFT JOIN drivers AS viewer_driver
+    ON ${viewerDriverParam ? `viewer_driver.id = ${viewerDriverParam}` : "false"}
+`;
+}

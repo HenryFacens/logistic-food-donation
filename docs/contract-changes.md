@@ -35,3 +35,29 @@
   fields remain top-level; `ngoId`, when provided, must match the authenticated
   demo NGO profile.
 - Status: approved and applied before the final gate.
+
+## Applied: driver pickup summary, kg-based rewards, and redacted proof codes
+
+- Requester: web-field (driver available deliveries screen)
+- Change:
+  - `Pickup` gains an optional `summary` (`PickupSummary`) with category,
+    description, weight, quantity/unit, `expiresAt`, seller and NGO names and
+    addresses, `routeDistanceKm`, `distanceToPickupKm` (driver only, else
+    null), and `rewardPoints`. `GET /pickups` always returns it.
+  - Reward points move to `@resgata/shared` (`COLLECTION_REWARD_POINTS = 25`,
+    `calculateRewardPoints(weightKg) = 10 + round(weightKg)` on delivery,
+    `calculateTotalRewardPoints`). The API credits these values and
+    `summary.rewardPoints` shows the same total. Previously: +25 / +50 fixed.
+  - `pickupCode` and `deliveryCode` become optional and are omitted from every
+    driver response (list, assign, collect, deliver). NGO responses keep them.
+  - `GET /me` returns optional `capacityKg` for drivers
+    (`currentDemoUserSchema` in shared).
+- Reason: drivers could not choose deliveries from ids and coordinates; fixed
+  points rewarded small runs; any driver received proof codes for pickups that
+  were not theirs.
+- Impact: additive for consumers except code redaction. Before the change the
+  web never rendered codes to drivers, and `scripts/smoke.sh` reads them from
+  the NGO response, so nothing that worked depends on the driver copy. Known
+  gap (pre-existing): no screen shows `pickupCode` to the seller; see
+  `docs/handoffs/api.md`.
+- Status: approved and applied for the hackathon demo.

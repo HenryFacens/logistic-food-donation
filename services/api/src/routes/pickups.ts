@@ -1,5 +1,7 @@
 import {
+  COLLECTION_REWARD_POINTS,
   assignPickupRequestSchema,
+  calculateRewardPoints,
   confirmPickupRequestSchema,
   paginationQuerySchema,
   pickupStatusSchema,
@@ -16,7 +18,12 @@ import {
   type ApiHandler,
 } from "../http.js";
 import { idempotentTransaction } from "../idempotency.js";
-import { mapPickup, pickupSelect } from "../mappers.js";
+import {
+  mapPickup,
+  pickupSelect,
+  pickupSummaryJoins,
+  pickupSummarySelect,
+} from "../mappers.js";
 import { decodeCursor, pageFrom } from "../pagination.js";
 
 export const listPickups: ApiHandler = async (request) => {
@@ -48,14 +55,22 @@ export const listPickups: ApiHandler = async (request) => {
     }
     values.push(query.limit + 1);
     const result = await client.query(
-      `SELECT ${pickupSelect}
+      `SELECT ${pickupSummarySelect}
        FROM pickups AS pickup
+       ${pickupSummaryJoins(actor.role === "driver" ? "$1" : null)}
        WHERE ${filters.join(" AND ")}
        ORDER BY pickup.created_at DESC, pickup.id DESC
        LIMIT $${values.length}`,
       values,
     );
-    return json(200, pageFrom(result.rows.map(mapPickup), query.limit));
+    const includeCodes = actor.role !== "driver";
+    return json(
+      200,
+      pageFrom(
+        result.rows.map((row) => mapPickup(row, { includeCodes })),
+        query.limit,
+      ),
+    );
   } finally {
     client.release();
   }
@@ -114,7 +129,9 @@ export const assignPickup: ApiHandler = async (request) => {
           "A coleta não está disponível para atribuição.",
         );
       }
-      const pickup = mapPickup(updated.rows[0]);
+      const pickup = mapPickup(updated.rows[0], {
+        includeCodes: actor.role !== "driver",
+      });
       await client.query(
         `INSERT INTO events (
            donation_id, from_status, to_status, event_type, correlation_id, payload
@@ -160,7 +177,6 @@ async function confirmPickupState(
           nextDonation: "collected",
           eventType: "pickup.collected",
           timestamp: "collected_at",
-          points: 25,
         }
       : {
           currentPickup: ["collected", "en_route_delivery"],
@@ -170,7 +186,6 @@ async function confirmPickupState(
           nextDonation: "delivered",
           eventType: "pickup.delivered",
           timestamp: "delivered_at",
-          points: 50,
         };
 
   const result = await idempotentTransaction(
@@ -183,11 +198,16 @@ async function confirmPickupState(
         donation_id: string;
         status: string;
         expected_code: string;
+        weight_kg: string;
       }>(
-        `SELECT donation_id, status, ${definition.codeColumn} AS expected_code
-         FROM pickups
-         WHERE id = $1 AND driver_id = $2
-         FOR UPDATE`,
+        `SELECT pickup.donation_id,
+                pickup.status,
+                pickup.${definition.codeColumn} AS expected_code,
+                donation.estimated_weight_kg AS weight_kg
+         FROM pickups AS pickup
+         JOIN donations AS donation ON donation.id = pickup.donation_id
+         WHERE pickup.id = $1 AND pickup.driver_id = $2
+         FOR UPDATE OF pickup`,
         [pickupId, actor.profileId],
       );
       const pickup = locked.rows[0];
@@ -232,9 +252,14 @@ async function confirmPickupState(
           }),
         ],
       );
+      // Same rule as `summary.rewardPoints`, so the card matches the credit.
+      const points =
+        action === "collect"
+          ? COLLECTION_REWARD_POINTS
+          : calculateRewardPoints(Number(pickup.weight_kg));
       await client.query(
         "UPDATE drivers SET points = points + $2 WHERE id = $1",
-        [actor.profileId, definition.points],
+        [actor.profileId, points],
       );
       const updated = await client.query(
         `SELECT ${pickupSelect}
@@ -242,7 +267,7 @@ async function confirmPickupState(
          WHERE pickup.id = $1`,
         [pickupId],
       );
-      const response = mapPickup(updated.rows[0]);
+      const response = mapPickup(updated.rows[0], { includeCodes: false });
       return { status: 200, body: response, resourceId: response.id };
     },
   );

@@ -16,6 +16,16 @@ export const getCurrentUser: ApiHandler = async (request) => {
   const client = await getPool().connect();
   try {
     const actor = await requireActor(client, request);
+    const capacity =
+      actor.role === "driver"
+        ? await client.query<{ capacity_kg: string }>(
+            "SELECT capacity_kg FROM drivers WHERE id = $1",
+            [actor.profileId],
+          )
+        : null;
+    const capacityKg = capacity?.rows[0]
+      ? Number(capacity.rows[0].capacity_kg)
+      : undefined;
     return json(200, {
       id: actor.id,
       demoKey: actor.demoKey,
@@ -23,6 +33,7 @@ export const getCurrentUser: ApiHandler = async (request) => {
       displayName: actor.displayName,
       phone: actor.phone,
       profileId: actor.profileId,
+      ...(capacityKg === undefined ? {} : { capacityKg }),
     });
   } finally {
     client.release();

@@ -192,6 +192,150 @@ INSERT INTO coupons (
   ('25000000-0000-4000-8000-000000000008', '24000000-0000-4000-8000-000000000003', 'Visita guiada SIMULADO', 'Visita guiada fictícia em Campinas.', 'SIMULADO. Datas selecionadas.', 140, 70, '2026-01-01T00:00:00-03:00', '2027-12-31T23:59:59-03:00')
 ON CONFLICT (id) DO NOTHING;
 
+-- Open deliveries for the driver screen. Times are relative to now(), so the
+-- API dev reset calls this function again to restore a fresh, rich demo.
+-- Capacity check: driver-ana carries 350 kg; 120 kg + 260 kg exceeds it.
+CREATE OR REPLACE FUNCTION reset_demo_open_pickups()
+RETURNS integer
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  demo_ids uuid[] := ARRAY[
+    '30000000-0000-4000-8000-000000000101',
+    '30000000-0000-4000-8000-000000000102',
+    '30000000-0000-4000-8000-000000000103',
+    '30000000-0000-4000-8000-000000000104',
+    '30000000-0000-4000-8000-000000000105'
+  ]::uuid[];
+  created integer;
+BEGIN
+  DELETE FROM pickups WHERE donation_id = ANY (demo_ids);
+  DELETE FROM donations WHERE id = ANY (demo_ids);
+
+  WITH demo (
+    sequence,
+    seller_sequence,
+    ngo_sequence,
+    category,
+    description,
+    quantity,
+    unit,
+    weight_kg,
+    expires_in_minutes
+  ) AS (
+    VALUES
+      (101, 1, 4, 'bakery'::donation_category,
+        'SIMULADO - pães franceses e bolos do dia', 6, 'tray'::donation_unit, 18, 50),
+      (102, 2, 2, 'produce'::donation_category,
+        'SIMULADO - frutas e verduras da feira', 42, 'kg'::donation_unit, 42, 95),
+      (103, 3, 1, 'pantry'::donation_category,
+        'SIMULADO - cestas de arroz, feijão e óleo', 24, 'box'::donation_unit, 120, 300),
+      (104, 6, 3, 'produce'::donation_category,
+        'SIMULADO - hortifrúti do atacado', 260, 'kg'::donation_unit, 260, 480),
+      (105, 5, 3, 'dairy'::donation_category,
+        'SIMULADO - iogurtes e queijos refrigerados', 9, 'kg'::donation_unit, 9, 180)
+  ),
+  inserted AS (
+    INSERT INTO donations (
+      id,
+      seller_id,
+      status,
+      category,
+      description,
+      quantity,
+      unit,
+      estimated_weight_kg,
+      perishability_minutes,
+      pickup_address,
+      pickup_location,
+      available_from,
+      expires_at,
+      classification,
+      classification_confidence,
+      correlation_id,
+      idempotency_key,
+      version,
+      simulated,
+      simulation_label,
+      created_at,
+      updated_at
+    )
+    SELECT
+      ('30000000-0000-4000-8000-' || lpad(demo.sequence::text, 12, '0'))::uuid,
+      seller.id,
+      'accepted',
+      demo.category,
+      demo.description,
+      demo.quantity,
+      demo.unit,
+      demo.weight_kg,
+      demo.expires_in_minutes + 30,
+      seller.address,
+      seller.location,
+      now() - interval '30 minutes',
+      now() + demo.expires_in_minutes * interval '1 minute',
+      jsonb_build_object(
+        'category', demo.category,
+        'description', demo.description,
+        'confidence', 0.93,
+        'perishabilityMinutes', demo.expires_in_minutes + 30,
+        'source', 'manual',
+        'simulated', true
+      ),
+      0.93,
+      'seed-open-correlation-' || demo.sequence,
+      'seed-open-' || demo.sequence,
+      3,
+      true,
+      'SIMULADO',
+      now() - interval '30 minutes',
+      now() - interval '10 minutes'
+    FROM demo
+    JOIN sellers AS seller ON seller.id = (
+      '21000000-0000-4000-8000-' || lpad(demo.seller_sequence::text, 12, '0')
+    )::uuid
+    RETURNING id, pickup_location
+  )
+  INSERT INTO pickups (
+    id,
+    donation_id,
+    ngo_id,
+    driver_id,
+    status,
+    pickup_code,
+    delivery_code,
+    pickup_location,
+    delivery_location,
+    created_at,
+    updated_at
+  )
+  SELECT
+    ('33000000-0000-4000-8000-' || lpad(demo.sequence::text, 12, '0'))::uuid,
+    inserted.id,
+    ngo.id,
+    NULL,
+    'awaiting_driver',
+    (410000 + demo.sequence)::text,
+    (520000 + demo.sequence)::text,
+    inserted.pickup_location,
+    ngo.location,
+    now() - interval '10 minutes' + demo.sequence * interval '1 second',
+    now() - interval '10 minutes' + demo.sequence * interval '1 second'
+  FROM demo
+  JOIN inserted ON inserted.id = (
+    '30000000-0000-4000-8000-' || lpad(demo.sequence::text, 12, '0')
+  )::uuid
+  JOIN ngos AS ngo ON ngo.id = (
+    '22000000-0000-4000-8000-' || lpad(demo.ngo_sequence::text, 12, '0')
+  )::uuid;
+
+  GET DIAGNOSTICS created = ROW_COUNT;
+  RETURN created;
+END;
+$$;
+
+SELECT reset_demo_open_pickups();
+
 WITH generated AS (
   SELECT
     series AS sequence,
