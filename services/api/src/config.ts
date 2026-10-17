@@ -7,6 +7,13 @@ const environmentSchema = z.object({
   OPENAI_BASE_URL: z.url().default("http://mock-openai:3000"),
   VISION_API_URL: z.url().optional(),
   VISION_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
+  ANTHROPIC_API_KEY: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined),
+  ANTHROPIC_MODEL: z.string().trim().min(1).default("claude-opus-5-5"),
+  CLAUDE_TIMEOUT_MS: z.coerce.number().int().positive().default(25000),
   ENABLE_DEV_RESET: z
     .enum(["true", "false"])
     .default("false")

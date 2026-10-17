@@ -9,6 +9,8 @@ x-app-environment: &app-environment
   AzureWebJobsStorage: ${AZURE_WEBJOBS_STORAGE:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=bG9jYWwtcmVzZ2F0YS1henVyaXRlLWtleS0yMDI2;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;}
   OPENAI_BASE_URL: http://mock-openai:3000
   OPENAI_API_KEY: local-simulated-key
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
   MAPS_BASE_URL: http://mock-maps:3000
   ACS_BASE_URL: http://mock-acs:3000
   ACS_MOCK_URL: http://mock-acs:3000/messages

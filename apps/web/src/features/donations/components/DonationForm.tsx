@@ -14,18 +14,16 @@ import {
   donationUnitLabels,
 } from '../model/donationView'
 import {
+  applyClassification,
   buildDonationPublishOperation,
   buildDonationRequest,
   createStableIdempotencyRegistry,
+  isUnsafeClassification,
+  toLocalInput,
   type DonationFormValues,
   type DonationPublisher,
   type DonationPublishOutcome,
 } from '../model/publish'
-
-const toLocalInput = (date: Date) => {
-  const offset = date.getTimezoneOffset() * 60_000
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
-}
 
 const createInitialValues = (): DonationFormValues => {
   const available = new Date()
@@ -74,13 +72,10 @@ export function DonationForm({
     const signature = JSON.stringify(classification)
     if (appliedClassification.current === signature) return
     appliedClassification.current = signature
-    setValues((current) => ({
-      ...current,
-      category: classification.category,
-      description: classification.description.replace(/\s+—\s+SIMULADO$/u, ''),
-      perishabilityMinutes: String(classification.perishabilityMinutes),
-    }))
+    setValues((current) => applyClassification(current, classification))
   }, [classification])
+
+  const unsafe = isUnsafeClassification(classification)
 
   const update = (field: keyof DonationFormValues, value: string) => {
     setFormError(null)
@@ -107,6 +102,10 @@ export function DonationForm({
           event.preventDefault()
           setFormError(null)
           setSuccessMessage(null)
+          if (unsafe) {
+            setFormError(donationMessages.unsafeBlocked)
+            return
+          }
           try {
             const body = buildDonationRequest(values, classification)
             const idempotencyKey = registry.current.keyFor(body)
@@ -203,72 +202,7 @@ export function DonationForm({
             />
           </label>
           <label className="grid gap-2 font-bold">
-            Validade estimada (min)
-            <input
-              className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
-              max="10080"
-              min="15"
-              onChange={(event) =>
-                update('perishabilityMinutes', event.target.value)
-              }
-              required
-              type="number"
-              value={values.perishabilityMinutes}
-            />
-          </label>
-        </div>
-
-        <fieldset className="grid gap-4 rounded-card border border-border p-4">
-          <legend className="px-2 font-extrabold">Local de retirada</legend>
-          <label className="grid gap-2 font-bold">
-            Endereço
-            <input
-              className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
-              onChange={(event) => update('line1', event.target.value)}
-              required
-              value={values.line1}
-            />
-          </label>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-2 font-bold">
-              Bairro
-              <input
-                className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
-                onChange={(event) => update('district', event.target.value)}
-                required
-                value={values.district}
-              />
-            </label>
-            <label className="grid gap-2 font-bold">
-              CEP
-              <input
-                className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
-                inputMode="numeric"
-                onChange={(event) => update('postalCode', event.target.value)}
-                pattern="[0-9]{5}-?[0-9]{3}"
-                required
-                value={values.postalCode}
-              />
-            </label>
-          </div>
-          <p className="mb-0 text-xs">
-            Campinas/SP · coordenadas de demonstração do Cambuí.
-          </p>
-        </fieldset>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="grid gap-2 font-bold">
-            Disponível a partir de
-            <input
-              className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
-              onChange={(event) => update('availableFrom', event.target.value)}
-              required
-              type="datetime-local"
-              value={values.availableFrom}
-            />
-          </label>
-          <label className="grid gap-2 font-bold">
-            Disponível até
+            Retirar até
             <input
               className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
               onChange={(event) => update('expiresAt', event.target.value)}
@@ -278,6 +212,86 @@ export function DonationForm({
             />
           </label>
         </div>
+
+        <details className="rounded-card border border-border p-4">
+          <summary className="cursor-pointer font-extrabold">
+            {donationMessages.pickupDetails}
+            <span className="block text-sm font-normal">
+              {values.line1} · {values.district}
+            </span>
+          </summary>
+          <div className="mt-4 grid gap-4">
+            <label className="grid gap-2 font-bold">
+              Endereço
+              <input
+                className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
+                onChange={(event) => update('line1', event.target.value)}
+                required
+                value={values.line1}
+              />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="grid gap-2 font-bold">
+                Bairro
+                <input
+                  className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
+                  onChange={(event) => update('district', event.target.value)}
+                  required
+                  value={values.district}
+                />
+              </label>
+              <label className="grid gap-2 font-bold">
+                CEP
+                <input
+                  className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
+                  inputMode="numeric"
+                  onChange={(event) => update('postalCode', event.target.value)}
+                  pattern="[0-9]{5}-?[0-9]{3}"
+                  required
+                  value={values.postalCode}
+                />
+              </label>
+            </div>
+            <p className="mb-0 text-xs">
+              Campinas/SP · coordenadas de demonstração do Cambuí.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="grid gap-2 font-bold">
+                Disponível a partir de
+                <input
+                  className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
+                  onChange={(event) => update('availableFrom', event.target.value)}
+                  required
+                  type="datetime-local"
+                  value={values.availableFrom}
+                />
+              </label>
+              <label className="grid gap-2 font-bold">
+                Validade estimada (min)
+                <input
+                  className="min-h-12 rounded-control border border-border bg-surface px-3 font-normal"
+                  max="10080"
+                  min="15"
+                  onChange={(event) =>
+                    update('perishabilityMinutes', event.target.value)
+                  }
+                  required
+                  type="number"
+                  value={values.perishabilityMinutes}
+                />
+              </label>
+            </div>
+          </div>
+        </details>
+
+        {unsafe ? (
+          <div
+            className="rounded-control border border-danger/30 bg-danger/10 p-3 text-sm text-danger"
+            role="alert"
+          >
+            {donationMessages.unsafeBlocked}
+          </div>
+        ) : null}
 
         {formError || publishMutation.isError ? (
           <div
@@ -298,7 +312,7 @@ export function DonationForm({
 
         <Button
           className="w-full"
-          disabled={publishMutation.isPending}
+          disabled={publishMutation.isPending || unsafe}
           icon="donation"
           type="submit"
           variant="primary"

@@ -1,8 +1,11 @@
 export const donationMessages = {
-  donateEyebrow: 'Nova doação',
-  donateTitle: 'Publique seu excedente',
+  donateEyebrow: 'Passo 2',
+  donateTitle: 'Confira e publique',
   donateDescription:
-    'Revise a classificação, informe quantidade e retirada e publique para as ONGs próximas.',
+    'Confira o que a foto preencheu, ajuste se precisar e publique para as ONGs próximas.',
+  pickupDetails: 'Endereço e horário de retirada',
+  unsafeBlocked:
+    'A análise indicou que este alimento não está seguro para doação. Tire outra foto se achar que houve um engano.',
   listEyebrow: 'Acompanhamento',
   listTitle: 'Minhas doações',
   listDescription:

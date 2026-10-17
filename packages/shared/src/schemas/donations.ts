@@ -35,6 +35,9 @@ export type DonationUnit = z.infer<typeof donationUnitSchema>;
 
 export const visionSourceSchema = z.enum(["camera", "upload", "manual"]);
 
+export const foodConditionSchema = z.enum(["good", "attention", "unsafe"]);
+export type FoodCondition = z.infer<typeof foodConditionSchema>;
+
 export const classificationSchema = z.object({
   category: donationCategorySchema,
   description: nonEmptyTextSchema,
@@ -42,6 +45,15 @@ export const classificationSchema = z.object({
   perishabilityMinutes: z.number().int().min(15).max(7 * 24 * 60),
   source: visionSourceSchema,
   simulated: z.boolean(),
+  // Optional fields filled by real image analysis; mock results omit them.
+  isFood: z.boolean().optional(),
+  items: z.array(nonEmptyTextSchema).max(20).optional(),
+  suggestedQuantity: z.number().positive().optional(),
+  suggestedUnit: donationUnitSchema.optional(),
+  estimatedWeightKg: z.number().positive().optional(),
+  condition: foodConditionSchema.optional(),
+  conditionNotes: z.string().trim().max(500).optional(),
+  model: z.string().optional(),
 });
 export type Classification = z.infer<typeof classificationSchema>;
 

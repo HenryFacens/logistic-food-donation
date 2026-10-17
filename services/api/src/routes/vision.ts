@@ -4,6 +4,7 @@ import {
   type Classification,
   type ClassifyDonationRequest,
 } from "@resgata/shared";
+import { classifyWithClaude, claudeVisionEnabled } from "../claude-vision.js";
 import { getConfig } from "../config.js";
 import { getPool } from "../db.js";
 import { ApiError } from "../errors.js";
@@ -109,6 +110,20 @@ export const classifyDonation: ApiHandler = async (request) => {
 
   const correlationId =
     request.headers.get("x-correlation-id") ?? crypto.randomUUID();
+  if (claudeVisionEnabled()) {
+    try {
+      return json(200, await classifyWithClaude(body));
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      // Keep the vendor flow usable when Claude is unreachable; the
+      // deterministic result is visibly labeled SIMULADO.
+      console.error(
+        `[vision] Claude classification failed (${correlationId}):`,
+        error instanceof Error ? error.message : error,
+      );
+      return json(200, deterministicClassification(body));
+    }
+  }
   try {
     return json(200, await classifyWithProxy(body, correlationId));
   } catch (error) {

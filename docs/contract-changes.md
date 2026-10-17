@@ -35,3 +35,16 @@
   fields remain top-level; `ngoId`, when provided, must match the authenticated
   demo NGO profile.
 - Status: approved and applied before the final gate.
+
+## Applied: real image analysis fields on `Classification`
+
+- Requester: vendor upload flow (Claude vision)
+- Change: `Classification` gains optional `isFood`, `items`,
+  `suggestedQuantity`, `suggestedUnit`, `estimatedWeightKg`, `condition`
+  (`good`/`attention`/`unsafe`), `conditionNotes`, and `model`.
+- Reason: the vendor flow prefills quantity, weight, and shelf life from the
+  photo and must surface food-safety concerns before publication.
+- Impact: backward compatible; mock and stored classifications omit the new
+  fields. `/vision/classify` calls Claude when `ANTHROPIC_API_KEY` is set and
+  falls back to the deterministic SIMULADO classifier otherwise.
+- Status: applied.

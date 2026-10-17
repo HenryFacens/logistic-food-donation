@@ -87,7 +87,9 @@ paths:
               $ref: "#/components/schemas/ClassifyDonationRequest"
       responses:
         "200":
-          description: Deterministic mock or manual classification.
+          description: >-
+            Claude image analysis when ANTHROPIC_API_KEY is configured;
+            otherwise a deterministic SIMULADO classification.
           content:
             application/json:
               schema:
@@ -871,6 +873,30 @@ components:
           enum: [camera, upload, manual]
         simulated:
           type: boolean
+        isFood:
+          type: boolean
+        items:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+        suggestedQuantity:
+          type: number
+          exclusiveMinimum: 0
+        suggestedUnit:
+          $ref: "#/components/schemas/DonationUnit"
+        estimatedWeightKg:
+          type: number
+          exclusiveMinimum: 0
+        condition:
+          type: string
+          enum: [good, attention, unsafe]
+        conditionNotes:
+          type: string
+          maxLength: 500
+        model:
+          type: string
     ClassifyDonationRequest:
       type: object
       additionalProperties: false

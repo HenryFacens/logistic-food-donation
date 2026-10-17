@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
     "@azure/functions": "^4.8.0",
     "@resgata/shared": "workspace:*",
     "pg": "^8.16.3",

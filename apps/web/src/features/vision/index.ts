@@ -8,7 +8,9 @@ export {
   browserSupportsCameraCapture,
   createImageClassificationRequest,
   createManualClassificationRequest,
+  fitWithin,
   imageFileToBase64,
+  prepareImageForUpload,
   type VisionMode,
 } from './model/classification'
 export { visionMessages } from './messages'

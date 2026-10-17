@@ -22,9 +22,12 @@ export {
   formatDateTime,
 } from './model/donationView'
 export {
+  applyClassification,
   buildDonationPublishOperation,
   buildDonationRequest,
   createStableIdempotencyRegistry,
+  isUnsafeClassification,
+  toLocalInput,
   type DonationFormValues,
   type DonationPublisher,
   type DonationPublishOperation,
