@@ -1,272 +1,227 @@
 # Resgata
 
-Resgata dispatches perishable food surplus to the most suitable NGO, retries
-the next destination when an offer expires, and tracks collection, delivery,
-notifications, coupons, and social impact.
+Resgata moves good surplus food from shops to the NGOs that need it, with
+drivers who are already on the road. A shop photographs what is left, an NGO
+says exactly what it needs, and the platform decides who receives it and who
+carries it.
 
-The repository follows the product and architecture references under `docs/`.
-Project-local Codex maintenance skills live under `.codex/skills/`.
+**Live demo:** https://gateway.purpledune-51104d3e.brazilsouth.azurecontainerapps.io
+(Azure Container Apps, Brazil South). Pick a profile on *Quem é você?*: no
+sign-up needed.
 
-## Delivery stages
+![Resgata user workflows and system architecture](docs/images/architecture.png)
 
-| Stage | Scope | Status |
+## Three innovations
+
+### 1. Image analysis: a photo fills the donation
+
+The shop owner taps **Tirar foto**. Claude (`claude-sonnet-5-5`, structured
+output) reads the photo and returns:
+
+- what the food is, the items visible, and a listing title in pt-BR;
+- quantity and unit (kg, unidades, caixas, bandejas) and the total weight;
+- condition (`good`, `attention`, `unsafe`) with a short note, and a
+  conservative shelf life;
+- estimated retail value per kg and the cost the shop would pay to discard it.
+
+The form fills itself and every AI-filled field carries an **IA** tag until the
+owner edits it. Quantity and weight stay coherent: changing the quantity
+rescales the weight at the same weight per item. The pickup window is simple:
+1h, 2h, 3h, or a custom time, never past the estimated shelf life. Food judged
+`unsafe` or not food is refused by the API, so it never reaches an NGO. The
+photo is stored in Blob Storage and shown to the NGO with the AI's condition
+note.
+
+Code: `services/api/src/claude-vision.ts`,
+`apps/web/src/features/vision`, `apps/web/src/features/donations`.
+
+### 2. Matching supply and demand
+
+NGOs publish **Solicitações** with the exact item and amount
+("Pão francês, 60 unidades até 19/10") and their receiving hours. Each new
+donation is matched in two steps:
+
+1. **Rules decide who can receive it:** service radius, road ETA against the
+   food's shelf life, receiving hours, free capacity, accepted categories, and
+   food safety.
+2. **Claude rates how well it answers each eligible NGO's requests:** a fit
+   from 0 to 1, how much of the request it covers in the request's own unit,
+   and a one-line reason ("Bolo não substitui pão francês no café da manhã").
+
+The score (0–100) weighs request fit 35%, distance 30%, shelf life 20%, and
+space 15%. The best NGO gets the offer; if it declines or does not answer in
+time, the next one does. Acceptance is atomic, so exactly one NGO wins.
+
+Matching is explainable on both sides:
+
+- the donor sees every NGO ranked, with distance, drive time, matched request,
+  and why others were excluded;
+- the NGO sees each offer's score broken into its four parts, and
+  **Combinações recentes**: where it ranked on every recent donation in the
+  area, Claude's reason, and who got the offer.
+
+Every demo reset posts three fresh donations through the real pipeline, so the
+NGO screen always shows live scores. Without an API key, a rule matcher
+(category, shared words, comparable units) takes over.
+
+Code: `services/workers/src/handlers/matching.ts`,
+`services/workers/src/matching/need-matcher.ts`,
+`apps/web/src/features/offers`, `apps/web/src/features/needs`.
+
+### 3. Route optimization for drivers
+
+Drivers are people already driving somewhere, more like BlaBlaCar than Uber.
+
+- **Meu trajeto (trip mode).** The driver enters where they leave from, where
+  they are going, and when. `POST /drivers/me/trip-match` ranks open deliveries
+  by the minutes each adds to that trip, using Azure Maps road times and
+  deadlines counted from the departure, and combines the best compatible set
+  into one route that still ends at the driver's destination. The map shows
+  the combined route over the dashed direct trip; ticking another delivery
+  recomputes it.
+- **Minhas entregas.** Accepted deliveries get an optimized stop order
+  (`GET /drivers/me/route-plan`): every pickup precedes its delivery, a minute
+  late weighs like ten minutes of driving, up to five deliveries are solved
+  exactly (branch and bound), and larger loads use a greedy heuristic. The plan
+  shows the minutes saved against the acceptance order.
+
+Example from the demo (BCG Faria Lima → USP, leaving 16:00, live traffic):
+
+| | Minutes | Result |
 |---|---|---|
-| 0 | pnpm monorepo, source documents, agent rules, maintenance skills | complete |
-| 1 | shared contracts, state machine, matching, migrations, seed, OpenAPI | complete |
-| 2 | Compose infrastructure, API, workers, mocks, and web foundations | complete |
-| 3 | seller, NGO, driver, partner, admin, and offline features | complete |
-| 4 | full/lite runtime integration, smoke tests, concurrency, and visual QA | complete |
-| 5 | physical phone camera/GPS/PWA acceptance | documented, manual |
+| Direct trip | 13 | — |
+| Hortifruti Butantã → Casa de Acolhida Butantã | +8 | on the way |
+| Padaria Funchal → Cozinha Solidária Butantã | +10 | on the way |
+| Doceria Vila Olímpia (pickup by 16:02) | — | *não dá tempo* |
+| Atacado Mooca → Banco de Alimentos Santana | +77 | wrong direction |
+| **Combined route: both pickups, both drop-offs, then USP** | **34 (+20)** | **52 kg, +122 points** |
+
+Code: `packages/shared/src/routing/plan.ts`,
+`services/api/src/routes/tripMatch.ts`, `services/api/src/routes/routePlan.ts`,
+`apps/web/src/features/pickups`.
+
+## How the roles connect
+
+![Workflow chart](docs/images/workflow.jpeg)
+
+| Role | Tabs | What they do |
+|---|---|---|
+| Doador (shop) | Doar · Minhas doações · Impacto | Photograph and publish surplus; see who is coming and the **pickup code** to give the driver; see kg checked by NGOs and rate the driver. |
+| ONG | Doações · Solicitações · Entregas | Accept or decline offers; publish requests; see deliveries on the way with the **delivery code**; check in what arrived (weight and condition). |
+| Motorista | Meu trajeto · Disponíveis · Minhas | Find deliveries on their trip; confirm pickup and delivery with the codes; earn points to trade in **Prêmios**. |
+
+The codes close the loop: the shop holds the pickup code, the NGO holds the
+delivery code, and the driver receives neither from the system. Statuses
+refresh on every screen without reloading. Dashboards show a few headline
+numbers, each tagged as recorded, calculated, or estimated.
+
+![Data flow diagram](docs/images/data-flow.jpeg)
+
+## As deployed
+
+The architecture image shows the target design. The hackathon deployment runs
+the same code with a few simpler pieces:
+
+| Piece | Target | Deployed now |
+|---|---|---|
+| Web | Azure Static Web Apps | Container App (nginx) behind a gateway Container App |
+| API and workers | Azure Functions | Functions runtime in Container Apps |
+| Queue | Service Bus | PostgreSQL-backed queue (`QUEUE_DRIVER=pg`) |
+| Database, files | PostgreSQL + PostGIS, Blob Storage | Same (Flexible Server B1ms, Storage account) |
+| AI, maps | Claude API, Azure Maps | Same (`claude-sonnet-5-5`; tiles, routes, matrix, and search through `/api/maps/*`, key never in the browser) |
+| Sign-in, messages | Azure AD B2C, WhatsApp/SMS | Demo profiles; message outbox mock |
+
+Deploy with `infra/azure/deploy.sh` (needs `az login`):
+
+```bash
+infra/azure/deploy.sh                          # infrastructure, images, apps
+SKIP_INFRA=1 infra/azure/deploy.sh             # rebuild images and update apps
+SKIP_INFRA=1 RESET_DB=1 infra/azure/deploy.sh  # also reload schema and demo data
+```
 
 ## Workspace
 
 ```text
-apps/web/                 React, Vite, Tailwind, TanStack Query, PWA
-packages/shared/          Zod contracts, state machine, haversine, matching
-services/api/             Azure Functions HTTP application
-services/workers/         outbox relay, matching, fallback, notifications
-services/mocks/           deterministic OpenAI, maps, and ACS mocks
-db/                       PostGIS migrations and fictional Campinas seed
-infra/                    nginx gateway, TLS test proxy, emulator configuration
-scripts/                  contract validation and end-to-end smoke
-docs/handoffs/            staged multi-agent implementation records
-.codex/skills/            architecture and multi-agent maintenance skills
+apps/web/            React 19, Vite, Tailwind, TanStack Query, Leaflet, PWA
+packages/shared/     Zod contracts, state machine, matching score, route planner
+services/api/        Azure Functions HTTP API (Claude vision, Azure Maps, trips)
+services/workers/    outbox relay, matching with Claude, offer fallback, notifications
+services/mocks/      local OpenAI, maps, and ACS mocks for offline runs
+db/                  PostGIS migrations and demo seed (Campinas and São Paulo)
+infra/               Azure deploy script, nginx gateway, emulator configuration
+docs/                demo script, OpenAPI, contract changes, diagrams
 ```
 
-## Architecture
+## Run locally
 
-```mermaid
-flowchart LR
-  Web["swa-resgata-web<br/>web"] --> Gateway["apim-resgata<br/>gateway"]
-  Gateway --> API["func-resgata-api<br/>api"]
-  API --> Postgres["psql-resgata<br/>postgres + PostGIS"]
-  API --> Azurite["stresgata<br/>azurite"]
-  API --> Stream["sigr-resgata<br/>SSE"]
-  API --> OpenAI["oai-resgata<br/>mock-openai"]
-  API --> Maps["maps-resgata<br/>mock-maps"]
-  API --> Outbox["transactional outbox"]
-  Outbox --> Workers["func-resgata-workers<br/>workers"]
-  Workers --> Bus["sbns-resgata<br/>servicebus or pg"]
-  Bus --> Workers
-  Workers --> ACS["acs-resgata<br/>mock-acs"]
-  Workers --> Postgres
-  ServiceBus["servicebus emulator"] --> MSSQL["mssql"]
-```
-
-All Azure-named services run locally. No Azure credential or live cloud call is
-required.
-
-## Run the full stack
-
-Requirements: Docker Compose and enough memory for SQL Server. Copy the
-development environment and start the default Azure-emulator profile:
+Requirements: Docker Compose. Put keys in `.env` (git-ignored):
 
 ```bash
-cp .env.example .env
-docker compose up -d --build
-docker compose ps
+cp .env.example .env     # add ANTHROPIC_API_KEY and AZURE_MAPS_KEY
+make lite                # PostgreSQL queue; `docker compose up -d --build` for Service Bus
 ```
 
-Endpoints:
+- app and API through the gateway: `http://localhost:8080`;
+- web dev server: `http://localhost:5173`;
+- message outbox mock: `http://localhost:4003/outbox`.
 
-- web: `http://localhost:5173`;
-- gateway and application: `http://localhost:8080`;
-- API directly: `http://localhost:7071/api`;
-- ACS message outbox: `http://localhost:4003/outbox`;
-- Service Bus health: `http://localhost:5300/health`.
+Without `ANTHROPIC_API_KEY` the photo analysis uses the offline classifier and
+matching uses rules; without `AZURE_MAPS_KEY` maps fall back to OpenStreetMap
+and travel times to estimates. Everything else works the same.
 
-Every service should report healthy. Stop the stack with:
+## Demo
 
-```bash
-make down
-```
-
-## Lite mode
-
-Machines that cannot run the SQL Server image can use PostgreSQL as the message
-bus while preserving the same application behavior:
+Reset before presenting (refreshes offers, open deliveries, and deadlines):
 
 ```bash
-make lite
-```
-
-## Seed and reset
-
-The seed contains fictional Campinas/SP data: sellers, NGOs, drivers,
-partners, coupons, and historical donations.
-
-```bash
-make seed
-
-curl -X POST http://localhost:8080/api/dev/reset \
+curl -X POST "$BASE/api/dev/reset" \
   -H 'X-Demo-User: platform-resgata' \
-  -H 'Idempotency-Key: reset-demo-001'
+  -H "Idempotency-Key: reset-$(date +%s)"
 ```
 
-## Demo profiles
+The full walkthrough, with what the audience sees at each step, is in
+[`docs/demo-script.md`](docs/demo-script.md). In short:
 
-The `/entrar` screen selects a fictional identity and sends its key through
-`X-Demo-User`:
+1. **Doador:** photo of bread → the form fills itself → publish → see why
+   Instituto Prato Solidário was chosen.
+2. **ONG:** the offer with its score → accept → *Combinações recentes*.
+3. **Motorista:** *Meu trajeto* → type `bcg`, then `usp`, leave at 16:00 →
+   deliveries on the way and the combined route → accept.
+4. Pickup with the shop's code, delivery with the NGO's code, check-in at the
+   NGO, impact and points updated.
 
-- `seller-padaria-cambui`;
-- `ngo-prato-solidario`;
-- `driver-ana`;
-- `partner-cafe-local`.
-
-## Donation loop
-
-The full loop from the product flowchart runs end to end:
-
-1. **Sign in.** `/entrar` offers phone sign-in: a 6-digit code is sent through
-   the notification channel (WhatsApp in production) and exchanged for a bearer
-   session. Demo profiles stay available while `ENABLE_DEMO_LOGIN=true`.
-2. **Photo analysis.** The vendor taps *Tirar foto*. Claude
-   (`ANTHROPIC_MODEL`, default `claude-sonnet-5-5`) identifies the food,
-   quantity, weight, shelf life, and condition, and prefills the form. The photo
-   is kept in blob storage and shown to NGOs. The API rejects donations whose
-   analysis is `unsafe` or not food.
-3. **Pickup location.** The shop's registered address is the default. *Estou em
-   outro local* uses phone GPS (HTTPS only) with OpenStreetMap reverse
-   geocoding; typing a CEP fills the address through ViaCEP. Vendors can save a
-   new address as the shop address.
-4. **NGO demand.** NGOs publish specific requests under *Pedidos*: the item
-   ("Pão francês"), quantity and unit (kg, unidades, caixas, bandejas),
-   deadline, and notes, plus their daily receiving window and free capacity.
-   Vendors see nearby requests on the donation screen.
-5. **Matching.** Rules decide who *can* receive: service radius, road ETA
-   (OSRM) against shelf life, receiving hours, free capacity, accepted
-   categories, and food safety. Claude (`MATCHING_MODEL`, default
-   `claude-sonnet-5-5`) then compares the donation, including the photo
-   analysis, with each eligible NGO's open requests and returns a fit, the
-   covered amount in the request's unit, and a reason. Request fit weighs 35%,
-   distance 30%, shelf life 20%, capacity 15% (food flagged *attention* weighs
-   distance more). Without a key, or if Claude fails, a rule matcher (category,
-   shared words, comparable units) is used. Unanswered offers fall back to the
-   next NGO after `OFFER_TIMEOUT_SECONDS`.
-6. **Acceptance and delivery.** Accepting fills the matched request by the
-   estimated amount when it is a real match (fit ≥ 0.7; substitutes leave the
-   request open), uses
-   today's capacity, notifies the seller, and alerts the three nearest available
-   drivers whose vehicle fits the load. Drivers go online/offline, share their
-   location, and see open pickups nearest first.
-
-7. **Driver routes.** Drivers accept several deliveries at once and see an
-   optimized stop order (`GET /drivers/me/route-plan`): every pickup precedes
-   its delivery, deadlines weigh ten times more than driving minutes, and
-   travel times come from the Azure Maps route matrix. Up to five deliveries
-   are solved exactly; larger loads use a greedy heuristic. The plan shows the
-   minutes saved versus the acceptance order on an Azure Maps map.
-
-### External services
-
-| Concern | Default | Production setting |
-|---|---|---|
-| Image analysis | Claude when `ANTHROPIC_API_KEY` is set, SIMULADO otherwise | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` |
-| Maps, routes, address search | Azure Maps (`AZURE_MAPS_KEY`) via `/api/maps/*`; OpenStreetMap services as fallback | Same key; the browser never sees it |
-| Addresses | ViaCEP + public Nominatim, SIMULADO fallback | Self-hosted Nominatim (`NOMINATIM_URL`) or `GEO_PROVIDER=simulated` |
-| Road ETAs | Public OSRM demo server, straight-line fallback | Self-hosted OSRM (`OSRM_URL`) or `ROUTING_PROVIDER=none` |
-| Messages | Local ACS mock (`:4003/outbox`) | `NOTIFICATION_PROVIDER=whatsapp` with `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, and an approved `WHATSAPP_TEMPLATE_NAME` |
-| Sign-in | Demo profiles plus phone codes echoed on screen | `ENABLE_DEMO_LOGIN=false`, `ENABLE_DEV_LOGIN_CODES=false` |
-
-The public OSRM and Nominatim servers are for light testing only; their usage
-policies forbid production traffic. WhatsApp business-initiated messages need
-an approved template with one body variable (`{{1}}`), which receives the
-message text.
-
-For the hackathon walkthrough that proves matching with live posts, see
-[`docs/demo-script.md`](docs/demo-script.md).
-
-## Three-minute demo
-
-1. Open `/entrar`, choose **Padaria Cambuí**, classify or describe surplus,
-   and publish it.
-2. Switch to **ONG Prato Solidário**, inspect the explainable matching score,
-   and accept the pending offer.
-3. Switch to **Ana — motorista**, assume the route, confirm collection and
-   delivery with the six-digit demo codes and location.
-4. Return to the seller impact dashboard and inspect the live donation state.
-5. Open the ACS outbox on port 4003 to show offer, collection, and delivery
-   notifications.
-6. Open `/admin/queues` to show outbox, jobs, events, correlation IDs, and
-   dead-letter replay controls.
-
-Set `OFFER_TIMEOUT_SECONDS=5` before startup to demonstrate automatic fallback
-to the next NGO.
+Demo data is fictional and presented as real: shops, NGOs, and drivers in
+Campinas, plus a São Paulo network along the BCG → USP road whose deadlines
+are anchored to the next 16:00 on every reset.
 
 ## Validation
 
-Automated validation completed on 2026-10-16:
+As of 2026-10-17:
 
-- shared domain: 9 tests;
-- API: 5 tests;
-- workers: 9 tests;
-- mocks: 3 tests;
-- web: 34 tests across 14 files;
-- OpenAPI parsing and clean PostGIS migration/seed validation;
-- production PWA build with 13 precached entries;
-- architecture-boundary lint for 127 web source files;
-- full Service Bus profile smoke: happy path, idempotent replay, timeout
-  fallback, and exactly one winner under concurrent acceptance;
-- lite PostgreSQL-driver smoke with the same scenarios;
-- browser QA for seller, NGO, driver, and partner routes;
-- responsive QA at 390 by 844 with no horizontal document overflow.
-
-Run the full smoke:
-
-```bash
-make smoke
-make smoke-lite
-```
-
-## HTTPS phone testing
-
-Camera, GPS, and installability require a secure context on a physical device.
-The trusted-LAN certificate and temporary nginx TLS proxy procedure is in
-`docs/phone-testing.md`.
-
-## Maintenance skills
-
-- `.codex/skills/resgata-multi-agent`: ownership, handoffs, gates, and
-  subagent integration.
-- `.codex/skills/resgata-web-architecture`: route shells, dependency
-  boundaries, providers, contracts, and feature maintenance.
-
-Both skills were generated with the Codex skill-creator workflow and validated
-with its structural validator.
+- tests: shared 24, API 17, workers 17, mocks 3, web 122;
+- lint, type checks, and the web dependency-boundary check pass;
+- OpenAPI 3.1 validates (`docs/openapi.yaml`);
+- the full loop (publish → match → accept → pickup code → delivery code →
+  check-in) runs through the UI at phone size, locally and on Azure;
+- `make smoke` and `make smoke-lite` cover idempotent replay, timeout
+  fallback, and exactly one winner under concurrent acceptance.
 
 ## Decisions
 
-- The original Vite PWA was retained and moved into the pnpm monorepo.
-- PostgreSQL is the source of truth; no browser or service owns a separate
-  fictional dataset.
-- Every mutation uses correlation and idempotency metadata where applicable.
-- Donation creation writes its event and transactional outbox record in the
-  same database transaction.
-- Atomic database transitions enforce a single winner for concurrent offer
-  acceptance.
-- Service Bus is the default transport; PostgreSQL scheduling remains the
-  deterministic timeout source because the emulator does not provide
-  production-equivalent scheduled-message behavior.
-- The API keeps public `/api/admin/*` compatibility while Azure Functions uses
-  internal `/api/ops/*` routes because `/admin` is reserved by the Functions
-  host.
-- Dashboard routes use a desktop shell that collapses into a wrapped,
-  overflow-free header on narrow screens.
-- The current worktree contains root-level `@azure/mcp` tooling that requires
-  Node 22 on the host. Application runtime images remain pinned to Node 20 and
-  install only their filtered workspace dependencies.
+- PostgreSQL is the source of truth; donation creation writes its event and
+  outbox record in the same transaction, and every mutation is idempotent.
+- Claude calls use structured output; rules always decide eligibility, so the
+  model only ranks NGOs that can actually receive the food.
+- Azure Maps is called only from the server; the browser gets tiles, routes,
+  and search through `/api/maps/*`.
+- Demo data is presented as real for the hackathon: `simulated` flags stay in
+  the data, but the UI shows no "simulado" labels (`present_demo_as_real()`).
 
 ## Known gaps
 
-- Service Bus emulator state is non-persistent and lacks AMQP WebSockets,
-  partitioned entities, Entra ID, autoscale, disaster recovery, large-message
-  support, and production observability/SLA. See `docs/emulator-notes.md`.
-- SSE is implemented as a bounded resumable stream with `Last-Event-ID`, not a
-  permanently held managed SignalR connection.
-- Maps are represented by deterministic local routing/location data; live OSM
-  tiles are intentionally not required so the demo remains offline.
-- QR scanning uses the browser `BarcodeDetector` when available and always
-  provides a six-digit manual fallback; browser support differs from the
-  production-grade ZXing path.
-- Camera, GPS permission behavior, PWA installation, and offline replay still
-  require the documented physical-phone acceptance pass.
+- Sign-in is by demo profile; phone codes and WhatsApp delivery exist but are
+  off in the deployment.
+- Messages go to a mock outbox, not WhatsApp or SMS.
+- Travel times use live traffic at request time, not traffic forecast for the
+  departure.
+- Camera and GPS need HTTPS on a real phone; see `docs/phone-testing.md`.
