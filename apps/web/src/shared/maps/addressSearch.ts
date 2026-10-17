@@ -1,6 +1,8 @@
 import { env } from '../config/env'
 
 export interface ParsedPlaceAddress {
+  /** Place name for well-known places ("BCG São Paulo"). */
+  name?: string
   city: string
   district: string
   line1: string
@@ -103,8 +105,72 @@ export const parsePhotonFeature = (feature: PhotonFeature): ParsedPlaceAddress |
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
+/**
+ * Well-known places people type by name. Street search does not know "bcg"
+ * or "usp", so these come first when the text matches.
+ */
+const LANDMARKS: ReadonlyArray<ParsedPlaceAddress & { aliases: readonly string[] }> = [
+  {
+    aliases: ['bcg', 'boston consulting', 'bcg sao paulo', 'bcg são paulo'],
+    name: 'BCG São Paulo',
+    line1: 'Avenida Brigadeiro Faria Lima, 3732',
+    district: 'Itaim Bibi',
+    city: 'São Paulo',
+    state: 'SP',
+    postalCode: '04538-132',
+    location: { latitude: -23.5881923, longitude: -46.682234 },
+  },
+  {
+    aliases: ['usp', 'universidade de sao paulo', 'universidade de são paulo', 'cidade universitaria', 'cidade universitária'],
+    name: 'USP · Cidade Universitária',
+    line1: 'Avenida Professor Luciano Gualberto, 315',
+    district: 'Butantã',
+    city: 'São Paulo',
+    state: 'SP',
+    postalCode: '05508-010',
+    location: { latitude: -23.5629763, longitude: -46.7224134 },
+  },
+  {
+    aliases: ['unicamp', 'universidade estadual de campinas'],
+    name: 'Unicamp',
+    line1: 'Cidade Universitária Zeferino Vaz',
+    district: 'Barão Geraldo',
+    city: 'Campinas',
+    state: 'SP',
+    postalCode: '13083-970',
+    location: { latitude: -22.8172, longitude: -47.0698 },
+  },
+]
+
+const normalize = (text: string) =>
+  text
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/gu, '')
+
+/** Landmarks whose name or alias starts with the typed text. */
+export const matchLandmarks = (query: string): ParsedPlaceAddress[] => {
+  const typed = normalize(query)
+  if (typed.length < 2) return []
+  return LANDMARKS.filter(
+    (place) =>
+      place.aliases.some((alias) => normalize(alias).startsWith(typed)) ||
+      normalize(place.name ?? '').startsWith(typed),
+  ).map(({ aliases: _aliases, ...place }) => place)
+}
+
 /** Azure Maps suggestions through our API; Photon is the fallback. */
 export async function searchAddresses(
+  query: string,
+  signal?: AbortSignal,
+): Promise<ParsedPlaceAddress[]> {
+  const landmarks = matchLandmarks(query)
+  const found = await searchStreets(query, signal)
+  return [...landmarks, ...found]
+}
+
+async function searchStreets(
   query: string,
   signal?: AbortSignal,
 ): Promise<ParsedPlaceAddress[]> {

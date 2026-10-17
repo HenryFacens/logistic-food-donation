@@ -1,4 +1,9 @@
-export { parsePhotonFeature, searchAddresses, type ParsedPlaceAddress } from './addressSearch'
+export {
+  matchLandmarks,
+  parsePhotonFeature,
+  searchAddresses,
+  type ParsedPlaceAddress,
+} from './addressSearch'
 export {
   BrowserLocationError,
   browserLocationMessage,

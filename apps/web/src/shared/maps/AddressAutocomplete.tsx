@@ -81,9 +81,11 @@ export function AddressAutocomplete({
                 onClick={() => choose(place)}
                 type="button"
               >
-                <strong>{place.line1}</strong>
+                <strong>{place.name ?? place.line1}</strong>
                 <span>
-                  {[place.district, place.city, place.state].filter(Boolean).join(' · ')}
+                  {[place.name ? place.line1 : null, place.district, place.city]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </span>
               </button>
             </li>

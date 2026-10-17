@@ -240,6 +240,13 @@ export const resetDemo: ApiHandler = async (request) => {
       if (openPickups.rows[0]?.available) {
         await client.query("SELECT reset_demo_open_pickups()");
       }
+      // São Paulo deliveries for the driver trip demo (BCG → USP at 09:30).
+      const tripPickups = await client.query<{ available: boolean }>(
+        "SELECT to_regproc('reset_trip_demo_pickups') IS NOT NULL AS available",
+      );
+      if (tripPickups.rows[0]?.available) {
+        await client.query("SELECT reset_trip_demo_pickups()");
+      }
       // Last, after every reseed: demo data is presented as real.
       await client.query(`SELECT present_demo_as_real()`);
       await postLiveDonations(client, correlationId);

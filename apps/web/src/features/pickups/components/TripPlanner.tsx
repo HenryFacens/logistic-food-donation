@@ -22,24 +22,21 @@ interface Place {
   point: GeoPoint | null
 }
 
-// A real commute in Campinas that passes several demo pickups.
+// The demo commute: BCG (Faria Lima) to USP, leaving at 09:30.
 const EXAMPLE = {
-  origin: { label: 'Rua Coronel Quirino, 900 · Cambuí', point: { latitude: -22.8974, longitude: -47.051 } },
+  origin: { label: 'BCG São Paulo', point: { latitude: -23.5881923, longitude: -46.682234 } },
   destination: {
-    label: 'Unicamp · Cidade Universitária, Barão Geraldo',
-    point: { latitude: -22.8172, longitude: -47.0698 },
+    label: 'USP · Cidade Universitária',
+    point: { latitude: -23.5629763, longitude: -46.7224134 },
   },
+  time: '09:30',
 }
+
+/** Morning commute departure, the time drivers most often plan ahead. */
+const DEFAULT_DEPARTURE = '09:30'
 
 const clock = (iso: string) =>
   new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-
-/** Next quarter hour, as "HH:MM", for the departure default. */
-const nextQuarter = () => {
-  const date = new Date(Date.now() + 15 * 60_000)
-  date.setMinutes(Math.ceil(date.getMinutes() / 15) * 15, 0, 0)
-  return date.toTimeString().slice(0, 5)
-}
 
 /** Today at "HH:MM", or tomorrow when that time has passed. */
 const departureIso = (time: string) => {
@@ -48,6 +45,12 @@ const departureIso = (time: string) => {
   date.setHours(hours ?? 0, minutes ?? 0, 0, 0)
   if (date.getTime() < Date.now() - 5 * 60_000) date.setDate(date.getDate() + 1)
   return date.toISOString()
+}
+
+/** "hoje" or "amanhã" for a departure time, using the same rule as departureIso. */
+const dayLabel = (time: string) => {
+  const departure = new Date(departureIso(time))
+  return departure.toDateString() === new Date().toDateString() ? 'hoje' : 'amanhã'
 }
 
 function PlaceField({
@@ -71,7 +74,7 @@ function PlaceField({
         onChange={(text) => onChange({ label: text, point: null })}
         onPlace={(found) =>
           onChange({
-            label: [found.line1, found.district].filter(Boolean).join(' · '),
+            label: found.name ?? [found.line1, found.district].filter(Boolean).join(' · '),
             point: found.location,
           })
         }
@@ -141,7 +144,7 @@ export function TripPlanner({ accepting, onAccept }: TripPlannerProps) {
   const api = useApiClient()
   const [origin, setOrigin] = useState<Place>({ label: '', point: null })
   const [destination, setDestination] = useState<Place>({ label: '', point: null })
-  const [time, setTime] = useState(nextQuarter)
+  const [time, setTime] = useState(DEFAULT_DEPARTURE)
   const [locating, setLocating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<string[] | null>(null)
@@ -255,12 +258,15 @@ export function TripPlanner({ accepting, onAccept }: TripPlannerProps) {
         />
         <label className="trip-field trip-field--time" htmlFor="trip-time">
           Saída às
-          <input
-            id="trip-time"
-            onChange={(event) => setTime(event.target.value)}
-            type="time"
-            value={time}
-          />
+          <span className="trip-field__time">
+            <input
+              id="trip-time"
+              onChange={(event) => setTime(event.target.value)}
+              type="time"
+              value={time}
+            />
+            <small>{dayLabel(time)}</small>
+          </span>
         </label>
         {error ? (
           <p className="trip-error" role="alert">
@@ -280,11 +286,12 @@ export function TripPlanner({ accepting, onAccept }: TripPlannerProps) {
           onClick={() => {
             setOrigin(EXAMPLE.origin)
             setDestination(EXAMPLE.destination)
+            setTime(EXAMPLE.time)
             setError(null)
           }}
           type="button"
         >
-          Usar exemplo: Cambuí → Unicamp
+          Usar exemplo: BCG → USP às 9:30
         </button>
       </section>
 

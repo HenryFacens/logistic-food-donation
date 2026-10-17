@@ -2246,7 +2246,6 @@
 }
 
 .trip-field--time input {
-  justify-self: start;
   min-height: var(--control-min-size);
   padding: 0 0.75rem;
   border: 1px solid rgb(var(--color-border-strong));
@@ -2434,4 +2433,15 @@
   .driver-tab > svg {
     display: none;
   }
+}
+
+.trip-field__time {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.trip-field__time small {
+  color: rgb(var(--color-muted));
+  font-weight: 600;
 }

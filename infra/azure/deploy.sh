@@ -114,7 +114,8 @@ if [[ -z "${SKIP_INFRA:-}" || -n "${RESET_DB:-}" ]]; then
       db/seed/001_demo_seed.sql \
       db/seed/002_metrics_seed.sql \
       db/migrations/004_needs_photos_login.sql \
-      db/migrations/005_present_as_real.sql; do
+      db/migrations/005_present_as_real.sql \
+      db/migrations/006_sao_paulo_trip_demo.sql; do
       echo "  $file"
       run_psql <"$file" >/dev/null
     done

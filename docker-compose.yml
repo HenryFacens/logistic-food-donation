@@ -178,6 +178,7 @@ services:
       - ./db/seed/002_metrics_seed.sql:/docker-entrypoint-initdb.d/050-metrics-seed.sql:ro
       - ./db/migrations/004_needs_photos_login.sql:/docker-entrypoint-initdb.d/060-needs-photos-login.sql:ro
       - ./db/migrations/005_present_as_real.sql:/docker-entrypoint-initdb.d/070-present-as-real.sql:ro
+      - ./db/migrations/006_sao_paulo_trip_demo.sql:/docker-entrypoint-initdb.d/080-sao-paulo-trip-demo.sql:ro
     networks:
       - resgata
     healthcheck:

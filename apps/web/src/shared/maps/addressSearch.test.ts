@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parsePhotonFeature } from './addressSearch'
+import { matchLandmarks, parsePhotonFeature } from './addressSearch'
 
 describe('parsePhotonFeature', () => {
   it('builds a Campinas address from an OpenStreetMap suggestion', () => {
@@ -39,5 +39,15 @@ describe('parsePhotonFeature', () => {
         properties: { city: 'Campinas', countrycode: 'BR' },
       }),
     ).toBeNull()
+  })
+})
+describe('landmarks', () => {
+  it('puts BCG and USP first when typed by name', () => {
+    expect(matchLandmarks('bcg')[0]).toMatchObject({
+      name: 'BCG São Paulo',
+      line1: 'Avenida Brigadeiro Faria Lima, 3732',
+    })
+    expect(matchLandmarks('USP')[0]).toMatchObject({ district: 'Butantã' })
+    expect(matchLandmarks('Rua Coronel Quirino')).toEqual([])
   })
 })
