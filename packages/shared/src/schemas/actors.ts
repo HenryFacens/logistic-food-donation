@@ -17,6 +17,14 @@ export const demoUserSchema = z.object({
 });
 export type DemoUser = z.infer<typeof demoUserSchema>;
 
+/** `GET /me`: the demo identity plus the selected role profile. */
+export const currentDemoUserSchema = demoUserSchema.extend({
+  profileId: uuidSchema,
+  /** Vehicle capacity, returned only for drivers. */
+  capacityKg: z.number().positive().optional(),
+});
+export type CurrentDemoUser = z.infer<typeof currentDemoUserSchema>;
+
 export const sellerSchema = z.object({
   id: uuidSchema,
   userId: uuidSchema,

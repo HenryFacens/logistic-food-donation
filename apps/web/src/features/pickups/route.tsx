@@ -1,10 +1,8 @@
-import {
-  DriverPickupsPage,
-  NgoPickupsPage,
-} from './pages/PickupListPage'
+import { DriverDeliveriesPage } from './pages/DriverDeliveriesPage'
+import { NgoPickupsPage } from './pages/PickupListPage'
 
 export const ngoPickupsRouteElement = <NgoPickupsPage />
-export const driverPickupsRouteElement = <DriverPickupsPage />
+export const driverPickupsRouteElement = <DriverDeliveriesPage />
 
 export const pickupRouteElements = {
   'driver-pickups': driverPickupsRouteElement,

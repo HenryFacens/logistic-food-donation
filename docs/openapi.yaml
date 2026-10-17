@@ -1255,6 +1255,10 @@ components:
         profileId:
           type: string
           format: uuid
+        capacityKg:
+          type: number
+          exclusiveMinimum: 0
+          description: Vehicle capacity; returned only for drivers.
 
     Classification:
       type: object
@@ -1666,8 +1670,6 @@ components:
         - ngoId
         - driverId
         - status
-        - pickupCode
-        - deliveryCode
         - pickupLocation
         - deliveryLocation
         - assignedAt
@@ -1700,9 +1702,15 @@ components:
         pickupCode:
           type: string
           pattern: '^\d{6}$'
+          description: >-
+            Collection proof code. Returned to the NGO; omitted from every
+            driver response because the seller informs it on site.
         deliveryCode:
           type: string
           pattern: '^\d{6}$'
+          description: >-
+            Delivery proof code. Returned to the NGO; omitted from every
+            driver response because the NGO informs it on arrival.
         pickupLocation:
           $ref: "#/components/schemas/GeoPoint"
         deliveryLocation:
@@ -1729,6 +1737,99 @@ components:
         updatedAt:
           type: string
           format: date-time
+        summary:
+          $ref: "#/components/schemas/PickupSummary"
+    PickupItem:
+      type: object
+      additionalProperties: false
+      required: [name, quantity, unit]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          $ref: "#/components/schemas/DonationUnit"
+    PickupSummary:
+      type: object
+      additionalProperties: false
+      description: >-
+        Driver decision data joined from the donation, seller, and NGO.
+        Returned by GET /pickups; other pickup responses may omit it.
+      required:
+        - category
+        - description
+        - estimatedWeightKg
+        - quantity
+        - unit
+        - items
+        - expiresAt
+        - deliverBy
+        - sellerName
+        - pickupAddress
+        - ngoName
+        - deliveryAddress
+        - routeDistanceKm
+        - distanceToPickupKm
+        - rewardPoints
+      properties:
+        category:
+          oneOf:
+            - $ref: "#/components/schemas/DonationCategory"
+            - type: "null"
+        description:
+          type: string
+        estimatedWeightKg:
+          type: number
+          exclusiveMinimum: 0
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          $ref: "#/components/schemas/DonationUnit"
+        items:
+          type: array
+          description: >-
+            Itemized contents; empty when the seller only gave a description.
+          items:
+            $ref: "#/components/schemas/PickupItem"
+        expiresAt:
+          type: string
+          format: date-time
+          description: Pickup deadline at the seller (the donation expiry).
+        deliverBy:
+          type: string
+          format: date-time
+          description: >-
+            Delivery deadline at the NGO: availableFrom + perishabilityMinutes,
+            never earlier than expiresAt.
+        sellerName:
+          type: string
+        pickupAddress:
+          $ref: "#/components/schemas/Address"
+        ngoName:
+          type: string
+        deliveryAddress:
+          $ref: "#/components/schemas/Address"
+        routeDistanceKm:
+          type: number
+          minimum: 0
+          description: Straight-line pickup-to-delivery distance, one decimal.
+        distanceToPickupKm:
+          type: [number, "null"]
+          minimum: 0
+          description: >-
+            Distance from the requesting driver's current location to the
+            pickup point; null for other roles.
+        rewardPoints:
+          type: integer
+          minimum: 0
+          description: >-
+            Points earned for completing the pickup: 25 on collection plus
+            10 + round(estimatedWeightKg) on delivery. The API credits the
+            same values (calculateRewardPoints in @resgata/shared).
     PickupList:
       type: object
       additionalProperties: false

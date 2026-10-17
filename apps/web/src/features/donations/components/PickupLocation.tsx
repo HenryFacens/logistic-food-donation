@@ -10,19 +10,21 @@ import {
   useSellerProfile,
 } from '../api/location'
 import { donationMessages } from '../messages'
+import { AddressAutocomplete } from './AddressAutocomplete'
 import {
   addressFromValues,
   applyAddress,
   type DonationFormValues,
 } from '../model/publish'
 
-type LocationSource = 'default' | 'shop' | 'gps' | 'cep' | 'edited'
+type LocationSource = 'default' | 'shop' | 'gps' | 'cep' | 'search' | 'edited'
 
 const sourceLabels: Record<LocationSource, string> = {
   cep: donationMessages.locationFromCep,
   default: donationMessages.locationDefault,
   edited: donationMessages.locationEdited,
   gps: donationMessages.locationFromGps,
+  search: donationMessages.locationFromSearch,
   shop: donationMessages.locationFromShop,
 }
 
@@ -160,13 +162,25 @@ export function PickupLocation({
               <span className="text-sm font-normal">{donationMessages.lookingUpCep}</span>
             ) : null}
           </label>
-          <label className="grid gap-2 font-bold">
+          <label className="grid gap-2 font-bold" htmlFor="pickup-address-line">
             {donationMessages.addressLine}
-            <input
-              className={inputClass}
-              onChange={(event) => edit('line1', event.target.value)}
-              placeholder={donationMessages.addressPlaceholder}
-              required
+            <AddressAutocomplete
+              id="pickup-address-line"
+              onChange={(line1) => edit('line1', line1)}
+              onPlace={(place) =>
+                takeAddress(
+                  {
+                    city: place.city || values.city,
+                    district: place.district || values.district,
+                    line1: place.line1,
+                    location: place.location,
+                    postalCode: place.postalCode || values.postalCode,
+                    state: place.state || values.state,
+                  },
+                  'search',
+                  false,
+                )
+              }
               value={values.line1}
             />
           </label>

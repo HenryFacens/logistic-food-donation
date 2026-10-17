@@ -56,7 +56,9 @@ export const pickupMessages = {
   driverWeightChartDescription:
     'Diferencia o peso estimado coletado do peso efetivamente conferido pela ONG.',
   driverWeightChartTitle: 'Carga transportada e entregue',
+  emptyAvailable: 'Avisaremos quando surgir uma nova entrega. A lista se atualiza sozinha.',
   emptyDriver: 'Nenhuma rota disponível ou atribuída neste momento.',
+  emptyMine: 'Aceite entregas na aba Disponíveis para começar uma rota.',
   emptyNgo: 'Os recebimentos aceitos aparecerão aqui.',
   ngoDashboardDescription:
     'Recebimento e distribuição aparecem separados: receber alimento não comprova que ele chegou à comunidade.',

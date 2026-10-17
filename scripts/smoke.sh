@@ -57,11 +57,18 @@ reset_demo() {
     -H "Idempotency-Key: reset-$RUN_ID-$1" >/dev/null
 }
 
+# UTC timestamp N seconds from now; GNU date (-d) or BSD/macOS date (-r).
+utc_in() {
+  local epoch=$(( $(date +%s) + $1 ))
+  date -u -d "@$epoch" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null ||
+    date -u -r "$epoch" +%Y-%m-%dT%H:%M:%SZ
+}
+
 donation_payload() {
   local description="$1"
   local available_from expires_at
-  available_from="$(date -u -d '+5 minutes' +%Y-%m-%dT%H:%M:%SZ)"
-  expires_at="$(date -u -d '+6 hours' +%Y-%m-%dT%H:%M:%SZ)"
+  available_from="$(utc_in 300)"
+  expires_at="$(utc_in 21600)"
   jq -nc \
     --arg description "$description" \
     --arg availableFrom "$available_from" \

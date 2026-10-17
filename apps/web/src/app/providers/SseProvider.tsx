@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { ApiClientError } from '../../shared/api'
 import type { QueryScope } from '../../shared/query'
 import {
   createFetchSseTransport,
@@ -113,7 +114,18 @@ export function SseProvider({
         if (active && !controller.signal.aborted) {
           reconnectTimer = window.setTimeout(() => void connect(true), env.sseRetryMs)
         }
-      } catch {
+      } catch (error) {
+        // After a database reset the stored cursor no longer exists; resume
+        // from the start instead of retrying the same rejected id forever.
+        if (error instanceof ApiClientError && error.code === 'invalid_last_event_id') {
+          lastEventIdRef.current = null
+          setLastEventId(null)
+          try {
+            sessionStorage.removeItem(LAST_EVENT_KEY)
+          } catch {
+            // The in-memory cursor is already cleared.
+          }
+        }
         if (active && !controller.signal.aborted) {
           setStatus('error')
           reconnectTimer = window.setTimeout(() => void connect(true), env.sseRetryMs)

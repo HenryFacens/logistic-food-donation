@@ -1,5 +1,7 @@
 import {
+  COLLECTION_REWARD_POINTS,
   assignPickupRequestSchema,
+  calculateRewardPoints,
   confirmPickupRequestSchema,
   paginationQuerySchema,
   pickupStatusSchema,
@@ -16,7 +18,12 @@ import {
   type ApiHandler,
 } from "../http.js";
 import { idempotentTransaction } from "../idempotency.js";
-import { mapPickup, pickupSelect } from "../mappers.js";
+import {
+  mapPickup,
+  pickupSelect,
+  pickupSummaryJoins,
+  pickupSummarySelect,
+} from "../mappers.js";
 import { decodeCursor, pageFrom } from "../pagination.js";
 
 export const listPickups: ApiHandler = async (request) => {
@@ -37,8 +44,8 @@ export const listPickups: ApiHandler = async (request) => {
         ? // Unassigned pickups only show to available drivers whose vehicle fits the load.
           `(pickup.driver_id = $1 OR (
              pickup.driver_id IS NULL
-             AND me.active
-             AND donation.estimated_weight_kg <= me.capacity_kg
+             AND viewer_driver.active
+             AND donation.estimated_weight_kg <= viewer_driver.capacity_kg
            ))`
         : "pickup.ngo_id = $1",
     ];
@@ -54,11 +61,10 @@ export const listPickups: ApiHandler = async (request) => {
     }
     values.push(query.limit + 1);
     const result = await client.query(
-      `SELECT ${pickupSelect},
-              ${isDriver ? "ST_Distance(me.current_location, pickup.pickup_location) / 1000.0" : "NULL"} AS distance_km
+      `SELECT ${pickupSummarySelect},
+              ${isDriver ? "ST_Distance(viewer_driver.current_location, pickup.pickup_location) / 1000.0" : "NULL"} AS distance_km
        FROM pickups AS pickup
-       JOIN donations AS donation ON donation.id = pickup.donation_id
-       ${isDriver ? "JOIN drivers AS me ON me.id = $1" : ""}
+       ${pickupSummaryJoins(isDriver ? "$1" : null)}
        WHERE ${filters.join(" AND ")}
        ORDER BY ${
          isDriver
@@ -68,7 +74,7 @@ export const listPickups: ApiHandler = async (request) => {
                 ELSE 2
               END,
               CASE WHEN pickup.driver_id IS NULL
-                THEN ST_Distance(me.current_location, pickup.pickup_location)
+                THEN ST_Distance(viewer_driver.current_location, pickup.pickup_location)
               END,`
            : ""
        }
@@ -76,7 +82,14 @@ export const listPickups: ApiHandler = async (request) => {
        LIMIT $${values.length}`,
       values,
     );
-    return json(200, pageFrom(result.rows.map(mapPickup), query.limit));
+    const includeCodes = actor.role !== "driver";
+    return json(
+      200,
+      pageFrom(
+        result.rows.map((row) => mapPickup(row, { includeCodes })),
+        query.limit,
+      ),
+    );
   } finally {
     client.release();
   }
@@ -109,6 +122,34 @@ export const assignPickup: ApiHandler = async (request) => {
     actor,
     { pickupId, ...body },
     async (client) => {
+      // The vehicle must fit this load plus everything already on board.
+      // Locking the driver row serializes concurrent accepts for one driver.
+      const load = await client.query<{ capacity: number; on_board: number; weight: number }>(
+        `SELECT driver.capacity_kg::float8 AS capacity,
+                coalesce((
+                  SELECT sum(donation.estimated_weight_kg)
+                  FROM pickups AS active
+                  JOIN donations AS donation ON donation.id = active.donation_id
+                  WHERE active.driver_id = driver.id
+                    AND active.status IN ('assigned', 'en_route_pickup', 'collected', 'en_route_delivery')
+                ), 0)::float8 AS on_board,
+                (SELECT donation.estimated_weight_kg::float8
+                 FROM pickups AS pickup
+                 JOIN donations AS donation ON donation.id = pickup.donation_id
+                 WHERE pickup.id = $2) AS weight
+         FROM drivers AS driver
+         WHERE driver.id = $1
+         FOR UPDATE OF driver`,
+        [body.driverId, pickupId],
+      );
+      const vehicle = load.rows[0];
+      if (vehicle && vehicle.weight !== null && vehicle.on_board + vehicle.weight > vehicle.capacity) {
+        throw new ApiError(
+          409,
+          "capacity_exceeded",
+          `A carga passaria da capacidade do veículo (${vehicle.capacity} kg).`,
+        );
+      }
       const updated = await client.query(
         `UPDATE pickups AS pickup
          SET driver_id = $2,
@@ -135,7 +176,9 @@ export const assignPickup: ApiHandler = async (request) => {
           "A coleta não está disponível para atribuição.",
         );
       }
-      const pickup = mapPickup(updated.rows[0]);
+      const pickup = mapPickup(updated.rows[0], {
+        includeCodes: actor.role !== "driver",
+      });
       await client.query(
         `INSERT INTO events (
            donation_id, from_status, to_status, event_type, correlation_id, payload
@@ -181,7 +224,6 @@ async function confirmPickupState(
           nextDonation: "collected",
           eventType: "pickup.collected",
           timestamp: "collected_at",
-          points: 25,
         }
       : {
           currentPickup: ["collected", "en_route_delivery"],
@@ -191,7 +233,6 @@ async function confirmPickupState(
           nextDonation: "delivered",
           eventType: "pickup.delivered",
           timestamp: "delivered_at",
-          points: 50,
         };
 
   const result = await idempotentTransaction(
@@ -204,11 +245,16 @@ async function confirmPickupState(
         donation_id: string;
         status: string;
         expected_code: string;
+        weight_kg: string;
       }>(
-        `SELECT donation_id, status, ${definition.codeColumn} AS expected_code
-         FROM pickups
-         WHERE id = $1 AND driver_id = $2
-         FOR UPDATE`,
+        `SELECT pickup.donation_id,
+                pickup.status,
+                pickup.${definition.codeColumn} AS expected_code,
+                donation.estimated_weight_kg AS weight_kg
+         FROM pickups AS pickup
+         JOIN donations AS donation ON donation.id = pickup.donation_id
+         WHERE pickup.id = $1 AND pickup.driver_id = $2
+         FOR UPDATE OF pickup`,
         [pickupId, actor.profileId],
       );
       const pickup = locked.rows[0];
@@ -253,9 +299,14 @@ async function confirmPickupState(
           }),
         ],
       );
+      // Same rule as `summary.rewardPoints`, so the card matches the credit.
+      const points =
+        action === "collect"
+          ? COLLECTION_REWARD_POINTS
+          : calculateRewardPoints(Number(pickup.weight_kg));
       await client.query(
         "UPDATE drivers SET points = points + $2 WHERE id = $1",
-        [actor.profileId, definition.points],
+        [actor.profileId, points],
       );
       const updated = await client.query(
         `SELECT ${pickupSelect}
@@ -263,7 +314,7 @@ async function confirmPickupState(
          WHERE pickup.id = $1`,
         [pickupId],
       );
-      const response = mapPickup(updated.rows[0]);
+      const response = mapPickup(updated.rows[0], { includeCodes: false });
       return { status: 200, body: response, resourceId: response.id };
     },
   );

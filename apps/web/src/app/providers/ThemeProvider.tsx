@@ -24,7 +24,7 @@ const restoreTheme = (): ThemePreference => {
     const value = localStorage.getItem(STORAGE_KEY)
     if (value === 'dark' || value === 'light' || value === 'system') return value
   } catch {
-    // The visual language remains usable without persistent storage.
+    // The dark default remains the safe fallback.
   }
   return 'dark'
 }
@@ -73,3 +73,4 @@ export function useTheme() {
   if (!value) throw new Error('useTheme must be used within ThemeProvider')
   return value
 }
+

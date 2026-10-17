@@ -4,6 +4,14 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    proxy: {
+      '/api': {
+        changeOrigin: true,
+        target: 'http://localhost:8080',
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -16,8 +24,8 @@ export default defineConfig({
         description:
           'Conecta excedentes de alimentos a organizações sociais em Campinas.',
         lang: 'pt-BR',
-        theme_color: '#0f766e',
-        background_color: '#ffffff',
+        theme_color: '#0b1220',
+        background_color: '#0b1220',
         display: 'standalone',
         start_url: '/',
         scope: '/',

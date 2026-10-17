@@ -98,6 +98,7 @@ if [[ -z "${SKIP_INFRA:-}" ]]; then
       db/migrations/001_initial_schema.sql \
       db/migrations/002_messaging_and_atomic_operations.sql \
       db/migrations/003_metrics_receipts_ratings.sql \
+      db/migrations/003b_donation_items.sql \
       db/seed/001_demo_seed.sql \
       db/seed/002_metrics_seed.sql \
       db/migrations/004_needs_photos_login.sql \

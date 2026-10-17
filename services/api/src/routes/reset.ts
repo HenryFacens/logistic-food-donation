@@ -127,6 +127,14 @@ export const resetDemo: ApiHandler = async (request) => {
          ) AS seed(id, stock)
          WHERE coupon.id = seed.id`,
       );
+      // Restore the open driver deliveries with fresh, now-relative deadlines.
+      // Databases seeded before the function existed skip this step.
+      const openPickups = await client.query<{ available: boolean }>(
+        "SELECT to_regproc('reset_demo_open_pickups') IS NOT NULL AS available",
+      );
+      if (openPickups.rows[0]?.available) {
+        await client.query("SELECT reset_demo_open_pickups()");
+      }
       // Last, after every reseed: demo data is presented as real.
       await client.query(`SELECT present_demo_as_real()`);
       return {

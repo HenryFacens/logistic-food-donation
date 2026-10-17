@@ -52,6 +52,25 @@ BEGIN
   ])[1 + abs(hashtext(id::text)) % 4]
   WHERE comment LIKE '%SIMULADO%';
 
+  -- Named demo donations: "SIMULADO - frutas e verduras da feira" keeps its
+  -- own words, capitalized ("Frutas e verduras da feira").
+  UPDATE donations AS donation
+  SET description = named.description,
+      classification = CASE
+        WHEN donation.classification IS NULL THEN NULL
+        ELSE jsonb_set(donation.classification, '{description}', to_jsonb(named.description))
+      END
+  FROM (
+    SELECT id, upper(left(rest, 1)) || substr(rest, 2) AS description
+    FROM (
+      SELECT id, btrim(regexp_replace(description, '^\s*SIMULADO\s*[-–]\s*', '')) AS rest
+      FROM donations
+      WHERE description ~ '^\s*SIMULADO\s*[-–]'
+        AND description !~ 'doação histórica'
+    ) AS stripped
+  ) AS named
+  WHERE donation.id = named.id;
+
   -- Historical donations: "SIMULADO - doação histórica 07" becomes a
   -- plausible description for its category.
   UPDATE donations AS donation

@@ -29,6 +29,7 @@ export const donationMessages = {
   locationFromShop: 'Endereço da loja',
   locationFromGps: 'Localização atual (GPS)',
   locationFromCep: 'Endereço pelo CEP',
+  locationFromSearch: 'Endereço encontrado no mapa',
   locationEdited: 'Endereço editado',
   useMyLocation: 'Estou em outro local',
   locating: 'Buscando localização…',

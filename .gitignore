@@ -11,3 +11,4 @@ coverage/
 .vite/
 .pnpm-store/
 .certs/
+apps/web/dev-dist/

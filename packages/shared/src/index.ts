@@ -1,6 +1,7 @@
 export * from "./domain/donation-state.js";
 export * from "./geo/haversine.js";
 export * from "./matching/score.js";
+export * from "./rewards/points.js";
 export * from "./schemas/actors.js";
 export * from "./schemas/auth.js";
 export * from "./schemas/common.js";

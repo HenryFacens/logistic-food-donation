@@ -4,4 +4,5 @@ export const pickupQueryKeys = {
     [...pickupQueryKeys.all, 'dashboard', audience] as const,
   list: (audience: 'driver' | 'ngo') =>
     [...pickupQueryKeys.all, 'list', audience] as const,
+  profile: () => [...pickupQueryKeys.all, 'profile'] as const,
 }

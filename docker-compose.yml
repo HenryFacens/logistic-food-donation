@@ -89,6 +89,8 @@ services:
     build:
       context: .
       dockerfile: infra/docker/api.Dockerfile
+    # azure-functions/node publishes linux/amd64 only.
+    platform: linux/amd64
     restart: unless-stopped
     ports:
       - "${API_PORT:-7071}:80"
@@ -126,6 +128,8 @@ services:
     build:
       context: .
       dockerfile: infra/docker/workers.Dockerfile
+    # azure-functions/node publishes linux/amd64 only.
+    platform: linux/amd64
     restart: unless-stopped
     environment:
       <<: *app-environment
@@ -167,6 +171,7 @@ services:
       - ./db/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/010-initial-schema.sql:ro
       - ./db/migrations/002_messaging_and_atomic_operations.sql:/docker-entrypoint-initdb.d/020-messaging.sql:ro
       - ./db/migrations/003_metrics_receipts_ratings.sql:/docker-entrypoint-initdb.d/030-metrics-receipts-ratings.sql:ro
+      - ./db/migrations/003b_donation_items.sql:/docker-entrypoint-initdb.d/035-donation-items.sql:ro
       - ./db/seed/001_demo_seed.sql:/docker-entrypoint-initdb.d/040-demo-seed.sql:ro
       - ./db/seed/002_metrics_seed.sql:/docker-entrypoint-initdb.d/050-metrics-seed.sql:ro
       - ./db/migrations/004_needs_photos_login.sql:/docker-entrypoint-initdb.d/060-needs-photos-login.sql:ro
@@ -222,6 +227,10 @@ services:
 
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-CU22-GDR1-ubuntu-22.04
+    # SQL Server 2022 publishes linux/amd64 only. Pin it here so Apple Silicon
+    # does not need DOCKER_DEFAULT_PLATFORM, which breaks multi-arch images
+    # already pulled as arm64 (Azurite).
+    platform: linux/amd64
     profiles: ["azure"]
     restart: unless-stopped
     environment:

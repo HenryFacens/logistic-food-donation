@@ -41,16 +41,27 @@ export const applyAddress = (
   state: address.state,
 })
 
+// Used only when no profile, GPS, CEP, or map suggestion supplied coordinates.
+const demoPickupLocation = { latitude: -22.8974, longitude: -47.051 }
+
+const selectedLocation = (values: DonationFormValues) => {
+  const latitude = Number(values.latitude)
+  const longitude = Number(values.longitude)
+  return values.latitude.trim() &&
+    values.longitude.trim() &&
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude)
+    ? { latitude, longitude }
+    : demoPickupLocation
+}
+
 export const addressFromValues = (values: DonationFormValues): Address => ({
-  city: values.city,
+  city: values.city || 'Campinas',
   district: values.district,
   line1: values.line1,
-  location: {
-    latitude: Number(values.latitude),
-    longitude: Number(values.longitude),
-  },
+  location: selectedLocation(values),
   postalCode: values.postalCode,
-  state: values.state,
+  state: values.state || 'SP',
 })
 
 export interface DonationPublishOperation {

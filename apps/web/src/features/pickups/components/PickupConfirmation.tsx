@@ -1,5 +1,10 @@
 import type { GeoPoint, Pickup } from '@resgata/shared'
 import { useCallback, useState } from 'react'
+import {
+  BrowserLocationError,
+  browserLocationMessage,
+  readBrowserLocation,
+} from '../../../shared/maps'
 import { Button } from '../../../shared/ui'
 import { pickupErrorMessage, pickupMessages } from '../messages'
 import {
@@ -41,26 +46,17 @@ export function PickupConfirmation({
   }, [])
 
   const locate = () => {
-    if (!navigator.geolocation) {
-      setLocationMessage('GPS indisponível. Será usado o ponto cadastrado.')
-      return
-    }
     setLocationMessage('Obtendo localização…')
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        const location = {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-        }
+    readBrowserLocation()
+      .then((location) => {
         setCurrentLocation(location)
         setLocationMessage(`Localização capturada: ${coordinateLabel(location)}`)
-      },
-      () => {
+      })
+      .catch((caught: unknown) => {
         setCurrentLocation(null)
-        setLocationMessage('GPS não autorizado. Será usado o ponto cadastrado.')
-      },
-      { enableHighAccuracy: true, maximumAge: 30_000, timeout: 8_000 },
-    )
+        const reason = caught instanceof BrowserLocationError ? caught.reason : 'unavailable'
+        setLocationMessage(browserLocationMessage(reason))
+      })
   }
 
   const submit = async () => {
@@ -107,6 +103,7 @@ export function PickupConfirmation({
         </span>
         <input
           autoComplete="one-time-code"
+          className="min-h-12 rounded-xl border border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))] px-4 text-center font-mono text-2xl font-medium tabular-nums tracking-[0.35em]"
           id={`pickup-code-${pickup.id}-${action}`}
           inputMode="numeric"
           maxLength={6}
