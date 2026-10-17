@@ -23,5 +23,5 @@ export const sessionMessages = {
   verifying: 'Verificando…',
   changePhone: 'Usar outro número',
   devCode: 'Ambiente de teste — código:',
-  demoTitle: 'Ou use um perfil de demonstração',
+  phoneOptional: 'Entrar com celular (opcional)',
 } as const

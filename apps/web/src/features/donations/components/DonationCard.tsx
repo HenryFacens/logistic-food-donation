@@ -10,6 +10,9 @@ import {
   formatDateTime,
 } from '../model/donationView'
 import { DonationTimeline } from './DonationTimeline'
+import { MatchingExplanation } from './MatchingExplanation'
+
+const PLACING: readonly Donation['status'][] = ['posted', 'classified', 'offered']
 
 interface DonationCardProps {
   apiClient: ApiClient
@@ -23,6 +26,11 @@ export function DonationCard({
   donation,
 }: DonationCardProps) {
   const [timelineOpen, setTimelineOpen] = useState(false)
+  // Open by default while the donation is being placed, so the ranking is
+  // visible live right after publishing.
+  const [matchingOpen, setMatchingOpen] = useState(
+    !compact && PLACING.includes(donation.status),
+  )
   const status = donationStatusView[donation.status]
 
   return (
@@ -50,7 +58,7 @@ export function DonationCard({
         <div>
           <dt className="font-bold text-muted">Retirada</dt>
           <dd className="m-0 text-text">
-            {donation.pickupAddress.district}, Campinas
+            {donation.pickupAddress.district}, {donation.pickupAddress.city}
           </dd>
         </div>
         <div>
@@ -59,8 +67,16 @@ export function DonationCard({
         </div>
       </dl>
 
-      {!compact || timelineOpen ? (
-        <div>
+      {!compact || timelineOpen || matchingOpen ? (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            aria-expanded={matchingOpen}
+            className="w-full sm:w-auto"
+            onClick={() => setMatchingOpen((current) => !current)}
+            variant="secondary"
+          >
+            {matchingOpen ? donationMessages.hideMatching : donationMessages.matching}
+          </Button>
           <Button
             aria-expanded={timelineOpen}
             className="w-full sm:w-auto"
@@ -71,6 +87,16 @@ export function DonationCard({
               ? donationMessages.hideTimeline
               : donationMessages.timeline}
           </Button>
+        </div>
+      ) : null}
+
+      {matchingOpen ? (
+        <div className="border-t border-border pt-4">
+          <MatchingExplanation
+            apiClient={apiClient}
+            donationId={donation.id}
+            status={donation.status}
+          />
         </div>
       ) : null}
 

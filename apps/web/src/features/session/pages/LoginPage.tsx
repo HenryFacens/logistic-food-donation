@@ -49,10 +49,6 @@ export function LoginPage({
         <p className="mb-0 text-base sm:text-lg">{sessionMessages.description}</p>
       </header>
 
-      <PhoneLogin apiClient={apiClient} onSignedIn={selectIdentity} />
-
-      <h2 className="mb-0 text-lg font-extrabold">{sessionMessages.demoTitle}</h2>
-
       {usersQuery.isLoading ? (
         <LoadingState label={sessionMessages.loading} />
       ) : null}
@@ -92,6 +88,13 @@ export function LoginPage({
           ))}
         </div>
       ) : null}
+
+      <details className="max-w-md">
+        <summary className="cursor-pointer font-bold">{sessionMessages.phoneOptional}</summary>
+        <div className="mt-3">
+          <PhoneLogin apiClient={apiClient} onSignedIn={selectIdentity} />
+        </div>
+      </details>
     </div>
   )
 }

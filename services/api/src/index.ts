@@ -35,6 +35,7 @@ import {
   listPickups,
 } from "./routes/pickups.js";
 import { logout, requestLoginCode, verifyLoginCode } from "./routes/auth.js";
+import { getDonationMatching } from "./routes/matching.js";
 import {
   cancelNeed,
   createNeed,
@@ -88,6 +89,12 @@ route(
   "GET",
   "donations/{donationId}/events",
   listDonationEvents,
+);
+route(
+  "getDonationMatching",
+  "GET",
+  "donations/{donationId}/matching",
+  getDonationMatching,
 );
 route("listOffers", "GET", "offers", listOffers);
 route("acceptOffer", "POST", "offers/{offerId}/accept", acceptOffer);

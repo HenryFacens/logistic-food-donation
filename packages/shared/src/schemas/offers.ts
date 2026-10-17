@@ -81,3 +81,33 @@ export const freightRequestSchema = z.object({
   updatedAt: isoDateTimeSchema,
 });
 export type FreightRequest = z.infer<typeof freightRequestSchema>;
+
+export const matchingCandidateViewSchema = z.object({
+  ngoId: uuidSchema,
+  ngoName: z.string().min(1),
+  rank: z.number().int().positive(),
+  eligible: z.boolean(),
+  score: z.number().min(0).max(100),
+  distanceKm: z.number().nonnegative(),
+  etaMinutes: z.number().nonnegative(),
+  /** 0-1 need signal; >= 0.6 means a published, open need for the category. */
+  needScore: z.number().min(0).max(1),
+  rejectionReasons: z.array(z.string()),
+  offerStatus: offerStatusSchema.nullable(),
+});
+export type MatchingCandidateView = z.infer<typeof matchingCandidateViewSchema>;
+
+export const matchingExplanationSchema = z.object({
+  donationId: uuidSchema,
+  runAt: isoDateTimeSchema.nullable(),
+  candidates: z.array(matchingCandidateViewSchema),
+  /** Active NGOs whose service radius does not reach the pickup point. */
+  outOfRange: z.array(
+    z.object({
+      ngoName: z.string().min(1),
+      distanceKm: z.number().nonnegative(),
+      serviceRadiusKm: z.number().positive(),
+    }),
+  ),
+});
+export type MatchingExplanation = z.infer<typeof matchingExplanationSchema>;

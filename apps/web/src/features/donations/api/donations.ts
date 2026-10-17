@@ -2,6 +2,7 @@ import {
   donationEventSchema,
   donationListSchema,
   donationSchema,
+  matchingExplanationSchema,
   type Donation,
   type DonationStatus,
 } from '@resgata/shared'
@@ -81,3 +82,22 @@ export const usePublishDonation = (
     },
   })
 }
+
+const LIVE_STATUSES: readonly DonationStatus[] = ['posted', 'classified', 'offered']
+
+/** Latest matching ranking; polls while the donation is still being placed. */
+export const useDonationMatching = (
+  apiClient: ApiClient,
+  donationId: string,
+  status: DonationStatus,
+  enabled = true,
+) =>
+  useQuery({
+    enabled: enabled && Boolean(donationId),
+    queryKey: [...donationKeys.detail(donationId), 'matching'] as const,
+    queryFn: async () =>
+      matchingExplanationSchema.parse(
+        await apiClient.get(`/donations/${donationId}/matching`),
+      ),
+    refetchInterval: LIVE_STATUSES.includes(status) ? 3_000 : false,
+  })

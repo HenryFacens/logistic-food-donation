@@ -197,6 +197,22 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /donations/{donationId}/matching:
+    get:
+      tags: [Offers]
+      operationId: getDonationMatching
+      description: >-
+        Ranked candidates of the latest matching run with road distance, ETA,
+        need signal, exclusion reasons, and each NGO's offer status, plus
+        active NGOs out of range.
+      parameters:
+        - { name: donationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: "Matching explanation for the donation."
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /offers:
     get:
       tags: [Offers]

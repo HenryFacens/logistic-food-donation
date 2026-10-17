@@ -46,6 +46,35 @@ AS $$
 $$;
 SELECT seed_ngo_needs();
 
+-- Demo hours: most NGOs receive around the clock so live demos work at any
+-- time; Casa Acolhedora keeps business hours to show the receiving-window rule.
+CREATE OR REPLACE FUNCTION seed_ngo_receiving_hours() RETURNS void
+LANGUAGE sql
+AS $$
+  UPDATE ngos SET receiving_start = '00:00', receiving_end = '23:59';
+  UPDATE ngos SET receiving_start = '08:00', receiving_end = '18:00'
+  WHERE id = '22000000-0000-4000-8000-000000000004';
+$$;
+SELECT seed_ngo_receiving_hours();
+
+-- Publishing a need adds its category; resets restore the seeded lists.
+CREATE OR REPLACE FUNCTION seed_ngo_categories() RETURNS void
+LANGUAGE sql
+AS $$
+  UPDATE ngos AS ngo
+  SET accepted_categories = seed.categories::donation_category[]
+  FROM (
+    VALUES
+      ('22000000-0000-4000-8000-000000000001'::uuid, '{produce,bakery,dairy,prepared,pantry}'),
+      ('22000000-0000-4000-8000-000000000002'::uuid, '{produce,bakery,prepared,pantry}'),
+      ('22000000-0000-4000-8000-000000000003'::uuid, '{produce,bakery,dairy,prepared,pantry,other}'),
+      ('22000000-0000-4000-8000-000000000004'::uuid, '{bakery,dairy,prepared,pantry}'),
+      ('22000000-0000-4000-8000-000000000005'::uuid, '{produce,bakery,dairy,pantry}')
+  ) AS seed(id, categories)
+  WHERE ngo.id = seed.id;
+$$;
+
+
 -- Photos taken by sellers; bytes live in blob storage.
 CREATE TABLE photos (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

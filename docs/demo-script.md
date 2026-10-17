@@ -1,0 +1,66 @@
+# Hackathon demo script
+
+Goal: show, with posts created live on stage, that matching reacts to real
+inputs (location, category, NGO needs, capacity, decisions) and explains every
+choice.
+
+## Before going on stage
+
+1. Stack running (`make lite` or `docker compose up -d`) with `ANTHROPIC_API_KEY`
+   in `.env`, and `OFFER_TIMEOUT_SECONDS=600` so offers wait for the NGO.
+2. Reset the data (restores NGO needs, capacity, and demo hours):
+
+   ```bash
+   curl -X POST http://localhost:8080/api/dev/reset \
+     -H 'X-Demo-User: seller-padaria-cambui' -H "Idempotency-Key: reset-$(date +%s)"
+   ```
+
+3. Open two windows: one for the donor (**Padaria Cambuí**), one for the NGO
+   (**ONG Prato Solidário**). Use the demo profiles on `/entrar`; phone sign-in
+   is optional and not needed for the demo.
+4. Have real food ready to photograph (bread works best for the story).
+
+Demo NGO hours: every NGO receives around the clock except **Casa Acolhedora
+(08:00–18:00)**, which shows the receiving-window rule outside those hours.
+
+## Story (about 4 minutes)
+
+| Step | Who | Do | What the audience sees |
+|---|---|---|---|
+| 1 | Donor | *Doar* → **Tirar foto** of the bread | Claude names the food, estimates quantity, weight, and shelf life, and marks the condition. The form fills itself. |
+| 2 | Donor | Point at *ONGs da região precisam de* | Live NGO needs near the shop. |
+| 3 | Donor | **Publicar doação** → *Doações* | The card opens **Por que esta ONG?**: all NGOs ranked with road distance, drive time, open needs, and why any were excluded. Prato Solidário (1.4 km, open bread need) gets the offer. |
+| 4 | NGO | *Ofertas* | The photo, Claude's condition note, "1,4 km · ~12 min". |
+| 5 | NGO | **Recusar** | Back in the donor window the ranking updates within seconds: *Recusou* on Prato, *Oferta enviada* to the next NGO. |
+| 6 | NGO | *Pedidos* → set *Espaço livre hoje* to 0 → donor posts again | Prato Solidário drops to the bottom: *Descartada: sem espaço livre hoje*. Restore the capacity afterwards. |
+| 7 | Donor, then NGO | Donor posts yogurt (photo or *Sem foto? Descreva o alimento*) → Prato Solidário is *Descartada: não recebe esta categoria*. NGO: *Pedidos* → **Laticínios 30 kg** → donor posts yogurt again | Prato Solidário, which did not take dairy a minute ago, now ranks first with an open need. |
+| 8 | Donor | *Local de retirada* → **Editar endereço** → CEP `13083-970` (Cidade Universitária, Barão Geraldo) → post again | The winner changes to Rede Barra de Alimentos, next door. |
+| 9 | NGO | Accept any offer → *Pedidos* | The need bar fills by the donated kg and today's capacity drops. |
+| 10 | Driver | Switch to **Ana — motorista** | The new pickup comes first with its distance; drivers can go offline/online. |
+
+Steps 5–8 are the proof: each one changes a single input and the ranking
+changes for the stated reason.
+
+## Verified outcomes (2026-10-17, against the running stack)
+
+Fresh posts made through the API produced these first choices:
+
+| Scenario | First choice | Why |
+|---|---|---|
+| Bread posted in Cambuí | Prato Solidário, 95.6 | 1.4 km road, open bread need |
+| Same bread posted in Barão Geraldo | Rede Barra de Alimentos, 97.4 | 0.9 km; two NGOs excluded as out of range |
+| Yogurt in Cambuí | Mesa para Todos, 73.2 | Prato Solidário excluded: does not take dairy |
+| Yogurt after Sementes do Amanhã published a dairy need | Sementes do Amanhã, 75.6 | Open need (need 1.0 vs 0.5) |
+| Prato Solidário declines | Mesa para Todos receives the offer | Next eligible NGO, within seconds |
+| Prato Solidário sets free capacity to 0 | Mesa para Todos | Prato Solidário excluded: no space today |
+| Prato Solidário publishes a dairy need, yogurt posted | Prato Solidário, 95.6 | Now accepts dairy and has an open need |
+| Bread posted at CEP 13083-970 | Rede Barra de Alimentos, 97.9 | 0.6 km road |
+
+## If something goes wrong
+
+- **No photo analysis**: without `ANTHROPIC_API_KEY` the result is labeled
+  SIMULADO; the rest of the flow still works.
+- **Every NGO excluded**: check the clock against NGO hours on *Pedidos*, or run
+  the reset again.
+- **Offer expired before the NGO clicked**: raise `OFFER_TIMEOUT_SECONDS` and
+  restart the workers.

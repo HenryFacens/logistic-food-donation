@@ -157,6 +157,9 @@ policies forbid production traffic. WhatsApp business-initiated messages need
 an approved template with one body variable (`{{1}}`), which receives the
 message text.
 
+For the hackathon walkthrough that proves matching with live posts, see
+[`docs/demo-script.md`](docs/demo-script.md).
+
 ## Three-minute demo
 
 1. Open `/entrar`, choose **Padaria Cambuí**, classify or describe surplus,

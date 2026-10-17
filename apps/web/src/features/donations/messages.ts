@@ -37,6 +37,17 @@ export const donationMessages = {
   published: 'Doação publicada e enviada para classificação.',
   queued: 'Doação salva para sincronização quando a conexão voltar.',
   timeline: 'Ver histórico',
+  matching: 'Por que esta ONG?',
+  hideMatching: 'Ocultar matching',
+  matchingLoading: 'Carregando matching',
+  matchingPending: 'Analisando e buscando ONGs…',
+  matchingSummary: (ranked: number, outside: number) =>
+    `${ranked} ONG${ranked === 1 ? '' : 's'} avaliada${ranked === 1 ? '' : 's'}${
+      outside ? `, ${outside} fora do raio` : ''
+    } · ranking calculado às`,
+  openNeed: 'tem pedido aberto',
+  excluded: 'Descartada:',
+  outOfRange: 'Fora do raio:',
   hideTimeline: 'Ocultar histórico',
   timelineLoading: 'Carregando histórico',
   timelineEmpty: 'Ainda não há eventos para esta doação.',
