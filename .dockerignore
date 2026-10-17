@@ -1,0 +1,16 @@
+# Keep build contexts small (local builds and Azure ACR Tasks).
+**/node_modules
+**/dist
+**/coverage
+**/.vite
+.git
+.idea
+.env
+.env.*
+!.env.example
+*.jpeg
+*.jpg
+*.png
+!apps/web/public/**
+.certs
+.pnpm-store
