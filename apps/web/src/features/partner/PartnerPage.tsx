@@ -157,12 +157,12 @@ export function PartnerPage() {
               <div>
                 <span>Entregas patrocinadas</span>
                 <strong>{dashboard.data.sponsoredDeliveries}</strong>
-                <small>SIMULADO no contrato atual</small>
+                <small>no contrato atual</small>
               </div>
               <div>
                 <span>Cupons ativos</span>
                 <strong>{dashboard.data.activeCoupons}</strong>
-                <small>SIMULADO no contrato atual</small>
+                <small>no contrato atual</small>
               </div>
             </div>
           </>
@@ -304,7 +304,6 @@ export function PartnerPage() {
                   <th scope="col">Código</th>
                   <th scope="col">Emissão</th>
                   <th scope="col">Status</th>
-                  <th scope="col">Origem</th>
                 </tr>
               </thead>
               <tbody>
@@ -322,9 +321,6 @@ export function PartnerPage() {
                         label={redemptionStatusLabels[redemption.status]}
                         tone={statusTone[redemption.status]}
                       />
-                    </td>
-                    <td>
-                      {redemption.simulated ? <SimuladoBadge /> : 'Real'}
                     </td>
                   </tr>
                 ))}

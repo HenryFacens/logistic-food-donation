@@ -69,7 +69,7 @@ export function deterministicClassification(
   );
   return classificationSchema.parse({
     category: match?.category ?? "other",
-    description: `${description} — SIMULADO`,
+    description,
     confidence: request.manualDescription ? 0.88 : 0.76,
     perishabilityMinutes: match?.perishabilityMinutes ?? 720,
     source: request.source,

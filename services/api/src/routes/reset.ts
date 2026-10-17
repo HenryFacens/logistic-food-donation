@@ -127,6 +127,8 @@ export const resetDemo: ApiHandler = async (request) => {
          ) AS seed(id, stock)
          WHERE coupon.id = seed.id`,
       );
+      // Last, after every reseed: demo data is presented as real.
+      await client.query(`SELECT present_demo_as_real()`);
       return {
         status: 200,
         body: {

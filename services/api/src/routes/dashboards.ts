@@ -119,7 +119,7 @@ export const getSellerForecast: ApiHandler = async (request) => {
       expectedWeightKg: Number(row?.expected_weight_kg ?? 0),
       methodology:
         row?.methodology ??
-        "SIMULADO - histórico insuficiente para projeção.",
+        "Histórico insuficiente para projeção.",
       simulated: true,
       simulationLabel: "SIMULADO",
     });

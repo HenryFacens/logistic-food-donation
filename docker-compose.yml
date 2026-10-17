@@ -170,6 +170,7 @@ services:
       - ./db/seed/001_demo_seed.sql:/docker-entrypoint-initdb.d/040-demo-seed.sql:ro
       - ./db/seed/002_metrics_seed.sql:/docker-entrypoint-initdb.d/050-metrics-seed.sql:ro
       - ./db/migrations/004_needs_photos_login.sql:/docker-entrypoint-initdb.d/060-needs-photos-login.sql:ro
+      - ./db/migrations/005_present_as_real.sql:/docker-entrypoint-initdb.d/070-present-as-real.sql:ro
     networks:
       - resgata
     healthcheck:

@@ -11,10 +11,10 @@ const donation = {
 test("pickup notification preserves the event state instead of the latest row state", () => {
   assert.equal(
     createPickupMessage(donation, "collected"),
-    "SIMULADO - Coleta confirmada: Pães do fim do dia.",
+    "Coleta confirmada: Pães do fim do dia.",
   );
   assert.equal(
     createPickupMessage(donation, "delivered"),
-    "SIMULADO - Entrega confirmada: Pães do fim do dia.",
+    "Entrega confirmada: Pães do fim do dia.",
   );
 });

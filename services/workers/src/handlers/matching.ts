@@ -193,7 +193,7 @@ async function finishWithoutDestination(
         provider_name,
         simulated,
         simulation_label
-      ) VALUES ($1, 'unavailable', 'Frete parceiro SIMULADO', true, 'SIMULADO')
+      ) VALUES ($1, 'unavailable', 'Frete parceiro', true, 'SIMULADO')
       ON CONFLICT (donation_id) DO UPDATE
       SET status = 'unavailable',
           updated_at = now()

@@ -38,7 +38,7 @@ const commonProps = {
 }
 
 describe('MetricsDashboard', () => {
-  it('renders the driver dashboard as charts with one simulation label', () => {
+  it('renders the driver dashboard as charts without simulation labels', () => {
     const markup = renderToStaticMarkup(
       <MetricsDashboard
         {...commonProps}
@@ -72,7 +72,7 @@ describe('MetricsDashboard', () => {
     expect(markup).toContain('dashboard-line-chart__curve')
     expect(markup).toContain('Carga transportada e entregue')
     expect(markup).toContain('O tempo de aceite')
-    expect(markup.match(/SIMULADO/g)).toHaveLength(1)
+    expect(markup).not.toContain('SIMULADO')
   })
 
   it('renders NGO receipt charts without inventing unavailable distribution', () => {

@@ -17,7 +17,8 @@ export function createPickupMessage(
   row: Pick<PickupNotificationRow, "donation_description" | "simulated">,
   pickupStatus: string,
 ): string {
-  const prefix = row.simulated ? "SIMULADO - " : "";
+  // Demo data is presented as real, so messages carry no simulation prefix.
+  const prefix = "";
   const action =
     pickupStatus === "delivered"
       ? "Entrega confirmada"

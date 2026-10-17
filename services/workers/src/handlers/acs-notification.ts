@@ -11,7 +11,8 @@ interface OfferNotificationRow extends QueryResultRow {
 }
 
 export function createOfferMessage(row: OfferNotificationRow): string {
-  const prefix = row.simulated ? "SIMULADO - " : "";
+  // Demo data is presented as real, so messages carry no simulation prefix.
+  const prefix = "";
   return (
     `${prefix}Nova oferta para ${row.ngo_name}: ${row.description}. ` +
     `Responda no Resgata antes de ${row.expires_at.toISOString()}.`

@@ -35,7 +35,10 @@ ports/environment/seed identifiers. Put it in `docs/handoffs/<agent>.md`.
 
 - UI copy and fictional data are pt-BR; code, comments, and technical docs are
   English.
-- Simulated product data is visibly labeled `SIMULADO`.
+- Demo data is presented as real for the hackathon: do not show `SIMULADO`
+  badges or wording in the UI, notifications, or seed text. Keep the
+  `simulated`/`simulation_label` fields internally; `SimuladoBadge` renders
+  nothing and `present_demo_as_real()` cleans seed text on init and reset.
 - The default queue driver is Service Bus; `make lite` uses PostgreSQL.
 - Writes preserve idempotency and atomic state transitions.
 - Web dependencies flow `app -> features -> shared`; consumers use each

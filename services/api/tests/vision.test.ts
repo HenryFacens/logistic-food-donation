@@ -10,7 +10,7 @@ describe("deterministic vision fallback", () => {
     });
     expect(result.category).toBe("bakery");
     expect(result.simulated).toBe(true);
-    expect(result.description).toContain("SIMULADO");
+    expect(result.description).not.toContain("SIMULADO");
   });
 });
 
