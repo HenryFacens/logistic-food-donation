@@ -81,3 +81,57 @@ None from `docs/openapi.yaml` or the API-agent brief.
 - Default queue driver: `servicebus`.
 - Default vision timeout: 5000 ms.
 - Dev reset flag: `ENABLE_DEV_RESET`.
+
+## 2026-10-16: pickup summary, kg-based rewards, proof-code redaction
+
+### Completed
+
+- `GET /pickups` joins donation, seller, and NGO (`pickupSummarySelect` +
+  `pickupSummaryJoins` in `mappers.ts`) and returns `summary`: category,
+  description, weight, quantity/unit, `expiresAt`, names and addresses,
+  `routeDistanceKm` (`ST_Distance(pickup, delivery) / 1000`),
+  `distanceToPickupKm` (requesting driver's `current_location`, null for
+  NGOs), `rewardPoints`.
+- Rewards come from `@resgata/shared`: `COLLECTION_REWARD_POINTS` (25) on
+  collect and `calculateRewardPoints(kg) = 10 + round(kg)` on deliver, using
+  `donations.estimated_weight_kg`. `summary.rewardPoints` =
+  `calculateTotalRewardPoints(kg)`, so the card equals the credit (verified
+  in the demo: +40 shown, +40 credited).
+- `GET /me` returns `capacityKg` for drivers.
+- `POST /dev/reset` also calls `reset_demo_open_pickups()` (defined in the
+  seed) to recreate five open deliveries with deadlines relative to now.
+  Databases seeded before this change skip that call.
+- Tests: `tests/pickup-mapper.test.ts` (redaction, summary, reward rule),
+  `packages/shared/tests/reward-points.test.ts`.
+
+### Proof codes: decision
+
+- How the demo shows them today: the NGO sees `deliveryCode` on
+  `/ong/recebimentos`. **No screen shows `pickupCode`**, neither to the
+  seller nor to anyone else; before this change it reached only the API
+  response of NGOs and drivers, and the driver UI never rendered it.
+- Applied: codes are omitted from **every driver response** (list, assign,
+  collect, deliver). NGO responses keep both. Nothing that worked broke:
+  the driver UI never read them, and `scripts/smoke.sh` reads codes from the
+  NGO response.
+- Open (pre-existing, not invented here): during the demo the presenter
+  needs the pickup code from outside the UI, for example
+  `curl -s localhost:8080/api/pickups -H 'X-Demo-User: ngo-prato-solidario' | jq '.items[] | {donationId, pickupCode}'`.
+  Seeded open deliveries use fixed codes: pickup `410101`–`410105`, delivery
+  `520101`–`520105` (suffix = seed sequence 101–105). Proper fix: show
+  `pickupCode` to the seller on "Minhas doações" once a pickup exists, which
+  needs seller read access to its donation's pickup.
+
+### Stable identifiers
+
+- Open demo deliveries: donations `30000000-0000-4000-8000-000000000101`…`105`,
+  pickups `33000000-0000-4000-8000-000000000101`…`105`. Weights 18, 42, 9,
+  120, 260 kg; deadlines 50 min, 95 min, 3 h, 5 h, 8 h after seed/reset.
+  `driver-ana` capacity 350 kg (120 + 260 exceeds it).
+
+### Verification
+
+```bash
+pnpm --filter @resgata/api typecheck && pnpm --filter @resgata/api test
+make reset-lite && make smoke-lite
+```
