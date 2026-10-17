@@ -1011,7 +1011,7 @@ paths:
                   maxItems: 5
                   items: { type: string, format: uuid }
                   description: "Deliveries the driver picked; omit to let the server choose."
-                maxDetourMinutes: { type: integer, minimum: 5, maximum: 120, default: 20 }
+                maxDetourMinutes: { type: integer, minimum: 5, maximum: 120, default: 25 }
       responses:
         "200":
           description: >-

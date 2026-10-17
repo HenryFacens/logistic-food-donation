@@ -15,7 +15,7 @@ import { json, parseJson, type ApiHandler } from "../http.js";
 import { mapPickup, pickupSummaryJoins, pickupSummarySelect } from "../mappers.js";
 
 /** Extra driving the driver accepts unless they say otherwise. */
-const DEFAULT_MAX_DETOUR_MINUTES = 20;
+const DEFAULT_MAX_DETOUR_MINUTES = 25;
 /** Candidates checked against real road times (each costs one matrix call). */
 const ROAD_CHECKED_CANDIDATES = 8;
 /** Deliveries the server bundles into one trip by itself. */
