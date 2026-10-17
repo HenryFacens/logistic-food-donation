@@ -1,4 +1,9 @@
-export { usePickupActions, usePickups } from './api/usePickups'
+export {
+  useCurrentProfile,
+  usePickupActions,
+  usePickups,
+} from './api/usePickups'
+export { DriverDeliveriesPage } from './pages/DriverDeliveriesPage'
 export {
   DriverPickupsPage,
   NgoPickupsPage,
@@ -10,7 +15,13 @@ export {
   pickupRouteElements,
 } from './route'
 export {
+  acceptOutcomeMessage,
+  capacityCheck,
   mapPickupConfirmation,
   nextPickupAction,
   normalizeConfirmationCode,
+  pickupUrgency,
+  selectionSummaryLabel,
+  selectionTotals,
+  sortAvailablePickups,
 } from './viewModels'

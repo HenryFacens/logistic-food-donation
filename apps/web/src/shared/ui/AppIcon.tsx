@@ -4,6 +4,7 @@ export type AppIconName =
   | 'admin'
   | 'arrow-right'
   | 'check'
+  | 'clock'
   | 'coupon'
   | 'dashboard'
   | 'donation'
@@ -22,6 +23,7 @@ const paths: Record<AppIconName, string> = {
   admin: 'M12 3 4 6v6c0 5 3.4 8 8 9 4.6-1 8-4 8-9V6l-8-3Zm0 4v10m-4-5h8',
   'arrow-right': 'm9 18 6-6-6-6',
   check: 'm5 12 4 4L19 6',
+  clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-13v4l3 2',
   coupon: 'M4 7a2 2 0 0 0 2-2h12v4a3 3 0 0 0 0 6v4H6a2 2 0 0 0-2-2V7Zm8-2v14',
   dashboard: 'M4 4h6v7H4V4Zm10 0h6v4h-6V4ZM4 15h6v5H4v-5Zm10-3h6v8h-6v-8Z',
   donation: 'M12 21s-8-4.7-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.3-8 11-8 11Z',

@@ -1,11 +1,21 @@
 import type { Pickup } from '@resgata/shared'
 import { useState } from 'react'
-import { Button, Card, SimuladoBadge, StatusBadge } from '../../../shared/ui'
+import {
+  Button,
+  Card,
+  MetricValue,
+  SimuladoBadge,
+  StatusBadge,
+} from '../../../shared/ui'
 import { pickupErrorMessage, pickupMessages } from '../messages'
 import {
   coordinateLabel,
+  displayName,
+  formatKg,
+  formatKm,
   nextPickupAction,
   pickupStatusLabels,
+  shortAddress,
 } from '../viewModels'
 import { PickupConfirmation } from './PickupConfirmation'
 
@@ -36,6 +46,7 @@ export function PickupCard({
   const [confirmation, setConfirmation] = useState<'collect' | 'deliver' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const action = nextPickupAction(pickup)
+  const summary = pickup.summary
 
   const assign = async () => {
     setError(null)
@@ -52,7 +63,9 @@ export function PickupCard({
         <div>
           <span className="eyebrow">Doação {pickup.donationId.slice(0, 8)}</span>
           <h2 className="mb-1 text-xl">
-            {audience === 'ngo' ? 'Recebimento programado' : 'Rota solidária'}
+            {summary
+              ? summary.description
+              : audience === 'ngo' ? 'Recebimento programado' : 'Rota solidária'}
           </h2>
           <p className="mb-0">Atualizada em {new Date(pickup.updatedAt).toLocaleString('pt-BR')}</p>
         </div>
@@ -62,21 +75,47 @@ export function PickupCard({
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-2xl bg-[rgb(var(--color-primary)/0.07)] p-4 sm:grid-cols-2">
+      {summary ? (
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <strong className="text-2xl"><MetricValue value={formatKg(summary.estimatedWeightKg)} /></strong>
+          {audience === 'driver' ? (
+            <strong className="metric-value text-lg text-primary-strong">+{summary.rewardPoints} pts</strong>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="grid gap-3 rounded-2xl border border-border bg-canvas p-4 sm:grid-cols-2">
         <div>
-          <span className="block text-xs font-bold uppercase text-[rgb(var(--color-muted))]">Retirada</span>
-          <strong>{coordinateLabel(pickup.pickupLocation)}</strong>
+          <span className="block text-xs font-medium uppercase tracking-wider text-muted">Retirada</span>
+          {summary ? (
+            <>
+              <strong className="block">{displayName(summary.sellerName)}</strong>
+              <span className="text-sm text-muted">{shortAddress(summary.pickupAddress)}</span>
+            </>
+          ) : (
+            <strong className="metric-value">{coordinateLabel(pickup.pickupLocation)}</strong>
+          )}
         </div>
         <div>
-          <span className="block text-xs font-bold uppercase text-[rgb(var(--color-muted))]">Entrega</span>
-          <strong>{coordinateLabel(pickup.deliveryLocation)}</strong>
+          <span className="block text-xs font-medium uppercase tracking-wider text-muted">Entrega</span>
+          {summary ? (
+            <>
+              <strong className="block">{displayName(summary.ngoName)}</strong>
+              <span className="text-sm text-muted">
+                {shortAddress(summary.deliveryAddress)} · rota{' '}
+                <span className="metric-value">{formatKm(summary.routeDistanceKm)}</span>
+              </span>
+            </>
+          ) : (
+            <strong className="metric-value">{coordinateLabel(pickup.deliveryLocation)}</strong>
+          )}
         </div>
       </div>
 
-      {audience === 'ngo' ? (
-        <div className="rounded-2xl border border-dashed border-[rgb(var(--color-primary))] p-4">
-          <span className="block text-xs font-bold uppercase text-[rgb(var(--color-muted))]">Código para confirmar entrega</span>
-          <strong className="text-3xl tracking-[0.22em]">{pickup.deliveryCode}</strong>
+      {audience === 'ngo' && pickup.deliveryCode ? (
+        <div className="rounded-2xl border border-dashed border-border-strong p-4">
+          <span className="block text-xs font-medium uppercase tracking-wider text-muted">Código para confirmar entrega</span>
+          <strong className="metric-value text-3xl tracking-[0.22em]">{pickup.deliveryCode}</strong>
           <p className="mb-0 mt-1 text-sm">Informe este código ao motorista somente quando os alimentos chegarem.</p>
         </div>
       ) : null}
