@@ -8,6 +8,7 @@ A shop photographs what is left, an NGO says exactly what it needs, and a
 driver who is already driving picks it up on the way.
 
 [**Open the live demo**](https://gateway.purpledune-51104d3e.brazilsouth.azurecontainerapps.io) ·
+[Pitch (PDF)](docs/Resgata-pitch.pdf) ·
 [Demo script](docs/demo-script.md) ·
 [API](docs/openapi.yaml)
 
@@ -189,7 +190,7 @@ services/workers/      outbox relay, matching with Claude, offer fallback
 db/                    PostGIS migrations; demo data for Campinas and São Paulo
 infra/azure/           deployment script
 tools/readme-media/    Remotion source of the animations above
-docs/                  demo script, OpenAPI, diagrams, contract changes
+docs/                  pitch PDF, demo script, OpenAPI, diagrams, contract changes
 ```
 
 The animations use real screens from the running app. To regenerate them:
