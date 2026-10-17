@@ -3,10 +3,20 @@ import {
   estimateEtaMinutes,
   type DonationCategory,
   type MatchingScore,
+  type MatchingWeights,
   type MessageEnvelope,
 } from "@resgata/shared";
 import type { QueryResultRow } from "pg";
 import type { SqlExecutor } from "../infrastructure/database.js";
+import {
+  NoRoutingProvider,
+  type RoadRoute,
+  type RouteEtaProvider,
+} from "../routing/route-eta.js";
+
+// Candidates are pre-sorted by straight-line distance; only the nearest ones
+// are worth a road-routing lookup.
+const MAX_ROUTED_CANDIDATES = 10;
 
 interface DonationRow extends QueryResultRow {
   id: string;
@@ -15,6 +25,9 @@ interface DonationRow extends QueryResultRow {
   estimated_weight_kg: string;
   perishability_minutes: number;
   expires_at: Date;
+  condition?: string | null;
+  pickup_latitude?: number;
+  pickup_longitude?: number;
 }
 
 interface NgoCandidateRow extends QueryResultRow {
@@ -24,6 +37,12 @@ interface NgoCandidateRow extends QueryResultRow {
   service_radius_km: string;
   accepted_categories: DonationCategory[];
   category_need: string | null;
+  /** Kilograms still requested in open, unexpired needs for the category. */
+  open_need_kg?: string | null;
+  receiving_start_min?: number;
+  receiving_end_min?: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface RankedCandidate {
@@ -31,32 +50,97 @@ interface RankedCandidate {
   score: MatchingScore;
 }
 
+export interface RankingContext {
+  /** Minutes since local midnight (America/Sao_Paulo) at matching time. */
+  nowMinuteOfDay?: number;
+  /** Road routes keyed by NGO id; straight-line estimates are used otherwise. */
+  roadRoutes?: Map<string, RoadRoute>;
+}
+
+// Food flagged for attention by the photo analysis goes to closer NGOs.
+const ATTENTION_WEIGHTS: MatchingWeights = {
+  distance: 0.5,
+  capacity: 0.2,
+  perishability: 0.2,
+  categoryNeed: 0.1,
+};
+
+/** Live published needs dominate; the static profile is a weak prior. */
+export function categoryNeedScore(
+  openNeedKg: number,
+  donationWeightKg: number,
+  staticNeed: number,
+): number {
+  if (openNeedKg > 0) {
+    return 0.6 + 0.4 * Math.min(1, openNeedKg / donationWeightKg);
+  }
+  return 0.5 * Math.min(1, Math.max(0, staticNeed));
+}
+
+/** Minutes after arrival until the NGO's daily receiving window is open. */
+export function minutesUntilReceiving(
+  arrivalMinuteOfDay: number,
+  startMinute: number,
+  endMinute: number,
+): number {
+  const arrival = ((arrivalMinuteOfDay % 1440) + 1440) % 1440;
+  if (arrival >= startMinute && arrival < endMinute) return 0;
+  return arrival < startMinute
+    ? startMinute - arrival
+    : 1440 - arrival + startMinute;
+}
+
 export function rankCandidates(
   donation: Pick<
     DonationRow,
-    "category" | "estimated_weight_kg" | "perishability_minutes"
+    "category" | "estimated_weight_kg" | "perishability_minutes" | "condition"
   >,
   rows: NgoCandidateRow[],
+  context: RankingContext = {},
 ): RankedCandidate[] {
   if (!donation.category) {
     return [];
   }
   const weightKg = Number(donation.estimated_weight_kg);
+  const weights =
+    donation.condition === "attention" ? ATTENTION_WEIGHTS : undefined;
   return rows
     .map((candidate) => {
-      const distanceKm = Number(candidate.distance_km);
+      const road = context.roadRoutes?.get(candidate.id);
+      const distanceKm = road?.distanceKm ?? Number(candidate.distance_km);
+      const etaMinutes = road?.etaMinutes ?? estimateEtaMinutes(distanceKm);
       const score = calculateMatchingScore({
         distanceKm,
         maxDistanceKm: Number(candidate.service_radius_km),
         ngoRemainingCapacityKg: Number(candidate.remaining_capacity_kg),
         donationWeightKg: weightKg,
         perishabilityMinutes: donation.perishability_minutes,
-        etaMinutes: estimateEtaMinutes(distanceKm),
-        categoryNeed: Number(candidate.category_need ?? 0),
+        etaMinutes,
+        categoryNeed: categoryNeedScore(
+          Number(candidate.open_need_kg ?? 0),
+          weightKg,
+          Number(candidate.category_need ?? 0),
+        ),
         acceptsCategory: candidate.accepted_categories.includes(
           donation.category!,
         ),
+        weights,
       });
+      if (
+        context.nowMinuteOfDay !== undefined &&
+        candidate.receiving_start_min !== undefined &&
+        candidate.receiving_end_min !== undefined
+      ) {
+        const wait = minutesUntilReceiving(
+          context.nowMinuteOfDay + etaMinutes,
+          candidate.receiving_start_min,
+          candidate.receiving_end_min,
+        );
+        if (etaMinutes + wait >= donation.perishability_minutes) {
+          score.eligible = false;
+          score.rejectionReasons.push("outside_receiving_hours");
+        }
+      }
       return { ngoId: candidate.id, score };
     })
     .sort(
@@ -122,6 +206,7 @@ export async function handleMatching(
   message: MessageEnvelope,
   transaction: SqlExecutor,
   offerTimeoutSeconds: number,
+  routing: RouteEtaProvider = new NoRoutingProvider(),
 ): Promise<void> {
   const donationResult = await transaction.query<DonationRow>(
     `
@@ -131,7 +216,10 @@ export async function handleMatching(
         category,
         estimated_weight_kg,
         perishability_minutes,
-        expires_at
+        expires_at,
+        classification ->> 'condition' AS condition,
+        ST_Y(pickup_location::geometry) AS pickup_latitude,
+        ST_X(pickup_location::geometry) AS pickup_longitude
       FROM donations
       WHERE id = $1
       FOR UPDATE
@@ -165,7 +253,19 @@ export async function handleMatching(
         ngo.capacity_kg - ngo.current_load_kg AS remaining_capacity_kg,
         ngo.service_radius_km,
         ngo.accepted_categories::text[] AS accepted_categories,
-        ngo.category_needs ->> donation.category::text AS category_need
+        ngo.category_needs ->> donation.category::text AS category_need,
+        (
+          SELECT sum(need.remaining_kg)
+          FROM ngo_needs AS need
+          WHERE need.ngo_id = ngo.id
+            AND need.category = donation.category
+            AND need.status = 'open'
+            AND need.needed_by > now()
+        ) AS open_need_kg,
+        (extract(epoch FROM ngo.receiving_start) / 60)::int AS receiving_start_min,
+        (extract(epoch FROM ngo.receiving_end) / 60)::int AS receiving_end_min,
+        ST_Y(ngo.location::geometry) AS latitude,
+        ST_X(ngo.location::geometry) AS longitude
       FROM donations AS donation
       JOIN ngos AS ngo
         ON ngo.active
@@ -179,7 +279,24 @@ export async function handleMatching(
     `,
     [donation.id],
   );
-  const candidates = rankCandidates(donation, candidateResult.rows);
+  const clock = await transaction.query<{ minute: number }>(
+    `SELECT (extract(epoch FROM (now() AT TIME ZONE 'America/Sao_Paulo')::time) / 60)::int AS minute`,
+  );
+  const roadRoutes = new Map<string, RoadRoute>();
+  if (donation.pickup_latitude !== undefined && donation.pickup_longitude !== undefined) {
+    const nearest = candidateResult.rows.slice(0, MAX_ROUTED_CANDIDATES);
+    const routes = await routing.routes(
+      { latitude: donation.pickup_latitude, longitude: donation.pickup_longitude },
+      nearest.map((row) => ({ latitude: row.latitude!, longitude: row.longitude! })),
+    );
+    routes.forEach((route, index) => {
+      if (route) roadRoutes.set(nearest[index]!.id, route);
+    });
+  }
+  const candidates = rankCandidates(donation, candidateResult.rows, {
+    nowMinuteOfDay: clock.rows[0]?.minute,
+    roadRoutes,
+  });
 
   const runResult = await transaction.query<{ id: string }>(
     `
@@ -311,4 +428,8 @@ export async function handleMatching(
   );
 }
 
-export const matchingInternals = { rankCandidates };
+export const matchingInternals = {
+  categoryNeedScore,
+  minutesUntilReceiving,
+  rankCandidates,
+};

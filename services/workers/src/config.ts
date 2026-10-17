@@ -10,6 +10,16 @@ export interface WorkersConfig {
   workerId: string;
   acsSender?: string;
   acsMockUrl?: string;
+  notificationProvider: "acs-mock" | "whatsapp";
+  whatsapp?: {
+    token: string;
+    phoneNumberId: string;
+    apiVersion: string;
+    templateName?: string;
+    templateLanguage: string;
+  };
+  /** OSRM base URL for road ETAs; undefined uses straight-line estimates. */
+  osrmUrl?: string;
 }
 
 function positiveInteger(name: string, fallback: number): number {
@@ -43,6 +53,26 @@ export function loadConfig(): WorkersConfig {
     );
   }
 
+  const notificationProvider =
+    process.env.NOTIFICATION_PROVIDER === "whatsapp" ? "whatsapp" : "acs-mock";
+  let whatsapp: WorkersConfig["whatsapp"];
+  if (notificationProvider === "whatsapp") {
+    const token = process.env.WHATSAPP_TOKEN;
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    if (!token || !phoneNumberId) {
+      throw new Error(
+        "WHATSAPP_TOKEN and WHATSAPP_PHONE_NUMBER_ID are required when NOTIFICATION_PROVIDER=whatsapp",
+      );
+    }
+    whatsapp = {
+      token,
+      phoneNumberId,
+      apiVersion: process.env.WHATSAPP_API_VERSION || "v21.0",
+      templateName: process.env.WHATSAPP_TEMPLATE_NAME || undefined,
+      templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE || "pt_BR",
+    };
+  }
+
   return {
     databaseUrl,
     queueDriver,
@@ -55,5 +85,11 @@ export function loadConfig(): WorkersConfig {
       `workers-${process.env.WEBSITE_INSTANCE_ID ?? "local"}`,
     acsSender: process.env.ACS_SENDER,
     acsMockUrl: process.env.ACS_MOCK_URL,
+    notificationProvider,
+    whatsapp,
+    osrmUrl:
+      process.env.ROUTING_PROVIDER === "none"
+        ? undefined
+        : process.env.OSRM_URL || "https://router.project-osrm.org",
   };
 }

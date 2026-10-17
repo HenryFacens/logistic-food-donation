@@ -28,7 +28,14 @@ import {
 } from "./messaging/servicebus-message-bus.js";
 import {
   AcsNotificationSender,
+  WhatsAppCloudSender,
+  type NotificationSender,
 } from "./notifications/notification-sender.js";
+import {
+  NoRoutingProvider,
+  OsrmRoutingProvider,
+  type RouteEtaProvider,
+} from "./routing/route-eta.js";
 import {
   NotificationDispatcher,
 } from "./notifications/notification-dispatcher.js";
@@ -93,10 +100,12 @@ export class WorkersRuntime {
             scheduler,
             store,
           );
-    const notificationSender = new AcsNotificationSender(
-      config.acsSender,
-      config.acsMockUrl,
-    );
+    const notificationSender: NotificationSender = config.whatsapp
+      ? new WhatsAppCloudSender(config.whatsapp)
+      : new AcsNotificationSender(config.acsSender, config.acsMockUrl);
+    const routing: RouteEtaProvider = config.osrmUrl
+      ? new OsrmRoutingProvider(config.osrmUrl)
+      : new NoRoutingProvider();
     const handlers = new Map<QueueName, MessageHandler>([
       [
         "donation.created",
@@ -113,6 +122,7 @@ export class WorkersRuntime {
             message,
             transaction,
             config.offerTimeoutSeconds,
+            routing,
           ),
         ),
       ],

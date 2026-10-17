@@ -48,6 +48,8 @@ export const offerSchema = z.object({
   correlationId: correlationIdSchema,
   createdAt: isoDateTimeSchema,
   donation: donationSchema.optional(),
+  distanceKm: z.number().nonnegative().optional(),
+  etaMinutes: z.number().int().nonnegative().optional(),
 });
 export type Offer = z.infer<typeof offerSchema>;
 

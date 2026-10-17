@@ -54,6 +54,8 @@ export const classificationSchema = z.object({
   condition: foodConditionSchema.optional(),
   conditionNotes: z.string().trim().max(500).optional(),
   model: z.string().optional(),
+  // Stored copy of the analyzed photo, reusable when publishing.
+  photoId: z.uuid().optional(),
 });
 export type Classification = z.infer<typeof classificationSchema>;
 
@@ -84,6 +86,7 @@ export const createDonationRequestSchema = z.object({
   availableFrom: isoDateTimeSchema,
   expiresAt: isoDateTimeSchema,
   imageUrl: z.url().optional(),
+  photoId: z.uuid().optional(),
   classification: classificationSchema.optional(),
 });
 export type CreateDonationRequest = z.infer<
@@ -103,7 +106,8 @@ export const donationSchema = z.object({
   pickupAddress: addressSchema,
   availableFrom: isoDateTimeSchema,
   expiresAt: isoDateTimeSchema,
-  imageUrl: z.url().nullable(),
+  // Absolute URL or an API-relative photo path such as /api/photos/{id}.
+  imageUrl: z.string().min(1).nullable(),
   classification: classificationSchema.nullable(),
   correlationId: correlationIdSchema,
   version: z.number().int().nonnegative(),

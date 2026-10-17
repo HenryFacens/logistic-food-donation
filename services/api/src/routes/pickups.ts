@@ -31,10 +31,16 @@ export const listPickups: ApiHandler = async (request) => {
   try {
     const actor = await requireActor(client, request, ["ngo", "driver"]);
     const values: unknown[] = [actor.profileId];
+    const isDriver = actor.role === "driver";
     const filters = [
-      actor.role === "ngo"
-        ? "pickup.ngo_id = $1"
-        : "(pickup.driver_id = $1 OR pickup.driver_id IS NULL)",
+      isDriver
+        ? // Unassigned pickups only show to available drivers whose vehicle fits the load.
+          `(pickup.driver_id = $1 OR (
+             pickup.driver_id IS NULL
+             AND me.active
+             AND donation.estimated_weight_kg <= me.capacity_kg
+           ))`
+        : "pickup.ngo_id = $1",
     ];
     if (status) {
       values.push(status);
@@ -48,10 +54,16 @@ export const listPickups: ApiHandler = async (request) => {
     }
     values.push(query.limit + 1);
     const result = await client.query(
-      `SELECT ${pickupSelect}
+      `SELECT ${pickupSelect},
+              donation.estimated_weight_kg AS donation_weight_kg,
+              donation.description AS donation_description,
+              ${isDriver ? "ST_Distance(me.current_location, pickup.pickup_location) / 1000.0" : "NULL"} AS distance_km
        FROM pickups AS pickup
+       JOIN donations AS donation ON donation.id = pickup.donation_id
+       ${isDriver ? "JOIN drivers AS me ON me.id = $1" : ""}
        WHERE ${filters.join(" AND ")}
-       ORDER BY pickup.created_at DESC, pickup.id DESC
+       ORDER BY ${isDriver ? "(pickup.driver_id IS NULL), distance_km," : ""}
+                pickup.created_at DESC, pickup.id DESC
        LIMIT $${values.length}`,
       values,
     );

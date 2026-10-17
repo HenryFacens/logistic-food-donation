@@ -4,12 +4,17 @@ import {
   type Classification,
   type ClassifyDonationRequest,
 } from "@resgata/shared";
-import { classifyWithClaude, claudeVisionEnabled } from "../claude-vision.js";
+import {
+  classifyWithClaude,
+  claudeVisionEnabled,
+  detectImageMediaType,
+} from "../claude-vision.js";
 import { getConfig } from "../config.js";
 import { getPool } from "../db.js";
 import { ApiError } from "../errors.js";
 import { json, parseJson, type ApiHandler } from "../http.js";
 import { requireActor } from "../auth.js";
+import { storePhoto } from "../photos.js";
 
 const categories: Array<{
   category: Classification["category"];
@@ -99,20 +104,13 @@ async function classifyWithProxy(
   return classificationSchema.parse(await response.json());
 }
 
-export const classifyDonation: ApiHandler = async (request) => {
-  const body = await parseJson(request, classifyDonationRequestSchema);
-  const client = await getPool().connect();
-  try {
-    await requireActor(client, request, ["seller"]);
-  } finally {
-    client.release();
-  }
-
-  const correlationId =
-    request.headers.get("x-correlation-id") ?? crypto.randomUUID();
+async function classifyBody(
+  body: ClassifyDonationRequest,
+  correlationId: string,
+): Promise<Classification> {
   if (claudeVisionEnabled()) {
     try {
-      return json(200, await classifyWithClaude(body));
+      return await classifyWithClaude(body);
     } catch (error) {
       if (error instanceof ApiError) throw error;
       // Keep the vendor flow usable when Claude is unreachable; the
@@ -121,18 +119,55 @@ export const classifyDonation: ApiHandler = async (request) => {
         `[vision] Claude classification failed (${correlationId}):`,
         error instanceof Error ? error.message : error,
       );
-      return json(200, deterministicClassification(body));
+      return deterministicClassification(body);
     }
   }
   try {
-    return json(200, await classifyWithProxy(body, correlationId));
+    return await classifyWithProxy(body, correlationId);
   } catch (error) {
-    if (
-      error instanceof ApiError &&
-      error.code !== "vision_unavailable"
-    ) {
+    if (error instanceof ApiError && error.code !== "vision_unavailable") {
       throw error;
     }
-    return json(200, deterministicClassification(body));
+    return deterministicClassification(body);
   }
+}
+
+// Saves the analyzed photo so the published donation can show it to NGOs.
+async function keepPhoto(
+  sellerId: string,
+  body: ClassifyDonationRequest,
+  correlationId: string,
+): Promise<string | undefined> {
+  if (!body.imageBase64) return undefined;
+  const data = body.imageBase64.replace(/^data:[^,]*,/, "");
+  const contentType = detectImageMediaType(data);
+  if (!contentType) return undefined;
+  try {
+    return await storePhoto(sellerId, Buffer.from(data, "base64"), contentType);
+  } catch (error) {
+    console.error(
+      `[vision] photo storage failed (${correlationId}):`,
+      error instanceof Error ? error.message : error,
+    );
+    return undefined;
+  }
+}
+
+export const classifyDonation: ApiHandler = async (request) => {
+  const body = await parseJson(request, classifyDonationRequestSchema);
+  const client = await getPool().connect();
+  let sellerId: string;
+  try {
+    sellerId = (await requireActor(client, request, ["seller"])).profileId;
+  } finally {
+    client.release();
+  }
+
+  const correlationId =
+    request.headers.get("x-correlation-id") ?? crypto.randomUUID();
+  const [classification, photoId] = await Promise.all([
+    classifyBody(body, correlationId),
+    keepPhoto(sellerId, body, correlationId),
+  ]);
+  return json(200, photoId ? { ...classification, photoId } : classification);
 };

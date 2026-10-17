@@ -70,6 +70,13 @@ export function mapDonationEvent(row: Row) {
 }
 
 export function mapOffer(row: Row) {
+  // The matching score keeps the raw distance (km) and ETA (minutes).
+  const components = (row.score_breakdown as {
+    components?: {
+      distance?: { raw?: number };
+      perishability?: { raw?: number };
+    };
+  } | null)?.components;
   return offerSchema.parse({
     id: row.id,
     donationId: row.donation_id,
@@ -81,6 +88,11 @@ export function mapOffer(row: Row) {
     acceptedAt: nullableIso(row.accepted_at),
     correlationId: row.correlation_id,
     createdAt: iso(row.created_at),
+    distanceKm: components?.distance?.raw,
+    etaMinutes:
+      components?.perishability?.raw === undefined
+        ? undefined
+        : Math.round(components.perishability.raw),
   });
 }
 
@@ -106,6 +118,15 @@ export function mapPickup(row: Row) {
     deliveredAt: nullableIso(row.delivered_at),
     createdAt: iso(row.created_at),
     updatedAt: iso(row.updated_at),
+    distanceKm:
+      row.distance_km === undefined || row.distance_km === null
+        ? undefined
+        : Math.round(number(row.distance_km) * 10) / 10,
+    donationWeightKg:
+      row.donation_weight_kg === undefined
+        ? undefined
+        : number(row.donation_weight_kg),
+    donationDescription: row.donation_description ?? undefined,
   });
 }
 

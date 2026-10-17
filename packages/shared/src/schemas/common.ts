@@ -19,8 +19,8 @@ export const addressSchema = z.object({
   line1: nonEmptyTextSchema,
   line2: z.string().trim().optional(),
   district: nonEmptyTextSchema,
-  city: z.literal("Campinas"),
-  state: z.literal("SP"),
+  city: nonEmptyTextSchema,
+  state: z.string().trim().length(2),
   postalCode: z.string().regex(/^\d{5}-?\d{3}$/),
   location: geoPointSchema,
 });

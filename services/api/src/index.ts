@@ -34,6 +34,24 @@ import {
   confirmDelivery,
   listPickups,
 } from "./routes/pickups.js";
+import { logout, requestLoginCode, verifyLoginCode } from "./routes/auth.js";
+import {
+  cancelNeed,
+  createNeed,
+  getNgoAvailability,
+  listMyNeeds,
+  listNearbyNeeds,
+  updateNgoAvailability,
+} from "./routes/needs.js";
+import {
+  getCepAddress,
+  getDriverStatus,
+  getPhoto,
+  getReverseAddress,
+  getSellerProfile,
+  updateDriverStatus,
+  updateSellerProfile,
+} from "./routes/profile.js";
 import { resetDemo } from "./routes/reset.js";
 import {
   getCurrentUser,
@@ -123,3 +141,25 @@ route(
 // Product extensions requested by the API implementation brief.
 route("listNgos", "GET", "ngos", listNgos);
 route("resetDemo", "POST", "dev/reset", resetDemo);
+
+// Phone sign-in.
+route("requestLoginCode", "POST", "auth/code", requestLoginCode);
+route("verifyLoginCode", "POST", "auth/verify", verifyLoginCode);
+route("logout", "POST", "auth/logout", logout);
+
+// Photos, locations, and profiles.
+route("getPhoto", "GET", "photos/{photoId}", getPhoto);
+route("getCepAddress", "GET", "geo/cep/{cep}", getCepAddress);
+route("getReverseAddress", "GET", "geo/reverse", getReverseAddress);
+route("getSellerProfile", "GET", "sellers/me", getSellerProfile);
+route("updateSellerProfile", "POST", "sellers/me", updateSellerProfile);
+route("getDriverStatus", "GET", "drivers/me", getDriverStatus);
+route("updateDriverStatus", "POST", "drivers/me", updateDriverStatus);
+
+// NGO demand: needs and receiving availability.
+route("listNearbyNeeds", "GET", "needs", listNearbyNeeds);
+route("listMyNeeds", "GET", "ngo/needs", listMyNeeds);
+route("createNeed", "POST", "ngo/needs", createNeed);
+route("cancelNeed", "POST", "ngo/needs/{needId}/cancel", cancelNeed);
+route("getNgoAvailability", "GET", "ngo/availability", getNgoAvailability);
+route("updateNgoAvailability", "POST", "ngo/availability", updateNgoAvailability);

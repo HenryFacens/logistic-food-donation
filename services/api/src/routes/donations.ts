@@ -1,4 +1,5 @@
 import {
+  type Classification,
   createDonationRequestSchema,
   donationListQuerySchema,
   uuidSchema,
@@ -16,7 +17,26 @@ import {
 import { idempotentTransaction } from "../idempotency.js";
 import { mapDonation, mapDonationEvent } from "../mappers.js";
 import { decodeCursor, pageFrom } from "../pagination.js";
+import { assertPhotoOwner, photoPath } from "../photos.js";
 import { donationVisibility } from "../visibility.js";
+
+// Server-side guard: the UI blocks these too, but the API is the authority.
+export function assertDonatable(classification?: Classification): void {
+  if (classification?.isFood === false) {
+    throw new ApiError(
+      422,
+      "not_food",
+      "A foto analisada não mostra alimentos. Envie uma foto do alimento.",
+    );
+  }
+  if (classification?.condition === "unsafe") {
+    throw new ApiError(
+      422,
+      "unsafe_food",
+      "A análise indicou que este alimento não está seguro para doação.",
+    );
+  }
+}
 
 export const listDonations: ApiHandler = async (request) => {
   const query = donationListQuerySchema.parse({
@@ -65,6 +85,8 @@ export const createDonation: ApiHandler = async (request) => {
       "O vencimento deve ocorrer após o início da disponibilidade.",
     );
   }
+  assertDonatable(body.classification);
+  const photoId = body.photoId ?? body.classification?.photoId;
   const key = idempotencyKeyFrom(request);
   const correlationId =
     request.headers.get("x-correlation-id") ?? crypto.randomUUID();
@@ -82,6 +104,7 @@ export const createDonation: ApiHandler = async (request) => {
     actor,
     body,
     async (client) => {
+      if (photoId) await assertPhotoOwner(client, photoId, actor.profileId);
       const inserted = await client.query(
         `INSERT INTO donations (
            seller_id,
@@ -97,6 +120,7 @@ export const createDonation: ApiHandler = async (request) => {
            available_from,
            expires_at,
            image_url,
+           photo_id,
            classification,
            classification_confidence,
            correlation_id,
@@ -115,10 +139,11 @@ export const createDonation: ApiHandler = async (request) => {
            $11,
            $12,
            $13,
-           $14::jsonb,
-           $15,
+           $14,
+           $15::jsonb,
            $16,
-           $17
+           $17,
+           $18
          )
          RETURNING *`,
         [
@@ -134,7 +159,8 @@ export const createDonation: ApiHandler = async (request) => {
           body.pickupAddress.location.latitude,
           body.availableFrom,
           body.expiresAt,
-          body.imageUrl ?? null,
+          photoId ? photoPath(photoId) : (body.imageUrl ?? null),
+          photoId ?? null,
           body.classification ? JSON.stringify(body.classification) : null,
           body.classification?.confidence ?? null,
           correlationId,

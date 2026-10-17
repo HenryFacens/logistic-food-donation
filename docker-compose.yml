@@ -11,6 +11,20 @@ x-app-environment: &app-environment
   OPENAI_API_KEY: local-simulated-key
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5-5}
+  # Sign-in: demo profiles stay available locally; dev codes are echoed in
+  # the API response only when ENABLE_DEV_LOGIN_CODES=true.
+  ENABLE_DEMO_LOGIN: ${ENABLE_DEMO_LOGIN:-true}
+  ENABLE_DEV_LOGIN_CODES: ${ENABLE_DEV_LOGIN_CODES:-true}
+  # Locations and routing: free OpenStreetMap services with simulated fallback.
+  GEO_PROVIDER: ${GEO_PROVIDER:-auto}
+  ROUTING_PROVIDER: ${ROUTING_PROVIDER:-osrm}
+  OSRM_URL: ${OSRM_URL:-https://router.project-osrm.org}
+  # Notifications: acs-mock (local outbox on :4003) or whatsapp (Meta Cloud API).
+  NOTIFICATION_PROVIDER: ${NOTIFICATION_PROVIDER:-acs-mock}
+  WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
+  WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+  WHATSAPP_TEMPLATE_NAME: ${WHATSAPP_TEMPLATE_NAME:-}
+  WHATSAPP_TEMPLATE_LANGUAGE: ${WHATSAPP_TEMPLATE_LANGUAGE:-pt_BR}
   MAPS_BASE_URL: http://mock-maps:3000
   ACS_BASE_URL: http://mock-acs:3000
   ACS_MOCK_URL: http://mock-acs:3000/messages
@@ -152,6 +166,7 @@ services:
       - ./db/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/010-initial-schema.sql:ro
       - ./db/migrations/002_messaging_and_atomic_operations.sql:/docker-entrypoint-initdb.d/020-messaging.sql:ro
       - ./db/seed/001_demo_seed.sql:/docker-entrypoint-initdb.d/030-demo-seed.sql:ro
+      - ./db/migrations/003_needs_photos_login.sql:/docker-entrypoint-initdb.d/040-needs-photos-login.sql:ro
     networks:
       - resgata
     healthcheck:
@@ -176,6 +191,8 @@ services:
       - 0.0.0.0
       - --location
       - /data
+      # Current Azure SDKs send newer API versions than this emulator pins.
+      - --skipApiVersionCheck
       - --debug
       - /data/debug.log
     ports:

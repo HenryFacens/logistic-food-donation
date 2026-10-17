@@ -90,6 +90,11 @@ export const resetDemo: ApiHandler = async (request) => {
          WHERE ngo.id = seed.id`,
       );
       await client.query(
+        `UPDATE ngos
+         SET receiving_start = '08:00', receiving_end = '20:00'`,
+      );
+      await client.query(`SELECT seed_ngo_needs()`);
+      await client.query(
         `UPDATE coupons AS coupon
          SET stock = seed.stock
          FROM (
