@@ -56,8 +56,7 @@ function AvailabilityCard() {
         <span>
           <strong>{needMessages.availabilityTitle}</strong>
           <small>
-            {availability.data.receivingStart}–{availability.data.receivingEnd} ·{' '}
-            {availability.data.availableCapacityKg.toLocaleString('pt-BR')} kg livres hoje
+            Das {availability.data.receivingStart} às {availability.data.receivingEnd}
           </small>
         </span>
       </summary>
@@ -76,7 +75,7 @@ function AvailabilityCard() {
           )
         }}
       >
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3">
           <label className="grid gap-2 font-bold">
             {needMessages.receivingStart}
             <input
@@ -95,20 +94,6 @@ function AvailabilityCard() {
               required
               type="time"
               value={values.receivingEnd}
-            />
-          </label>
-          <label className="grid gap-2 font-bold">
-            {needMessages.capacityToday}
-            <input
-              className={inputClass}
-              inputMode="decimal"
-              max={availability.data.capacityKg}
-              min="0"
-              onChange={(event) => set('availableCapacityKg', event.target.value)}
-              required
-              step="1"
-              type="number"
-              value={values.availableCapacityKg}
             />
           </label>
         </div>

@@ -68,4 +68,27 @@ describe("delivery route planning", () => {
     expect(plan.stops).toHaveLength(14);
     expect(plan.cost).toBeLessThanOrEqual(planInGivenOrder(0, jobs, big).cost);
   });
+
+  it("finishes at the driver's own destination when given one", () => {
+    // 0 driver home, 1 pickup, 2 NGO, 3 driver's destination; all on a line.
+    const line = [0, 5, 15, 20];
+    const minutes = line.map((from) => line.map((to) => Math.abs(from - to)));
+    const plan = planDeliveryRoute(0, [{ id: "A", pickupIndex: 1, deliveryIndex: 2 }], minutes, {
+      end: 3,
+    });
+    // On the way: no detour beyond the direct 20 minutes.
+    expect(plan.drivingMinutes).toBe(20);
+    // Arrives after two 5-minute stops.
+    expect(plan.endArrivalMinutes).toBe(30);
+  });
+
+  it("orders stops so the trip still ends at the destination cheaply", () => {
+    // Destination sits between the pickups and the far NGO would be a dead end.
+    const line = [0, 10, 40, 20];
+    const minutes = line.map((from) => line.map((to) => Math.abs(from - to)));
+    const withEnd = planDeliveryRoute(0, [{ id: "A", pickupIndex: 1, deliveryIndex: 2 }], minutes, {
+      end: 3,
+    });
+    expect(withEnd.drivingMinutes).toBe(40 + 20);
+  });
 });

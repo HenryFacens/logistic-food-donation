@@ -154,7 +154,7 @@
 }
 
 .producer-expiry__presets {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .producer-expiry__presets .screen-chip {
@@ -548,7 +548,7 @@
   }
 
   .producer-expiry__presets {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -569,4 +569,93 @@
 
 .producer-financial[open] summary {
   margin-bottom: 0.75rem;
+}
+
+/* Total weight sits right under the quantity it belongs to. */
+.producer-weight {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgb(var(--color-border));
+  font-weight: 700;
+}
+
+.producer-weight__field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.producer-weight__field input {
+  width: 7rem;
+  min-height: var(--control-min-size);
+  padding: 0 0.75rem;
+  border: 1px solid rgb(var(--color-border-strong));
+  border-radius: var(--radius-control);
+  background: rgb(var(--color-surface));
+  color: rgb(var(--color-text));
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.producer-weight small {
+  color: rgb(var(--color-muted));
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.producer-ai-tag {
+  display: inline-flex;
+  margin-left: 0.3rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: rgb(var(--color-info) / 0.14);
+  color: rgb(var(--color-info-strong));
+  font-size: 0.75rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.producer-expiry__custom {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 700;
+}
+
+.producer-expiry__custom input {
+  min-height: var(--control-min-size);
+  padding: 0 0.75rem;
+  border: 1px solid rgb(var(--color-border-strong));
+  border-radius: var(--radius-control);
+  background: rgb(var(--color-surface));
+  color: rgb(var(--color-text));
+  font-size: 1.1rem;
+}
+
+.producer-expiry__summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  color: rgb(var(--color-text));
+}
+
+.producer-expiry__summary svg {
+  flex: 0 0 auto;
+  margin-top: 0.2rem;
+  color: rgb(var(--color-primary-strong));
+}
+
+.producer-financial summary span,
+.producer-details summary span {
+  display: grid;
+}
+
+.producer-financial summary small,
+.producer-details summary small {
+  color: rgb(var(--color-muted));
+  font-size: 0.85rem;
+  font-weight: 500;
 }

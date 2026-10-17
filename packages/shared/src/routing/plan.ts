@@ -2,7 +2,8 @@
  * Pickup-and-delivery route planning for one driver.
  *
  * Points are indexes into a travel-time matrix (minutes). Index `start` is the
- * driver's position. Each job is a pickup (unless already collected) that
+ * driver's position; an optional `end` is where the driver finishes (their own
+ * destination when deliveries ride along on a planned trip). Each job is a pickup (unless already collected) that
  * must precede its delivery. The cost is total driving time plus a heavy
  * penalty per minute late, so deadlines win over small detours.
  */
@@ -34,6 +35,13 @@ export interface RoutePlan {
   /** drivingMinutes + LATE_PENALTY × lateMinutes; lower is better. */
   cost: number;
   method: "exact" | "greedy" | "given";
+  /** Arrival at `end`, when the route has one. */
+  endArrivalMinutes?: number;
+}
+
+export interface PlanOptions {
+  /** Matrix index where the route must finish. */
+  end?: number;
 }
 
 /** One minute late weighs like ten minutes of extra driving. */
@@ -55,6 +63,7 @@ function evaluate(
   start: number,
   minutes: readonly (readonly number[])[],
   method: RoutePlan["method"],
+  options: PlanOptions = {},
 ): RoutePlan {
   let position = start;
   let clock = 0;
@@ -77,7 +86,20 @@ function evaluate(
     clock += SERVICE_MINUTES;
     position = step.index;
   }
-  return { stops, drivingMinutes: driving, lateMinutes: late, cost: driving + LATE_PENALTY * late, method };
+  let endArrivalMinutes: number | undefined;
+  if (options.end !== undefined) {
+    const leg = minutes[position]?.[options.end] ?? Number.POSITIVE_INFINITY;
+    driving += leg;
+    endArrivalMinutes = clock + leg;
+  }
+  return {
+    stops,
+    drivingMinutes: driving,
+    lateMinutes: late,
+    cost: driving + LATE_PENALTY * late,
+    method,
+    ...(endArrivalMinutes === undefined ? {} : { endArrivalMinutes }),
+  };
 }
 
 const candidatesFor = (job: RouteJob) => ({
@@ -103,22 +125,24 @@ export function planInGivenOrder(
   start: number,
   jobs: readonly RouteJob[],
   minutes: readonly (readonly number[])[],
+  options: PlanOptions = {},
 ): RoutePlan {
   const sequence = jobs.flatMap((job) => {
     const { pickup, delivery } = candidatesFor(job);
     return pickup ? [pickup, delivery] : [delivery];
   });
-  return evaluate(sequence, start, minutes, "given");
+  return evaluate(sequence, start, minutes, "given", options);
 }
 
 function planExact(
   start: number,
   jobs: readonly RouteJob[],
   minutes: readonly (readonly number[])[],
+  options: PlanOptions,
 ): RoutePlan {
   const parts = jobs.map(candidatesFor);
   const total = parts.reduce((count, part) => count + (part.pickup ? 2 : 1), 0);
-  let best = planInGivenOrder(start, jobs, minutes);
+  let best = planInGivenOrder(start, jobs, minutes, options);
   best = { ...best, method: "exact" };
   const sequence: Candidate[] = [];
   const pickedUp = parts.map((part) => part.pickup === null);
@@ -128,7 +152,8 @@ function planExact(
     // Bound: the partial cost already exceeds the best complete plan.
     if (driving + LATE_PENALTY * late >= best.cost) return;
     if (sequence.length === total) {
-      best = evaluate(sequence, start, minutes, "exact");
+      const complete = evaluate(sequence, start, minutes, "exact", options);
+      if (complete.cost < best.cost) best = complete;
       return;
     }
     for (let job = 0; job < parts.length; job += 1) {
@@ -156,6 +181,7 @@ function planGreedy(
   start: number,
   jobs: readonly RouteJob[],
   minutes: readonly (readonly number[])[],
+  options: PlanOptions,
 ): RoutePlan {
   // Nearest feasible next stop, preferring stops whose deadline is at risk.
   const parts = jobs.map(candidatesFor);
@@ -182,7 +208,7 @@ function planGreedy(
     clock += (minutes[position]?.[picked.candidate.index] ?? 0) + SERVICE_MINUTES;
     position = picked.candidate.index;
   }
-  return evaluate(sequence, start, minutes, "greedy");
+  return evaluate(sequence, start, minutes, "greedy", options);
 }
 
 /** Best stop order for the driver's jobs (never worse than the given order). */
@@ -190,12 +216,13 @@ export function planDeliveryRoute(
   start: number,
   jobs: readonly RouteJob[],
   minutes: readonly (readonly number[])[],
+  options: PlanOptions = {},
 ): RoutePlan {
-  if (jobs.length === 0) {
-    return { stops: [], drivingMinutes: 0, lateMinutes: 0, cost: 0, method: "exact" };
-  }
-  const given = planInGivenOrder(start, jobs, minutes);
+  if (jobs.length === 0) return evaluate([], start, minutes, "exact", options);
+  const given = planInGivenOrder(start, jobs, minutes, options);
   const optimized =
-    jobs.length <= MAX_EXACT_JOBS ? planExact(start, jobs, minutes) : planGreedy(start, jobs, minutes);
+    jobs.length <= MAX_EXACT_JOBS
+      ? planExact(start, jobs, minutes, options)
+      : planGreedy(start, jobs, minutes, options);
   return optimized.cost <= given.cost ? optimized : given;
 }

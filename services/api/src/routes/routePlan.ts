@@ -97,6 +97,14 @@ export const getDriverRoutePlan: ApiHandler = async (request) => {
       };
     });
 
+    // Optional end: the driver's own destination ("end=lat,lon").
+    const endParam = request.query.get("end")?.split(",").map(Number);
+    const end: GeoPoint | null =
+      endParam?.length === 2 && endParam.every(Number.isFinite)
+        ? { latitude: endParam[0]!, longitude: endParam[1]! }
+        : null;
+    const endIndex = end ? points.push(end) - 1 : undefined;
+
     const azure = await travelMinutesMatrix(points);
     const minutes = points.map((from, i) =>
       points.map((to, j) => {
@@ -104,12 +112,13 @@ export const getDriverRoutePlan: ApiHandler = async (request) => {
         return value !== undefined && Number.isFinite(value) ? value : estimateMinutes(from, to);
       }),
     );
-    const plan = planDeliveryRoute(0, jobs, minutes);
-    const baseline = planInGivenOrder(0, jobs, minutes);
+    const options = endIndex === undefined ? {} : { end: endIndex };
+    const plan = planDeliveryRoute(0, jobs, minutes, options);
+    const baseline = planInGivenOrder(0, jobs, minutes, options);
 
     const ordered = plan.stops.map((stop) => points[stop.index]!);
     const road = ordered.length
-      ? await routeThrough([start, ...ordered]).catch(() => null)
+      ? await routeThrough([start, ...ordered, ...(end ? [end] : [])]).catch(() => null)
       : null;
 
     const rowById = new Map(result.rows.map((row) => [row.id, row]));
@@ -117,6 +126,7 @@ export const getDriverRoutePlan: ApiHandler = async (request) => {
       200,
       driverRoutePlanSchema.parse({
         start,
+        end,
         stops: plan.stops.map((stop, position) => {
           const row = rowById.get(stop.jobId)!;
           const isPickup = stop.kind === "pickup";

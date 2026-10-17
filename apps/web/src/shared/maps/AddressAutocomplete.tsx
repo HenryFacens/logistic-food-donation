@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import {
   searchAddresses,
   type ParsedPlaceAddress,
-} from '../../../shared/maps'
-import '../../../shared/maps/maps.css'
+} from './addressSearch'
+import './maps.css'
 
 interface AddressAutocompleteProps {
   id?: string

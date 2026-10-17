@@ -970,10 +970,67 @@ paths:
       description: >-
         Optimized stop order for the driver's active deliveries (pickup before
         delivery, deadline-aware), with Azure Maps travel times, ETAs, the
-        savings versus acceptance order, and the road geometry.
+        savings versus acceptance order, and the road geometry. With `end`
+        the route finishes at the driver's own destination.
+      parameters:
+        - name: end
+          in: query
+          required: false
+          description: "Driver's destination as `latitude,longitude`."
+          schema:
+            type: string
+            example: "-22.8172,-47.0698"
       responses:
         "200":
           description: "DriverRoutePlan."
+
+  /drivers/me/trip-match:
+    post:
+      tags: [Pickups]
+      operationId: matchDriverTrip
+      description: >-
+        Trip mode: the driver gives the trip they already plan (origin,
+        destination, departure). Open deliveries are ranked by the extra driving
+        each adds to that trip (Azure Maps road times, deadline-aware from the
+        departure), and the best compatible set is combined into one optimized
+        route that still ends at the destination. Read-only; accepting uses
+        `POST /pickups/{pickupId}/assign`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [origin, destination, departAt]
+              properties:
+                origin: { $ref: "#/components/schemas/GeoPoint" }
+                destination: { $ref: "#/components/schemas/GeoPoint" }
+                departAt: { type: string, format: date-time }
+                pickupIds:
+                  type: array
+                  maxItems: 5
+                  items: { type: string, format: uuid }
+                  description: "Deliveries the driver picked; omit to let the server choose."
+                maxDetourMinutes: { type: integer, minimum: 5, maximum: 120, default: 20 }
+      responses:
+        "200":
+          description: >-
+            TripMatch: direct trip (minutes, km, path), candidates with
+            detourMinutes/onTime/onTheWay, and the combined plan with stops,
+            arrival times, detour, points, weight, and road geometry.
+
+  /ngo/matching-feed:
+    get:
+      tags: [Offers]
+      operationId: getNgoMatchingFeed
+      description: >-
+        For the signed-in NGO, the latest donations it was ranked for (runs with
+        more than one candidate): its rank, score, matched request with
+        Claude's reason, exclusion reasons, who received the offer, and the
+        status of its own offer.
+      responses:
+        "200":
+          description: "NgoMatchingFeed (up to 12 items, newest first)."
 
   /admin/queues:
     get:

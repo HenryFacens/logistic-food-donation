@@ -951,7 +951,7 @@
 .driver-tabs {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.25rem;
   padding: 0.25rem;
   border: 1px solid rgb(var(--color-border));
@@ -966,15 +966,19 @@
   top: 0.25rem;
   bottom: 0.25rem;
   left: 0.25rem;
-  width: calc(50% - 0.375rem);
+  width: calc((100% - 1rem) / 3);
   border-radius: calc(var(--radius-control) - 0.125rem);
   background: rgb(var(--color-surface));
   box-shadow: var(--shadow-card);
   transition: transform 420ms var(--ease-out-expo);
 }
 
-.driver-tabs[data-active="mine"] .driver-tabs__indicator {
+.driver-tabs[data-active="available"] .driver-tabs__indicator {
   transform: translateX(calc(100% + 0.25rem));
+}
+
+.driver-tabs[data-active="mine"] .driver-tabs__indicator {
+  transform: translateX(calc(200% + 0.5rem));
 }
 
 .driver-tab {
@@ -2208,4 +2212,226 @@
 .pickup-dashboard__generated {
   margin: 0;
   font-size: 0.9rem;
+}
+
+/* Trip planner ("Meu trajeto"). */
+.trip-planner {
+  display: grid;
+  gap: 1rem;
+}
+
+.trip-form,
+.trip-result {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.trip-form h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.trip-form p {
+  margin: 0.25rem 0 0;
+}
+
+.trip-field {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+.trip-field input {
+  width: 100%;
+}
+
+.trip-field--time input {
+  justify-self: start;
+  min-height: var(--control-min-size);
+  padding: 0 0.75rem;
+  border: 1px solid rgb(var(--color-border-strong));
+  border-radius: var(--radius-control);
+  background: rgb(var(--color-surface));
+  color: rgb(var(--color-text));
+  font-size: 1.1rem;
+}
+
+.trip-link {
+  display: inline-flex;
+  justify-self: start;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgb(var(--color-primary-strong));
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.trip-error {
+  margin: 0;
+  color: rgb(var(--color-danger-strong));
+  font-weight: 700;
+}
+
+.trip-summary {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.trip-summary > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.65rem;
+  border-radius: var(--radius-control);
+  background: rgb(var(--color-surface-raised));
+}
+
+.trip-summary span {
+  color: rgb(var(--color-muted));
+  font-size: 0.8rem;
+}
+
+.trip-summary strong {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.trip-summary small {
+  color: rgb(var(--color-muted));
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.is-good {
+  color: rgb(var(--color-primary-strong));
+}
+
+.trip-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.trip-legend__line {
+  display: inline-block;
+  width: 1.6rem;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: rgb(var(--color-primary));
+}
+
+.trip-legend__line--direct {
+  height: 0;
+  border-top: 3px dashed #7a8c84;
+  border-radius: 0;
+  background: none;
+}
+
+.trip-stops {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trip-stops li {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 3.2rem minmax(0, 1fr);
+}
+
+.trip-stops time {
+  color: rgb(var(--color-primary-strong));
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.trip-empty {
+  margin: 0;
+  color: rgb(var(--color-text));
+}
+
+.trip-candidates {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.trip-candidates h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.trip-candidates ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trip-candidate label {
+  display: grid;
+  align-items: center;
+  gap: 0.7rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.trip-candidate.is-selected label {
+  border: 2px solid rgb(var(--color-primary));
+}
+
+.trip-candidate input {
+  width: 1.4rem;
+  height: 1.4rem;
+  accent-color: rgb(var(--color-primary-strong));
+}
+
+.trip-candidate__body {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.trip-candidate__body span {
+  color: rgb(var(--color-muted));
+  font-size: 0.85rem;
+}
+
+.trip-candidate__numbers {
+  display: grid;
+  justify-items: end;
+}
+
+.trip-candidate__numbers small {
+  color: rgb(var(--color-muted));
+}
+
+.trip-footnote {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* Three tabs on a phone: text only, slightly smaller. */
+@media (max-width: 480px) {
+  .driver-tab {
+    gap: 0.3rem;
+    font-size: 0.9rem;
+  }
+
+  .driver-tab > svg {
+    display: none;
+  }
 }

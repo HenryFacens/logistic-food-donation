@@ -5,6 +5,7 @@ import {
   type Classification,
 } from '@resgata/shared'
 import { useEffect, useRef, useState } from 'react'
+import { useNow } from '../model/useNow'
 import type { ApiClient } from '../../../shared/api'
 import { createIdempotencyKey } from '../../../shared/api'
 import { AppIcon, Button, StatusBadge } from '../../../shared/ui'
@@ -21,21 +22,19 @@ import {
   buildDonationPublishOperation,
   buildDonationRequest,
   createStableIdempotencyRegistry,
+  formatBrl,
   isUnsafeClassification,
   parseOptionalBrl,
-  toLocalInput,
+  rescaleWeight,
+  resolvePickupWindow,
+  type AiFilledField,
   type DonationFormValues,
   type DonationPublisher,
   type DonationPublishOutcome,
 } from '../model/publish'
 
 const createInitialValues = (shopAddress?: Address | null): DonationFormValues => {
-  const available = new Date()
-  available.setMinutes(available.getMinutes() + 15)
-  const expires = new Date(available)
-  expires.setHours(expires.getHours() + 2)
   const values: DonationFormValues = {
-    availableFrom: toLocalInput(available),
     category: '',
     // Replaced by the shop's registered address when it is available.
     city: 'Campinas',
@@ -43,7 +42,8 @@ const createInitialValues = (shopAddress?: Address | null): DonationFormValues =
     district: 'Cambuí',
     disposalCostBrl: '',
     estimatedWeightKg: '5',
-    expiresAt: toLocalInput(expires),
+    expiryMinutes: '120',
+    expiryTime: '',
     latitude: '-22.8974',
     line1: 'Rua Coronel Quirino, 900',
     longitude: '-47.051',
@@ -57,26 +57,29 @@ const createInitialValues = (shopAddress?: Address | null): DonationFormValues =
   return shopAddress ? applyAddress(values, shopAddress) : values
 }
 
-type ExpiryPreset = '1h' | '2h' | '3h' | 'today' | 'custom'
+const expiryPresets = [
+  { label: '15 min', minutes: 15 },
+  { label: '30 min', minutes: 30 },
+  { label: '1h', minutes: 60 },
+  { label: '2h', minutes: 120 },
+  { label: '3h', minutes: 180 },
+] as const
 
-const expiryPresets: Array<{
-  label: string
-  value: Exclude<ExpiryPreset, 'custom'>
-}> = [
-  { label: '1h', value: '1h' },
-  { label: '2h', value: '2h' },
-  { label: '3h', value: '3h' },
-  { label: 'Hoje', value: 'today' },
-]
+const clock = (date: Date) =>
+  date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
-const createExpiryValue = (preset: Exclude<ExpiryPreset, 'custom'>) => {
-  const expires = new Date()
-  if (preset === 'today') {
-    expires.setHours(23, 59, 0, 0)
-  } else {
-    expires.setHours(expires.getHours() + Number.parseInt(preset, 10))
-  }
-  return toLocalInput(expires)
+const inMinutes = (minutes: number) => {
+  if (minutes < 60) return `${minutes} min`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return rest ? `${hours}h${String(rest).padStart(2, '0')}` : `${hours}h`
+}
+
+const singularUnit: Record<string, string> = { box: 'caixa', tray: 'bandeja', unit: 'unidade' }
+
+/** Small tag on fields the photo analysis filled in. */
+function AiTag({ show }: { show: boolean }) {
+  return show ? <span className="producer-ai-tag">IA</span> : null
 }
 
 interface DonationFormProps {
@@ -96,7 +99,8 @@ export function DonationForm({
   shopAddress,
 }: DonationFormProps) {
   const [values, setValues] = useState(() => createInitialValues(shopAddress))
-  const [expiryPreset, setExpiryPreset] = useState<ExpiryPreset>('2h')
+  const [aiFields, setAiFields] = useState<ReadonlySet<AiFilledField>>(new Set())
+  const [customExpiry, setCustomExpiry] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const appliedClassification = useRef<string | null>(null)
@@ -104,6 +108,7 @@ export function DonationForm({
     createStableIdempotencyRegistry(createIdempotencyKey),
   )
   const publishMutation = usePublishDonation(apiClient, publisher)
+  const now = useNow(30_000)
 
   useEffect(() => {
     if (!classification) return
@@ -111,30 +116,59 @@ export function DonationForm({
     if (appliedClassification.current === signature) return
     appliedClassification.current = signature
     setValues((current) => {
-      const next = applyClassification(current, classification)
-      // The analysis shortened the deadline to the food's safe window.
-      if (next.expiresAt !== current.expiresAt) setExpiryPreset('custom')
-      return next
+      const applied = applyClassification(current, classification)
+      setAiFields(new Set(applied.filled))
+      return applied.values
     })
   }, [classification])
 
   const unsafe = isUnsafeClassification(classification)
+  const pickupWindow = resolvePickupWindow(values, new Date(now))
+  const minutesLeft = Math.round(
+    (pickupWindow.expiresAt.getTime() - now) / 60_000,
+  )
 
+  // A field the vendor edits is no longer "filled by the AI".
   const update = (field: keyof DonationFormValues, value: string) => {
     setFormError(null)
     setSuccessMessage(null)
+    setAiFields((current) => {
+      if (!current.has(field as AiFilledField)) return current
+      const next = new Set(current)
+      next.delete(field as AiFilledField)
+      return next
+    })
     setValues((current) => ({ ...current, [field]: value }))
+  }
+
+  // Quantity and weight move together (same number in kg; same weight per item otherwise).
+  const setQuantity = (quantity: string) => {
+    // Rescale from the previous quantity, in the same state update.
+    setValues((current) => ({
+      ...current,
+      estimatedWeightKg: rescaleWeight(current, quantity),
+    }))
+    update('quantity', quantity)
   }
 
   const changeQuantity = (direction: -1 | 1) => {
     const step = values.unit === 'kg' ? 0.5 : 1
     const current = Number(values.quantity) || step
-    update('quantity', String(Math.max(step, current + direction * step)))
+    setQuantity(String(Math.max(step, current + direction * step)))
   }
 
-  const selectExpiry = (preset: Exclude<ExpiryPreset, 'custom'>) => {
-    setExpiryPreset(preset)
-    update('expiresAt', createExpiryValue(preset))
+  const setUnit = (unit: string) => {
+    update('unit', unit)
+    // Switching to kg: the amount becomes the weight we already estimated.
+    if (unit === 'kg') {
+      setValues((current) => ({ ...current, quantity: current.estimatedWeightKg }))
+    }
+  }
+
+  const selectExpiry = (minutes: number) => {
+    setCustomExpiry(false)
+    update('expiryTime', '')
+    update('expiryMinutes', String(minutes))
   }
 
   const formatCurrencyField = (
@@ -145,13 +179,7 @@ export function DonationForm({
     try {
       const amount = parseOptionalBrl(current)
       if (amount === undefined) return
-      update(
-        field,
-        new Intl.NumberFormat('pt-BR', {
-          maximumFractionDigits: 2,
-          minimumFractionDigits: 2,
-        }).format(amount),
-      )
+      setValues((existing) => ({ ...existing, [field]: formatBrl(amount) }))
     } catch {
       // Keep the value so submit validation can explain how to correct it.
     }
@@ -185,6 +213,15 @@ export function DonationForm({
     }
   }
 
+  const shelfLifeHours = Math.round((Number(values.perishabilityMinutes) / 60) * 10) / 10
+  const weightPerItem =
+    values.unit !== 'kg' && Number(values.quantity) > 0
+      ? (Number(values.estimatedWeightKg) / Number(values.quantity)) * 1000
+      : null
+  const categoryLabel = values.category
+    ? donationCategoryLabels[values.category as keyof typeof donationCategoryLabels]
+    : 'Sem categoria'
+
   return (
     <form
       className="producer-confirm-form"
@@ -197,7 +234,9 @@ export function DonationForm({
         className="screen-card producer-quantity"
         aria-labelledby="producer-quantity-title"
       >
-        <h2 id="producer-quantity-title">{donationMessages.quantityTitle}</h2>
+        <h2 id="producer-quantity-title">
+          {donationMessages.quantityTitle} <AiTag show={aiFields.has('quantity')} />
+        </h2>
 
         <div className="producer-quantity__stepper">
           <button
@@ -210,7 +249,7 @@ export function DonationForm({
           <input
             aria-label="Quantidade"
             min={values.unit === 'kg' ? '0.5' : '1'}
-            onChange={(event) => update('quantity', event.target.value)}
+            onChange={(event) => setQuantity(event.target.value)}
             required
             step={values.unit === 'kg' ? '0.5' : '1'}
             type="number"
@@ -233,13 +272,41 @@ export function DonationForm({
               aria-pressed={values.unit === unit}
               className="screen-chip"
               key={unit}
-              onClick={() => update('unit', unit)}
+              onClick={() => setUnit(unit)}
               type="button"
             >
               {donationUnitLabels[unit]}
             </button>
           ))}
         </fieldset>
+
+        <label className="producer-weight">
+          <span>
+            Peso total <AiTag show={aiFields.has('estimatedWeightKg')} />
+          </span>
+          <span className="producer-weight__field">
+            <input
+              aria-label="Peso total em kg"
+              inputMode="decimal"
+              min="0.1"
+              onChange={(event) => update('estimatedWeightKg', event.target.value)}
+              required
+              step="0.1"
+              type="number"
+              value={values.estimatedWeightKg}
+            />
+            kg
+          </span>
+          {weightPerItem !== null && Number.isFinite(weightPerItem) && weightPerItem > 0 ? (
+            <small>
+              ≈ {weightPerItem >= 1000
+                ? `${(weightPerItem / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg`
+                : `${Math.round(weightPerItem)} g`}{' '}
+              por {singularUnit[values.unit] ?? 'item'}.
+              Mudou a quantidade? O peso acompanha.
+            </small>
+          ) : null}
+        </label>
       </section>
 
       <section
@@ -251,16 +318,47 @@ export function DonationForm({
           <legend className="sr-only">Prazo para retirada</legend>
           {expiryPresets.map((preset) => (
             <button
-              aria-pressed={expiryPreset === preset.value}
+              aria-pressed={!customExpiry && values.expiryMinutes === String(preset.minutes)}
               className="screen-chip"
-              key={preset.value}
-              onClick={() => selectExpiry(preset.value)}
+              key={preset.minutes}
+              onClick={() => selectExpiry(preset.minutes)}
               type="button"
             >
               {preset.label}
             </button>
           ))}
+          <button
+            aria-pressed={customExpiry}
+            className="screen-chip"
+            onClick={() => {
+              setCustomExpiry(true)
+              update('expiryTime', clock(pickupWindow.expiresAt))
+            }}
+            type="button"
+          >
+            Outro
+          </button>
         </fieldset>
+        {customExpiry ? (
+          <label className="producer-expiry__custom">
+            Retirar até às
+            <input
+              onChange={(event) => update('expiryTime', event.target.value)}
+              required
+              type="time"
+              value={values.expiryTime}
+            />
+          </label>
+        ) : null}
+        <p className="producer-expiry__summary">
+          <AppIcon name="clock" size={18} />
+          <span>
+            Até <strong>{clock(pickupWindow.expiresAt)}</strong> (daqui a {inMinutes(Math.max(0, minutesLeft))}).
+            {pickupWindow.capped
+              ? ` A IA estima que o alimento fica bom por ~${shelfLifeHours}h, então limitamos o prazo.`
+              : ''}
+          </span>
+        </p>
       </section>
 
       <PickupLocation
@@ -270,16 +368,30 @@ export function DonationForm({
         values={values}
       />
 
-      <details className="screen-card producer-financial">
+      <details
+        className="screen-card producer-financial"
+        open={aiFields.has('unitValueBrl') || aiFields.has('disposalCostBrl') || undefined}
+      >
         <summary id="producer-financial-title">
-          {donationMessages.financialTitle}
+          <span>
+            {donationMessages.financialTitle}
+            {values.unitValueBrl || values.disposalCostBrl ? (
+              <small>
+                {values.unitValueBrl ? `R$ ${values.unitValueBrl}/kg` : ''}
+                {values.unitValueBrl && values.disposalCostBrl ? ' · ' : ''}
+                {values.disposalCostBrl ? `descarte R$ ${values.disposalCostBrl}` : ''}
+              </small>
+            ) : null}
+          </span>
         </summary>
         <p className="producer-financial__notice" id="financial-values-notice">
           {donationMessages.financialNotice}
         </p>
         <div className="producer-financial__fields">
           <label>
-            {donationMessages.unitValueLabel}
+            <span>
+              {donationMessages.unitValueLabel} <AiTag show={aiFields.has('unitValueBrl')} />
+            </span>
             <input
               aria-describedby="financial-values-notice unit-value-help"
               autoComplete="off"
@@ -297,7 +409,9 @@ export function DonationForm({
             </small>
           </label>
           <label>
-            {donationMessages.disposalCostLabel}
+            <span>
+              {donationMessages.disposalCostLabel} <AiTag show={aiFields.has('disposalCostBrl')} />
+            </span>
             <input
               aria-describedby="financial-values-notice disposal-cost-help"
               autoComplete="off"
@@ -318,10 +432,19 @@ export function DonationForm({
       </details>
 
       <details className="screen-card producer-details">
-        <summary>{donationMessages.publicationDetails}</summary>
+        <summary>
+          <span>
+            {donationMessages.publicationDetails}
+            <small>
+              {categoryLabel} · bom por ~{shelfLifeHours}h
+            </small>
+          </span>
+        </summary>
         <div className="producer-details__content">
           <label>
-            Categoria
+            <span>
+              Categoria <AiTag show={aiFields.has('category')} />
+            </span>
             <select
               onChange={(event) => update('category', event.target.value)}
               required
@@ -337,73 +460,38 @@ export function DonationForm({
           </label>
 
           <label>
-            Descrição
+            <span>
+              Descrição <AiTag show={aiFields.has('description')} />
+            </span>
             <textarea
               onChange={(event) => update('description', event.target.value)}
-              placeholder="Descreva o alimento e suas condições"
+              placeholder="Ex.: pães franceses de hoje"
               required
               value={values.description}
             />
           </label>
 
-          <div className="producer-details__grid">
-            <label>
-              Peso estimado (kg)
-              <input
-                inputMode="decimal"
-                min="0.1"
-                onChange={(event) =>
-                  update('estimatedWeightKg', event.target.value)
-                }
-                required
-                step="0.1"
-                type="number"
-                value={values.estimatedWeightKg}
-              />
-            </label>
-            <label>
-              Validade estimada (min)
-              <input
-                max="10080"
-                min="15"
-                onChange={(event) =>
-                  update('perishabilityMinutes', event.target.value)
-                }
-                required
-                type="number"
-                value={values.perishabilityMinutes}
-              />
-            </label>
-          </div>
-
-
-
-          <div className="producer-details__grid">
-            <label>
-              Disponível a partir de
-              <input
-                onChange={(event) =>
-                  update('availableFrom', event.target.value)
-                }
-                required
-                type="datetime-local"
-                value={values.availableFrom}
-              />
-            </label>
-            <label>
-              Disponível até
-              <input
-                onChange={(event) => {
-                  setExpiryPreset('custom')
-                  update('expiresAt', event.target.value)
-                }}
-                required
-                type="datetime-local"
-                value={values.expiresAt}
-              />
-            </label>
-          </div>
-
+          <label>
+            <span>
+              Fica bom para consumo por (horas){' '}
+              <AiTag show={aiFields.has('perishabilityMinutes')} />
+            </span>
+            <input
+              inputMode="decimal"
+              max="168"
+              min="0.25"
+              onChange={(event) =>
+                update(
+                  'perishabilityMinutes',
+                  String(Math.round(Number(event.target.value) * 60)),
+                )
+              }
+              required
+              step="0.5"
+              type="number"
+              value={shelfLifeHours}
+            />
+          </label>
         </div>
       </details>
 

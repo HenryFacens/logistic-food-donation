@@ -140,7 +140,7 @@ export const formatDashboardPeriod = (
 
 // Driver deliveries: tab split, urgency, sorting, selection, and capacity.
 
-export type DriverTab = 'available' | 'mine'
+export type DriverTab = 'trip' | 'available' | 'mine'
 export type AvailableSort = 'nearest' | 'urgency'
 export type UrgencyTone = 'danger' | 'warning'
 

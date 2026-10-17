@@ -8,3 +8,4 @@ export {
 export { RouteMap, type RouteMapStop } from './RouteMap'
 export { fetchRouteThrough, parseOsrmRoute } from './routing'
 export { useDrivingRoute, type DrivingRoute } from './useDrivingRoute'
+export { AddressAutocomplete } from './AddressAutocomplete'

@@ -28,6 +28,7 @@ import { DriverAvailability } from '../components/DriverAvailability'
 import { PickupCard } from '../components/PickupCard'
 import { RoutePlanCard } from '../components/RoutePlanCard'
 import { SelectionBar } from '../components/SelectionBar'
+import { TripPlanner } from '../components/TripPlanner'
 import { SuccessBurst, type Celebration } from '../components/SuccessBurst'
 import { pickupMessages } from '../messages'
 import {
@@ -108,13 +109,12 @@ export function DriverDeliveriesPage() {
     })
   }
 
-  const accept = async () => {
-    if (!selected.length || capacity.exceeds) return
+  // Shared by the list selection and the trip planner; true when all were accepted.
+  const acceptIds = async (ids: readonly string[]): Promise<boolean> => {
+    if (!ids.length) return false
     try {
-      const outcome = await actions.acceptMany.mutateAsync(
-        selected.map((pickup) => pickup.id),
-      )
-      const acceptedPoints = selected
+      const outcome = await actions.acceptMany.mutateAsync(ids)
+      const acceptedPoints = (pickups.data?.items ?? [])
         .filter((pickup) => outcome.accepted.includes(pickup.id))
         .reduce((sum, pickup) => sum + (pickup.summary?.rewardPoints ?? 0), 0)
       // Full success gets the celebration; partial outcomes need the toast text.
@@ -137,13 +137,21 @@ export function DriverDeliveriesPage() {
       if (outcome.accepted.length && !outcome.failed.length) {
         setTab('mine')
         window.scrollTo({ top: 0, behavior: 'smooth' })
+        return true
       }
+      return false
     } catch (error) {
       toast.show(
         error instanceof Error && error.message ? error.message : pickupMessages.assignError,
         'danger',
       )
+      return false
     }
+  }
+
+  const accept = async () => {
+    if (!selected.length || capacity.exceeds) return
+    await acceptIds(selected.map((pickup) => pickup.id))
   }
 
   const confirmStep = async (input: {
@@ -191,6 +199,18 @@ export function DriverDeliveriesPage() {
       >
         <span className="driver-tabs__indicator" aria-hidden="true" />
         <button
+          aria-controls="driver-panel-trip"
+          aria-selected={tab === 'trip'}
+          className="driver-tab"
+          id="driver-tab-trip"
+          onClick={() => setTab('trip')}
+          role="tab"
+          type="button"
+        >
+          <AppIcon name="route" size={18} />
+          Meu trajeto
+        </button>
+        <button
           aria-controls="driver-panel-available"
           aria-selected={tab === 'available'}
           className="driver-tab"
@@ -217,7 +237,7 @@ export function DriverDeliveriesPage() {
           type="button"
         >
           <AppIcon name="truck" size={18} />
-          Minhas entregas
+          Minhas
           {pickups.data ? (
             <span className="driver-tab__count" key={groups.active.length}>
               {groups.active.length}
@@ -239,6 +259,22 @@ export function DriverDeliveriesPage() {
           icon="warning"
           title="Falha ao carregar as entregas"
         />
+      ) : tab === 'trip' ? (
+        <section
+          aria-labelledby="driver-tab-trip"
+          className="driver-panel"
+          id="driver-panel-trip"
+          key="trip"
+          role="tabpanel"
+        >
+          <TripPlanner
+            accepting={accepting}
+            onAccept={async (ids) => {
+              const ok = await acceptIds(ids)
+              return ok
+            }}
+          />
+        </section>
       ) : tab === 'available' ? (
         <section
           aria-labelledby="driver-tab-available"

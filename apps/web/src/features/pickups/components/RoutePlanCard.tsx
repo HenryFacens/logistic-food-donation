@@ -4,6 +4,7 @@ import { useApiClient } from '../../../shared/api'
 import { RouteMap, type RouteMapStop } from '../../../shared/maps'
 import { AppIcon, Card, LoadingState, MetricValue, StatusBadge } from '../../../shared/ui'
 import { pickupMessages } from '../messages'
+import { loadTrip } from '../model/trip'
 import { pickupQueryKeys } from '../queryKeys'
 
 const clock = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -13,10 +14,15 @@ const decimal = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
 export function RoutePlanCard({ active }: { active: readonly Pickup[] }) {
   const api = useApiClient()
   // Re-plan whenever a delivery is added, collected, or finished.
-  const signature = active.map((pickup) => `${pickup.id}:${pickup.status}`).join('|')
+  const trip = loadTrip()
+  const end = trip ? `${trip.destination.latitude},${trip.destination.longitude}` : ''
+  const signature = `${active.map((pickup) => `${pickup.id}:${pickup.status}`).join('|')}>${end}`
   const plan = useQuery({
     queryKey: pickupQueryKeys.routePlan(signature),
-    queryFn: async () => driverRoutePlanSchema.parse(await api.get('/drivers/me/route-plan')),
+    queryFn: async () =>
+      driverRoutePlanSchema.parse(
+        await api.get(`/drivers/me/route-plan${end ? `?end=${end}` : ''}`),
+      ),
     enabled: active.length > 0,
     staleTime: 60_000,
   })
@@ -35,6 +41,9 @@ export function RoutePlanCard({ active }: { active: readonly Pickup[] }) {
       title: `${stop.order}. ${stop.name}`,
       tone: stop.kind,
     })),
+    ...(data.end
+      ? [{ label: 'B', point: data.end, title: trip?.destinationLabel ?? 'Destino', tone: 'start' as const }]
+      : []),
   ]
 
   return (

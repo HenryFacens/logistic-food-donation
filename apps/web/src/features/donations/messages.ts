@@ -7,17 +7,17 @@ export const donationMessages = {
   quantityTitle: 'Quantos?',
   expiryTitle: 'Retirar até quando?',
   optional: 'Preenchimento opcional',
-  financialTitle: 'Valor e custo de descarte (opcional)',
+  financialTitle: 'Valor e custo de descarte',
   financialNotice:
-    'Use estes valores somente para estimativas de gestão. Eles não comprovam nem calculam dedução fiscal.',
-  unitValueLabel: 'Valor declarado por kg',
+    'Estimativas para o controle da loja. Os campos com "IA" foram sugeridos pela análise da foto; corrija se souber o valor real. Não servem como comprovante fiscal.',
+  unitValueLabel: 'Valor por kg (R$)',
   unitValueHelp:
     'Informe quanto esse alimento vale por kg, usando moeda brasileira.',
   disposalCostLabel: 'Custo estimado de descarte',
   disposalCostHelp:
     'Informe o custo total que seria necessário para descartar esta doação.',
   pickupLocation: 'Local de retirada',
-  publicationDetails: 'Categoria, horário e validade',
+  publicationDetails: 'Categoria, descrição e validade',
   classificationPending:
     'Comece pela foto: a IA preenche o alimento, o peso e a validade para você conferir.',
   listEyebrow: 'Padaria Cambuí',

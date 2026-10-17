@@ -7,14 +7,16 @@ import {
 } from '@resgata/shared'
 
 export interface DonationFormValues {
-  availableFrom: string
   category: string
   city: string
   description: string
   district: string
   disposalCostBrl: string
   estimatedWeightKg: string
-  expiresAt: string
+  /** Pickup window from publication, in minutes (preset chips). */
+  expiryMinutes: string
+  /** Custom pickup deadline as a clock time "HH:MM"; wins over minutes. */
+  expiryTime: string
   latitude: string
   line1: string
   longitude: string
@@ -80,8 +82,6 @@ export type DonationPublisher = (
   operation: DonationPublishOperation,
 ) => Promise<DonationPublishOutcome>
 
-const localDateToIso = (value: string) => new Date(value).toISOString()
-
 export const toLocalInput = (date: Date) => {
   const offset = date.getTimezoneOffset() * 60_000
   return new Date(date.getTime() - offset).toISOString().slice(0, 16)
@@ -89,36 +89,102 @@ export const toLocalInput = (date: Date) => {
 
 const formatAmount = (value: number) => String(Math.round(value * 10) / 10)
 
-// Prefills the vendor form from an image analysis. The pickup deadline the
-// vendor chose is kept, but never later than the food's estimated shelf life.
+export const formatBrl = (value: number) =>
+  new Intl.NumberFormat('pt-BR', {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  }).format(value)
+
+/** Form fields an image analysis can fill (shown with an "IA" tag). */
+export type AiFilledField =
+  | 'category'
+  | 'description'
+  | 'disposalCostBrl'
+  | 'estimatedWeightKg'
+  | 'perishabilityMinutes'
+  | 'quantity'
+  | 'unit'
+  | 'unitValueBrl'
+
+/** Prefills the vendor form from an image analysis; returns what it filled. */
 export const applyClassification = (
   values: DonationFormValues,
   classification: Classification,
-): DonationFormValues => {
+): { values: DonationFormValues; filled: AiFilledField[] } => {
   const next: DonationFormValues = {
     ...values,
     category: classification.category,
     description: classification.description.replace(/\s+—\s+SIMULADO$/u, ''),
     perishabilityMinutes: String(classification.perishabilityMinutes),
   }
+  const filled: AiFilledField[] = ['category', 'description', 'perishabilityMinutes']
   if (classification.suggestedQuantity) {
     next.quantity = formatAmount(classification.suggestedQuantity)
+    filled.push('quantity')
   }
-  if (classification.suggestedUnit) next.unit = classification.suggestedUnit
+  if (classification.suggestedUnit) {
+    next.unit = classification.suggestedUnit
+    filled.push('unit')
+  }
   if (classification.estimatedWeightKg) {
     next.estimatedWeightKg = formatAmount(classification.estimatedWeightKg)
+    filled.push('estimatedWeightKg')
+  } else if (next.unit === 'kg') {
+    next.estimatedWeightKg = next.quantity
   }
-  const availableFrom = new Date(values.availableFrom)
-  const chosenDeadline = new Date(values.expiresAt)
-  if (!Number.isNaN(availableFrom.getTime())) {
-    const safeUntil = new Date(
-      availableFrom.getTime() + classification.perishabilityMinutes * 60_000,
-    )
-    if (Number.isNaN(chosenDeadline.getTime()) || safeUntil < chosenDeadline) {
-      next.expiresAt = toLocalInput(safeUntil)
-    }
+  if (classification.estimatedValuePerKgBrl) {
+    next.unitValueBrl = formatBrl(classification.estimatedValuePerKgBrl)
+    filled.push('unitValueBrl')
   }
-  return next
+  if (classification.estimatedDisposalCostBrl) {
+    next.disposalCostBrl = formatBrl(classification.estimatedDisposalCostBrl)
+    filled.push('disposalCostBrl')
+  }
+  return { values: next, filled }
+}
+
+/**
+ * Keeps quantity and weight coherent: in kg they are the same number;
+ * otherwise the weight follows the quantity at a constant weight per item.
+ */
+export const rescaleWeight = (
+  values: DonationFormValues,
+  nextQuantity: string,
+): string => {
+  if (values.unit === 'kg') return nextQuantity
+  const quantity = Number(values.quantity)
+  const weight = Number(values.estimatedWeightKg)
+  const next = Number(nextQuantity)
+  if (!(quantity > 0) || !(weight > 0) || !(next > 0)) return values.estimatedWeightKg
+  return formatAmount(Math.max(0.1, (weight / quantity) * next))
+}
+
+/** Next occurrence of a clock time "HH:MM" after `now` (today or tomorrow). */
+const nextClockTime = (time: string, now: Date) => {
+  const [hours, minutes] = time.split(':').map(Number)
+  const date = new Date(now)
+  date.setHours(hours ?? 0, minutes ?? 0, 0, 0)
+  if (date.getTime() <= now.getTime()) date.setDate(date.getDate() + 1)
+  return date
+}
+
+/**
+ * The pickup window: available now, until the chosen time, but never beyond
+ * the food's estimated shelf life (`capped` tells the vendor we shortened it).
+ */
+export const resolvePickupWindow = (values: DonationFormValues, now = new Date()) => {
+  const chosen = values.expiryTime
+    ? nextClockTime(values.expiryTime, now)
+    : new Date(now.getTime() + (Number(values.expiryMinutes) || 120) * 60_000)
+  const shelfLife = Number(values.perishabilityMinutes)
+  const safeUntil =
+    shelfLife > 0 ? new Date(now.getTime() + shelfLife * 60_000) : null
+  const capped = safeUntil !== null && safeUntil < chosen
+  return {
+    availableFrom: now,
+    expiresAt: capped ? safeUntil : chosen,
+    capped,
+  }
 }
 
 export const isUnsafeClassification = (
@@ -163,18 +229,20 @@ export const parseOptionalBrl = (rawValue: string) => {
 export const buildDonationRequest = (
   values: DonationFormValues,
   classification?: Classification | null,
+  now = new Date(),
 ) => {
   const disposalCostBrl = parseOptionalBrl(values.disposalCostBrl)
   const unitValueBrl = parseOptionalBrl(values.unitValueBrl)
+  const window = resolvePickupWindow(values, now)
 
   return createDonationRequestSchema.parse({
-    availableFrom: localDateToIso(values.availableFrom),
+    availableFrom: window.availableFrom.toISOString(),
     category: values.category || classification?.category,
     classification: classification || undefined,
     description: values.description,
     ...(disposalCostBrl === undefined ? {} : { disposalCostBrl }),
     estimatedWeightKg: Number(values.estimatedWeightKg),
-    expiresAt: localDateToIso(values.expiresAt),
+    expiresAt: window.expiresAt.toISOString(),
     perishabilityMinutes: Number(values.perishabilityMinutes),
     pickupAddress: addressFromValues(values),
     quantity: Number(values.quantity),

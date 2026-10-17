@@ -27,6 +27,8 @@ describe("Claude vision mapping", () => {
     conditionNotes: "",
     shelfLifeHours: 400,
     confidence: 1.4,
+    valuePerKgBrl: 16.004,
+    disposalCostBrl: 2.5,
   };
 
   it("clamps model values into the public contract", () => {
@@ -46,17 +48,28 @@ describe("Claude vision mapping", () => {
       model: "claude-sonnet-5-5",
     });
     expect(result.conditionNotes).toBeUndefined();
+    expect(result.estimatedValuePerKgBrl).toBe(16);
+    expect(result.estimatedDisposalCostBrl).toBe(2.5);
   });
 
   it("drops non-positive quantity and weight estimates", () => {
     const result = toClassification(
-      { ...analysis, suggestedQuantity: 0, estimatedWeightKg: -1, shelfLifeHours: 0 },
+      {
+        ...analysis,
+        suggestedQuantity: 0,
+        estimatedWeightKg: -1,
+        shelfLifeHours: 0,
+        valuePerKgBrl: 0,
+        disposalCostBrl: -3,
+      },
       { source: "upload", imageBase64: "/9j/abc" },
       "claude-sonnet-5-5",
     );
     expect(result.suggestedQuantity).toBeUndefined();
     expect(result.estimatedWeightKg).toBeUndefined();
     expect(result.perishabilityMinutes).toBe(15);
+    expect(result.estimatedValuePerKgBrl).toBeUndefined();
+    expect(result.estimatedDisposalCostBrl).toBeUndefined();
   });
 
   it("detects supported image formats from base64 signatures", () => {

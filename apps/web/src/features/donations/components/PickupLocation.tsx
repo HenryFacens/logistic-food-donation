@@ -10,7 +10,7 @@ import {
   useSellerProfile,
 } from '../api/location'
 import { donationMessages } from '../messages'
-import { AddressAutocomplete } from './AddressAutocomplete'
+import { AddressAutocomplete } from '../../../shared/maps'
 import {
   addressFromValues,
   applyAddress,

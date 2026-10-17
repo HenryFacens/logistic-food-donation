@@ -10,6 +10,111 @@ import {
 } from "../http.js";
 import { idempotentTransaction } from "../idempotency.js";
 
+/**
+ * Fresh donations posted through the normal pipeline (donation, event, outbox)
+ * so the workers and Claude rank them live after every reset: NGOs open the
+ * app to real pending offers with real scores.
+ */
+const LIVE_DONATIONS = [
+  {
+    sellerId: "21000000-0000-4000-8000-000000000001",
+    category: "bakery",
+    description: "Pães franceses do dia",
+    items: ["Pão francês"],
+    quantity: 40,
+    unit: "unit",
+    weightKg: 2.4,
+    shelfLifeMinutes: 480,
+    pickupWithinMinutes: 180,
+  },
+  {
+    sellerId: "21000000-0000-4000-8000-000000000002",
+    category: "produce",
+    description: "Cenouras, batatas e abóbora para sopa",
+    items: ["Cenoura", "Batata", "Abóbora"],
+    quantity: 14,
+    unit: "kg",
+    weightKg: 14,
+    shelfLifeMinutes: 2880,
+    pickupWithinMinutes: 240,
+  },
+  {
+    sellerId: "21000000-0000-4000-8000-000000000003",
+    category: "dairy",
+    description: "Iogurtes naturais na validade",
+    items: ["Iogurte natural"],
+    quantity: 30,
+    unit: "unit",
+    weightKg: 4.5,
+    shelfLifeMinutes: 720,
+    pickupWithinMinutes: 180,
+  },
+] as const;
+
+async function postLiveDonations(
+  client: import("pg").PoolClient,
+  correlationId: string,
+) {
+  for (const donation of LIVE_DONATIONS) {
+    const classification = {
+      category: donation.category,
+      description: donation.description,
+      confidence: 0.9,
+      perishabilityMinutes: donation.shelfLifeMinutes,
+      source: "manual",
+      simulated: false,
+      isFood: true,
+      items: donation.items,
+      suggestedQuantity: donation.quantity,
+      suggestedUnit: donation.unit,
+      estimatedWeightKg: donation.weightKg,
+      condition: "good",
+    };
+    const inserted = await client.query<{ id: string }>(
+      `INSERT INTO donations (
+         seller_id, status, category, description, quantity, unit,
+         estimated_weight_kg, perishability_minutes, pickup_address,
+         pickup_location, available_from, expires_at, classification,
+         classification_confidence, correlation_id, idempotency_key
+       )
+       SELECT seller.id, 'posted', $2::donation_category, $3, $4, $5::donation_unit,
+              $6, $7, seller.address, seller.location, now(),
+              now() + $8 * interval '1 minute', $9::jsonb, 0.9, $10,
+              'reset-live-' || gen_random_uuid()
+       FROM sellers AS seller
+       WHERE seller.id = $1
+       RETURNING id`,
+      [
+        donation.sellerId,
+        donation.category,
+        donation.description,
+        donation.quantity,
+        donation.unit,
+        donation.weightKg,
+        donation.shelfLifeMinutes,
+        donation.pickupWithinMinutes,
+        JSON.stringify(classification),
+        correlationId,
+      ],
+    );
+    const donationId = inserted.rows[0]?.id;
+    if (!donationId) continue;
+    const event = await client.query<{ id: string }>(
+      `INSERT INTO events (
+         donation_id, from_status, to_status, event_type, correlation_id, payload
+       ) VALUES ($1, NULL, 'posted', 'donation.created', $2, $3::jsonb)
+       RETURNING id`,
+      [donationId, correlationId, JSON.stringify({ sellerId: donation.sellerId })],
+    );
+    await client.query(
+      `INSERT INTO outbox (
+         topic, event_type, aggregate_id, correlation_id, causation_id, payload
+       ) VALUES ('donation.created', 'donation.created', $1, $2, $3, $4::jsonb)`,
+      [donationId, correlationId, event.rows[0]?.id, JSON.stringify({ donationId })],
+    );
+  }
+}
+
 export const resetDemo: ApiHandler = async (request) => {
   if (!getConfig().ENABLE_DEV_RESET) {
     throw new ApiError(404, "not_found", "Rota de reset desabilitada.");
@@ -137,6 +242,7 @@ export const resetDemo: ApiHandler = async (request) => {
       }
       // Last, after every reseed: demo data is presented as real.
       await client.query(`SELECT present_demo_as_real()`);
+      await postLiveDonations(client, correlationId);
       return {
         status: 200,
         body: {

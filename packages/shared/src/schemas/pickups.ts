@@ -131,6 +131,8 @@ export type RoutePlanStop = z.infer<typeof routePlanStopSchema>;
 
 export const driverRoutePlanSchema = z.object({
   start: geoPointSchema,
+  /** The driver's own destination, when the route ends there. */
+  end: geoPointSchema.nullable().optional(),
   stops: z.array(routePlanStopSchema),
   drivingMinutes: z.number().nonnegative(),
   distanceKm: z.number().nonnegative().nullable(),
@@ -145,3 +147,73 @@ export const driverRoutePlanSchema = z.object({
   generatedAt: isoDateTimeSchema,
 });
 export type DriverRoutePlan = z.infer<typeof driverRoutePlanSchema>;
+
+/**
+ * Driver trip ("BlaBlaCar" mode): the driver already plans to drive from
+ * origin to destination; we look for deliveries that fit on the way.
+ */
+export const tripMatchRequestSchema = z.object({
+  origin: geoPointSchema,
+  destination: geoPointSchema,
+  departAt: isoDateTimeSchema,
+  /** Deliveries the driver picked; omitted to let the server choose. */
+  pickupIds: z.array(uuidSchema).max(5).optional(),
+  /** Longest extra driving the driver accepts, in minutes. */
+  maxDetourMinutes: z.number().int().min(5).max(120).optional(),
+});
+export type TripMatchRequest = z.infer<typeof tripMatchRequestSchema>;
+
+export const tripCandidateSchema = z.object({
+  pickupId: uuidSchema,
+  description: z.string(),
+  weightKg: z.number().nonnegative(),
+  rewardPoints: z.number().int().nonnegative(),
+  sellerName: z.string(),
+  ngoName: z.string(),
+  pickupPoint: geoPointSchema,
+  deliveryPoint: geoPointSchema,
+  /** Extra driving compared with the direct trip, this delivery alone. */
+  detourMinutes: z.number(),
+  /** Pickup and delivery both fit their deadlines at this departure. */
+  onTime: z.boolean(),
+  /** Within the driver's detour limit and on time. */
+  onTheWay: z.boolean(),
+  pickupDeadline: isoDateTimeSchema,
+  deliverBy: isoDateTimeSchema,
+});
+export type TripCandidate = z.infer<typeof tripCandidateSchema>;
+
+export const tripStopSchema = z.object({
+  kind: z.enum(["origin", "pickup", "delivery", "destination"]),
+  pickupId: uuidSchema.nullable(),
+  name: z.string(),
+  point: geoPointSchema,
+  /** Clock time the driver arrives. */
+  arriveAt: isoDateTimeSchema,
+  lateMinutes: z.number().nonnegative(),
+});
+export type TripStop = z.infer<typeof tripStopSchema>;
+
+export const tripMatchSchema = z.object({
+  departAt: isoDateTimeSchema,
+  maxDetourMinutes: z.number(),
+  direct: z.object({
+    minutes: z.number().nonnegative(),
+    distanceKm: z.number().nonnegative().nullable(),
+    path: z.array(z.tuple([z.number(), z.number()])).nullable(),
+  }),
+  candidates: z.array(tripCandidateSchema),
+  plan: z.object({
+    pickupIds: z.array(uuidSchema),
+    stops: z.array(tripStopSchema),
+    minutes: z.number().nonnegative(),
+    detourMinutes: z.number(),
+    distanceKm: z.number().nonnegative().nullable(),
+    rewardPoints: z.number().int().nonnegative(),
+    weightKg: z.number().nonnegative(),
+    lateMinutes: z.number().nonnegative(),
+    path: z.array(z.tuple([z.number(), z.number()])).nullable(),
+  }),
+  travelTimes: z.enum(["azure-maps", "estimate"]),
+});
+export type TripMatch = z.infer<typeof tripMatchSchema>;

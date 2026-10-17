@@ -54,6 +54,10 @@ export const classificationSchema = z.object({
   condition: foodConditionSchema.optional(),
   conditionNotes: z.string().trim().max(500).optional(),
   model: z.string().optional(),
+  /** Estimated retail value per kg, in BRL (management estimate only). */
+  estimatedValuePerKgBrl: z.number().nonnegative().optional(),
+  /** Estimated cost the vendor would pay to discard this food, in BRL. */
+  estimatedDisposalCostBrl: z.number().nonnegative().optional(),
   // Stored copy of the analyzed photo, reusable when publishing.
   photoId: z.uuid().optional(),
 });

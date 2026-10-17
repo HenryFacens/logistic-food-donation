@@ -56,6 +56,8 @@ interface RouteMapProps {
   stops?: readonly RouteMapStop[]
   /** Road geometry as [latitude, longitude]; straight segments when null. */
   path: ReadonlyArray<readonly [number, number]> | null
+  /** A reference route drawn dashed underneath (e.g. the direct trip). */
+  secondaryPath?: ReadonlyArray<readonly [number, number]> | null
 }
 
 // Azure Maps tiles through our API (the key never reaches the browser);
@@ -67,7 +69,7 @@ const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 
-export function RouteMap({ destination, origin, path, stops }: RouteMapProps) {
+export function RouteMap({ destination, origin, path, secondaryPath, stops }: RouteMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const theme = useDocumentTheme()
   const [usingFallbackTiles, setUsingFallbackTiles] = useState(false)
@@ -112,13 +114,23 @@ export function RouteMap({ destination, origin, path, stops }: RouteMapProps) {
 
     const bounds = latLngBounds(line[0], line[0])
     line.forEach((point) => bounds.extend(point))
+    if (secondaryPath?.length) {
+      const reference = secondaryPath.map((point): [number, number] => [point[0], point[1]])
+      reference.forEach((point) => bounds.extend(point))
+      polyline(reference, {
+        color: '#7a8c84',
+        dashArray: '6 8',
+        opacity: 0.9,
+        weight: 4,
+      }).addTo(view)
+    }
     for (const stop of pins) {
       const position: [number, number] = [stop.point.latitude, stop.point.longitude]
       bounds.extend(position)
       marker(position, { icon: pin(stop.label, stop.tone), title: stop.title }).addTo(view)
     }
     polyline(line, {
-      color: '#34d399',
+      color: theme === 'dark' ? '#4fd1a0' : '#0b7a5a',
       opacity: 0.95,
       weight: 5,
     }).addTo(view)
@@ -131,7 +143,7 @@ export function RouteMap({ destination, origin, path, stops }: RouteMapProps) {
     }
     // pinsKey captures the stop positions and labels.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pinsKey, path, theme])
+  }, [pinsKey, path, secondaryPath, theme])
 
   return (
     <div

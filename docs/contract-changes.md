@@ -145,3 +145,26 @@
   `make reset`); donations created through the form keep `items = []` and the
   driver UI falls back to description + total weight.
 - Status: approved and applied for the hackathon demo.
+
+## Applied: trip mode, NGO matching feed, AI money estimates
+
+- Requester: orchestrator (hackathon feedback)
+- Change:
+  - `POST /drivers/me/trip-match` (`tripMatchRequestSchema` / `tripMatchSchema`):
+    deliveries ranked by detour on the driver's own trip, plus the combined
+    optimized route. `planDeliveryRoute` accepts `{ end }` so a route can
+    finish at the driver's destination; `GET /drivers/me/route-plan` takes an
+    optional `end=lat,lon` and returns `end`.
+  - `GET /ngo/matching-feed` (`ngoMatchingFeedSchema`): how the NGO ranked on
+    recent donations.
+  - `Classification` gains optional `estimatedValuePerKgBrl` and
+    `estimatedDisposalCostBrl`, filled by Claude.
+  - `POST /dev/reset` posts three fresh donations through the normal pipeline
+    so offers and scores are live after every reset.
+  - The web form no longer sends user-chosen `availableFrom`; it is the
+    publication time, and `expiresAt` comes from the chosen pickup window
+    (capped by the estimated shelf life).
+- Impact: additive. The NGO availability endpoint keeps
+  `availableCapacityKg`; the web no longer edits it.
+- Status: approved and applied for the hackathon demo.
+

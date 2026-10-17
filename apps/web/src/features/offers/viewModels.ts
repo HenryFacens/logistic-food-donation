@@ -154,3 +154,15 @@ export const offerReasons = (offer: Offer): OfferReason[] => {
   if (freshness) reasons.push({ icon: 'clock', text: freshness })
   return reasons
 }
+
+/** The four parts of the matching score, in the NGO's words. */
+export const scoreParts = (score: MatchingScore) => [
+  { label: 'Solicitação', part: score.components.categoryNeed },
+  { label: 'Distância', part: score.components.distance },
+  { label: 'Validade', part: score.components.perishability },
+  { label: 'Espaço', part: score.components.capacity },
+].map(({ label, part }) => ({
+  label,
+  percent: Math.round(part.normalized * 100),
+  weight: Math.round(part.weight * 100),
+}))

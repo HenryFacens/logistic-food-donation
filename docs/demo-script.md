@@ -38,17 +38,18 @@ Seeded requests (restored by every reset):
 
 | Step | Who | Do | What the audience sees |
 |---|---|---|---|
-| 1 | Donor | *Doar* → **Tirar foto** of the bread | Claude names the food, estimates quantity, weight, and shelf life, and marks the condition. The form fills itself. |
+| 1 | Donor | *Doar* → **Tirar foto** of the bread | Claude names the food and fills quantity, total weight, value per kg, disposal cost, category, and shelf life (each tagged *IA*). Changing the quantity rescales the weight. Pick *Retirar até* 15 min–3h or *Outro*. |
 | 2 | Donor | Point at *ONGs da região precisam de* | Live NGO needs near the shop. |
 | 3 | Donor | **Publicar doação** → *Minhas doações* → **Ver histórico e por que esta ONG** | All NGOs ranked with road distance, drive time, open requests, and why any were excluded. Prato Solidário (1.4 km, asked for French rolls) gets the offer. |
 | 4 | NGO | *Doações* | The photo, then plain reasons: "Atende sua solicitação de Pão francês", "1,4 km de vocês, ~12 min de carro", Claude's condition note. |
 | 5 | NGO | **Não podemos** | Back in the donor window the ranking updates within seconds: *Recusou* on Prato, *Oferta enviada* to the next NGO. |
-| 6 | NGO | *Solicitações* → *Horário e espaço para receber* → *Espaço livre hoje* 0 → donor posts again | Prato Solidário drops to the bottom: *Descartada: sem espaço livre hoje*. Restore the capacity afterwards. |
+| 6 | NGO | *Doações* → scroll to *Combinações recentes* | Every new donation in the area with this NGO's score, rank, the request Claude matched and why, and who got the offer. The yogurt shows *Não entrou: vocês não recebem esta categoria*. |
 | 7 | Donor, then NGO | Donor posts yogurt (photo or *Descrever manualmente*) → Prato Solidário is *Descartada: não recebe esta categoria*. NGO: *Solicitações* → **Nova solicitação** → iogurte, 30 → donor posts yogurt again | Prato Solidário, which did not take dairy a minute ago, now ranks first with an open request. |
 | 8 | Donor | *Local de retirada* → **Editar endereço** → CEP `13083-970` (Cidade Universitária, Barão Geraldo) → post again | The winner changes to Rede Barra de Alimentos, next door. |
 | 9 | NGO | **Aceitar doação** → *Entregas* | The donation is *A caminho* with the NGO's delivery code; the request bar fills on *Solicitações*. |
 | 10 | Driver | Switch to **Motorista** → select it → **Aceitar entregas** | *Minhas entregas* shows the optimized route on the Azure map. The donor's card now says "Ana Souza está a caminho" with a big **Código de retirada**. |
 | 11 | Driver | **Confirmar retirada** with the donor's code, then **Confirmar entrega** with the NGO's code | Wrong codes are refused. The NGO sees the delivery under *Para conferir*. |
+| 11b | Driver | **Meu trajeto** → *Usar exemplo: Cambuí → Unicamp* → **Encontrar entregas no caminho** | Deliveries ranked by minutes added to the trip (e.g. Mercado Taquaral → Rede Barra, +6 min). The map shows the direct trip dashed and the combined route; tick a second one and the route and times recompute. **Aceitar** puts them in *Minhas*, ending at the destination. |
 | 12 | NGO, donor | NGO: **Confirmar recebimento**. Donor: *Impacto* | kg checked by the NGO, estimated meals, and a prompt to rate the driver. The driver's *Prêmios* shows the new points. |
 
 Steps 5–8 are the proof: each one changes a single input and the ranking

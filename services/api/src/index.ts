@@ -52,6 +52,8 @@ import {
 } from "./routes/maps.js";
 import { getDonationMatching } from "./routes/matching.js";
 import { getDriverRoutePlan } from "./routes/routePlan.js";
+import { matchDriverTrip } from "./routes/tripMatch.js";
+import { getNgoMatchingFeed } from "./routes/ngoMatchingFeed.js";
 import {
   cancelNeed,
   createNeed,
@@ -211,6 +213,8 @@ route("getSellerProfile", "GET", "sellers/me", getSellerProfile);
 route("updateSellerProfile", "POST", "sellers/me", updateSellerProfile);
 route("getDriverStatus", "GET", "drivers/me", getDriverStatus);
 route("getDriverRoutePlan", "GET", "drivers/me/route-plan", getDriverRoutePlan);
+route("matchDriverTrip", "POST", "drivers/me/trip-match", matchDriverTrip);
+route("getNgoMatchingFeed", "GET", "ngo/matching-feed", getNgoMatchingFeed);
 route("updateDriverStatus", "POST", "drivers/me", updateDriverStatus);
 
 // NGO demand: needs and receiving availability.

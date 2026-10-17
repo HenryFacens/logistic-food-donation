@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button, EmptyState, LoadingState } from '../../../shared/ui'
 import { useOfferDecision, useOffers } from '../api/useOffers'
+import { MatchingFeed } from '../components/MatchingFeed'
 import { OfferCard, OfferHistoryRow } from '../components/OfferCard'
 import { offerMessages } from '../messages'
 import { mapOfferDecision } from '../viewModels'
@@ -55,6 +56,8 @@ export function NgoOffersPage() {
           title={offerMessages.emptyTitle}
         />
       ) : null}
+
+      <MatchingFeed />
 
       {history.length ? (
         <section className="offers-history">

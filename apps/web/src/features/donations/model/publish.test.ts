@@ -8,6 +8,8 @@ import {
   createStableIdempotencyRegistry,
   isUnsafeClassification,
   parseOptionalBrl,
+  rescaleWeight,
+  resolvePickupWindow,
   type DonationFormValues,
 } from './publish'
 
@@ -32,14 +34,14 @@ const body = {
 } satisfies CreateDonationRequest
 
 const formValues = {
-  availableFrom: '2026-10-16T12:00',
   category: 'bakery',
   city: 'Campinas',
   description: 'Pães do dia',
   district: 'Cambuí',
   disposalCostBrl: '',
   estimatedWeightKg: '4',
-  expiresAt: '2026-10-16T18:00',
+  expiryMinutes: '120',
+  expiryTime: '',
   latitude: '-22.8974',
   line1: 'Rua Coronel Quirino, 900',
   longitude: '-47.051',
@@ -103,14 +105,14 @@ describe('donation publication', () => {
 
   it('uses the selected place coordinates and falls back to the demo point', () => {
     const values: DonationFormValues = {
-      availableFrom: '2026-10-16T12:00',
       category: 'produce',
       city: 'Campinas',
       description: 'Bananas',
       disposalCostBrl: '',
       district: 'Centro',
       estimatedWeightKg: '8',
-      expiresAt: '2026-10-16T18:00',
+      expiryMinutes: '120',
+  expiryTime: '',
       latitude: '',
       line1: 'Avenida Francisco Glicério, 650',
       longitude: '',
@@ -151,14 +153,14 @@ describe('donation publication', () => {
 
 describe('applyClassification', () => {
   const values: DonationFormValues = {
-    availableFrom: '2026-10-16T12:00',
     category: '',
     city: 'Campinas',
     description: '',
     disposalCostBrl: '',
     district: 'Cambuí',
     estimatedWeightKg: '5',
-    expiresAt: '2026-10-16T18:00',
+    expiryMinutes: '120',
+  expiryTime: '',
     latitude: '-22.8974',
     line1: 'Rua Coronel Quirino, 900',
     longitude: '-47.051',
@@ -181,16 +183,25 @@ describe('applyClassification', () => {
     suggestedUnit: 'unit',
   }
 
-  it('prefills amounts and sets the deadline from shelf life', () => {
-    expect(applyClassification(values, classification)).toMatchObject({
+  it('prefills amounts, value, and disposal cost and reports what it filled', () => {
+    const applied = applyClassification(values, {
+      ...classification,
+      estimatedValuePerKgBrl: 16,
+      estimatedDisposalCostBrl: 2.4,
+    })
+    expect(applied.values).toMatchObject({
       category: 'bakery',
       description: 'Pães franceses do dia',
+      disposalCostBrl: '2,40',
       estimatedWeightKg: '1.5',
-      expiresAt: '2026-10-16T16:00',
       perishabilityMinutes: '240',
       quantity: '30',
       unit: 'unit',
+      unitValueBrl: '16,00',
     })
+    expect(applied.filled).toEqual(
+      expect.arrayContaining(['quantity', 'estimatedWeightKg', 'unitValueBrl', 'disposalCostBrl']),
+    )
   })
 
   it('keeps vendor amounts when the analysis has none', () => {
@@ -202,7 +213,7 @@ describe('applyClassification', () => {
       simulated: true,
       source: 'manual',
     }
-    expect(applyClassification(values, simulated)).toMatchObject({
+    expect(applyClassification(values, simulated).values).toMatchObject({
       description: 'Pães',
       estimatedWeightKg: '5',
       quantity: '10',
@@ -219,14 +230,14 @@ describe('pickup address', () => {
   it('uses the GPS or profile coordinates instead of a fixed point', () => {
     const values = applyAddress(
       {
-        availableFrom: '2026-10-16T12:00',
-        category: 'bakery',
+          category: 'bakery',
         city: 'Campinas',
         description: 'Pães',
         disposalCostBrl: '',
         district: 'Cambuí',
         estimatedWeightKg: '2',
-        expiresAt: '2026-10-16T18:00',
+        expiryMinutes: '120',
+  expiryTime: '',
         latitude: '-22.8974',
         line1: 'Rua Coronel Quirino, 900',
         longitude: '-47.051',
@@ -250,5 +261,45 @@ describe('pickup address', () => {
       city: 'Valinhos',
       location: { latitude: -22.97, longitude: -46.996 },
     })
+  })
+})
+
+describe('pickup window and weight', () => {
+  const base: DonationFormValues = {
+    ...formValues,
+    perishabilityMinutes: '600',
+  }
+  const now = new Date('2026-10-16T14:00:00')
+
+  it('starts now and ends after the chosen minutes', () => {
+    const window = resolvePickupWindow({ ...base, expiryMinutes: '30' }, now)
+    expect(window.availableFrom).toEqual(now)
+    expect(window.expiresAt).toEqual(new Date('2026-10-16T14:30:00'))
+    expect(window.capped).toBe(false)
+  })
+
+  it('uses a custom clock time, rolling to tomorrow when it has passed', () => {
+    expect(resolvePickupWindow({ ...base, expiryTime: '18:15' }, now).expiresAt).toEqual(
+      new Date('2026-10-16T18:15:00'),
+    )
+    const late = resolvePickupWindow(
+      { ...base, perishabilityMinutes: '2880', expiryTime: '09:00' },
+      now,
+    )
+    expect(late.expiresAt).toEqual(new Date('2026-10-17T09:00:00'))
+  })
+
+  it('never goes past the estimated shelf life', () => {
+    const window = resolvePickupWindow(
+      { ...base, perishabilityMinutes: '45', expiryMinutes: '120' },
+      now,
+    )
+    expect(window.expiresAt).toEqual(new Date('2026-10-16T14:45:00'))
+    expect(window.capped).toBe(true)
+  })
+
+  it('scales the weight with the quantity at the same weight per item', () => {
+    expect(rescaleWeight({ ...base, quantity: '20', estimatedWeightKg: '4', unit: 'unit' }, '30')).toBe('6')
+    expect(rescaleWeight({ ...base, quantity: '8', estimatedWeightKg: '8', unit: 'kg' }, '12')).toBe('12')
   })
 })

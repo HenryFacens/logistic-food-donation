@@ -2,6 +2,7 @@ import type { Offer } from '@resgata/shared'
 import { useState } from 'react'
 import { AppIcon, Button, StatusBadge } from '../../../shared/ui'
 import { getErrorMessage, offerMessages } from '../messages'
+import { ScoreBreakdown } from './ScoreBreakdown'
 import {
   mapOfferDecision,
   offerReasons,
@@ -77,6 +78,8 @@ export function OfferCard({ deciding, offer, onDecision }: OfferCardProps) {
           </li>
         ))}
       </ul>
+
+      <ScoreBreakdown score={offer.score} />
 
       {condition ? (
         <p className={`offer-card__condition offer-card__condition--${condition}`}>

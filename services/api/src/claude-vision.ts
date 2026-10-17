@@ -55,6 +55,16 @@ const claudeAnalysisSchema = z.object({
   confidence: z
     .number()
     .describe("0 to 1: how confident you are in category and quantity."),
+  valuePerKgBrl: z
+    .number()
+    .describe(
+      "Typical retail price of this food in Campinas, in BRL per kg, for the shop's management records.",
+    ),
+  disposalCostBrl: z
+    .number()
+    .describe(
+      "What the shop would pay to throw this amount away (commercial waste collection, bags, labor), in BRL.",
+    ),
 });
 
 const SYSTEM_PROMPT = `You help small food vendors in Brazil (bakeries, restaurants, markets) donate surplus food to NGOs through the Resgata app. A vendor sends a photo of the food they want to donate, sometimes with a short note. Your analysis prefills the donation form; the vendor reviews it before publishing.
@@ -64,6 +74,8 @@ Identify what food is shown, estimate how much there is, and judge whether it is
 Food safety matters more than completeness: NGOs serve this food to people in vulnerable situations. Mark the condition "unsafe" for visible mold, spoilage, damaged or swollen packaging, or high-risk perishables (meat, fish, dairy, cooked dishes) that look like they were left unrefrigerated. Mark "attention" when the food is fine but must be handled or delivered quickly. Keep shelf-life estimates conservative.
 
 If the photo does not show food, set isFood to false, explain briefly in conditionNotes, and fill the other fields with your best neutral values.
+
+Also give rough money figures for the shop's records: the usual retail price per kg in Brazil today, and what discarding this amount would cost a small business (commercial waste collection in Brazilian cities is typically around R$ 0,50 to R$ 1,50 per kg, plus bags and staff time). These are estimates the vendor can edit.
 
 Write every user-facing text field (description, items, conditionNotes) in Brazilian Portuguese, in plain words a busy shop owner can read at a glance.`;
 
@@ -167,6 +179,10 @@ export function toClassification(
     condition: analysis.condition,
     conditionNotes: conditionNotes ? conditionNotes.slice(0, 500) : undefined,
     model,
+    estimatedValuePerKgBrl:
+      analysis.valuePerKgBrl > 0 ? Math.round(analysis.valuePerKgBrl * 100) / 100 : undefined,
+    estimatedDisposalCostBrl:
+      analysis.disposalCostBrl > 0 ? Math.round(analysis.disposalCostBrl * 100) / 100 : undefined,
   });
 }
 

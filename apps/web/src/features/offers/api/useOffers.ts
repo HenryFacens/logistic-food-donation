@@ -1,4 +1,5 @@
 import {
+  ngoMatchingFeedSchema,
   offerDecisionResponseSchema,
   offerListSchema,
 } from '@resgata/shared'
@@ -34,6 +35,16 @@ export function useOffers() {
     queryKey: offerQueryKeys.list(),
     queryFn: async () => offerListSchema.parse(await api.get('/offers?limit=50')),
     // New offers arrive from the matching worker; keep the list live.
+    refetchInterval: 15_000,
+  })
+}
+
+/** How this NGO ranked on recent donations in its area. */
+export function useMatchingFeed() {
+  const api = useApiClient()
+  return useQuery({
+    queryKey: offerQueryKeys.feed(),
+    queryFn: async () => ngoMatchingFeedSchema.parse(await api.get('/ngo/matching-feed')),
     refetchInterval: 15_000,
   })
 }

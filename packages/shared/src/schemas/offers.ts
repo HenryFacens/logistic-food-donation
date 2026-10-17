@@ -128,3 +128,33 @@ export const matchingExplanationSchema = z.object({
   ),
 });
 export type MatchingExplanation = z.infer<typeof matchingExplanationSchema>;
+
+/** How this NGO ranked on one recent donation in its area. */
+export const ngoMatchingFeedItemSchema = z.object({
+  donationId: uuidSchema,
+  description: z.string().min(1),
+  sellerName: z.string().min(1),
+  weightKg: z.number().nonnegative(),
+  imageUrl: z.string().nullable(),
+  runAt: isoDateTimeSchema,
+  /** This NGO's place among the NGOs ranked for the donation. */
+  rank: z.number().int().positive(),
+  candidates: z.number().int().positive(),
+  eligible: z.boolean(),
+  score: z.number().min(0).max(100),
+  distanceKm: z.number().nonnegative(),
+  etaMinutes: z.number().nonnegative(),
+  rejectionReasons: z.array(z.string()),
+  needMatch: needMatchSchema.optional(),
+  /** Who got the offer first, when it was not this NGO. */
+  winnerName: z.string().nullable(),
+  winnerScore: z.number().min(0).max(100).nullable(),
+  /** This NGO's offer for the donation, if it received one. */
+  offerStatus: offerStatusSchema.nullable(),
+});
+export type NgoMatchingFeedItem = z.infer<typeof ngoMatchingFeedItemSchema>;
+
+export const ngoMatchingFeedSchema = z.object({
+  items: z.array(ngoMatchingFeedItemSchema),
+});
+export type NgoMatchingFeed = z.infer<typeof ngoMatchingFeedSchema>;
