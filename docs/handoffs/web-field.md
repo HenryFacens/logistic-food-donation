@@ -99,3 +99,20 @@ card `+40 pts` = 40 credited → impact 6 → 7 donations, 72 → 77 kg.
 - `make smoke-lite` leaves `OFFER_TIMEOUT_SECONDS=5` in the running stack.
   Before a live demo run `COMPOSE_PROFILES= QUEUE_DRIVER=pg docker compose up -d`
   (back to `.env`, 30 s) and `POST /api/dev/reset`.
+
+## 2026-10-16: driver motion pass
+
+- Added `lottie-web@5.12.2` (light SVG player, lazy chunk ~47 KB gzip) via
+  `shared/ui/LottiePlayer` and two hand-made animations in
+  `features/pickups/animations/` (success burst, route loop for the empty
+  state). `tsconfig.app.json` enables `resolveJsonModule`.
+- Motion in `features/pickups/pickups.css`: sliding tab indicator, staggered
+  card entrance, animated checkbox, urgency ping, View Transitions on sort,
+  spring selection bar with animated totals and a capacity meter, shake on
+  overflow, progress stepper, and a non-blocking `SuccessBurst` for accept,
+  collect, and deliver (the confirm success toast was replaced by it).
+- Reduced motion: global rule collapses CSS motion, Lottie shows its last
+  frame, and the celebration stays visible statically.
+- Verified: gate green, end-to-end demo in Chrome (celebrations +25 and +15
+  matched the card's +40), reduced-motion run, no console errors.
+- Explainer for the team (pt-BR): `docs/motorista-entregas.md`.
