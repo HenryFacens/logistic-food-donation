@@ -38,7 +38,7 @@ Seeded requests (restored by every reset):
 
 | Step | Who | Do | What the audience sees |
 |---|---|---|---|
-| 1 | Donor | *Doar* → **Tirar foto** of the bread | Claude names the food and fills quantity, total weight, value per kg, disposal cost, category, and shelf life (each tagged *IA*). Changing the quantity rescales the weight. Pick *Retirar até* 15 min–3h or *Outro*. |
+| 1 | Donor | *Doar* → **Tirar foto** of the bread | Claude names the food and fills quantity, total weight, value per kg, disposal cost, category, and shelf life (each tagged *IA*). Changing the quantity rescales the weight. Pick *Retirar até* 1h, 2h, 3h, or *Outro*. |
 | 2 | Donor | Point at *ONGs da região precisam de* | Live NGO needs near the shop. |
 | 3 | Donor | **Publicar doação** → *Minhas doações* → **Ver histórico e por que esta ONG** | All NGOs ranked with road distance, drive time, open requests, and why any were excluded. Prato Solidário (1.4 km, asked for French rolls) gets the offer. |
 | 4 | NGO | *Doações* | The photo, then plain reasons: "Atende sua solicitação de Pão francês", "1,4 km de vocês, ~12 min de carro", Claude's condition note. |

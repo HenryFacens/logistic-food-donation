@@ -58,8 +58,6 @@ const createInitialValues = (shopAddress?: Address | null): DonationFormValues =
 }
 
 const expiryPresets = [
-  { label: '15 min', minutes: 15 },
-  { label: '30 min', minutes: 30 },
   { label: '1h', minutes: 60 },
   { label: '2h', minutes: 120 },
   { label: '3h', minutes: 180 },
