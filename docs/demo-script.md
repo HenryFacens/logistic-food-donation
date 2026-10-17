@@ -40,14 +40,16 @@ Seeded requests (restored by every reset):
 |---|---|---|---|
 | 1 | Donor | *Doar* → **Tirar foto** of the bread | Claude names the food, estimates quantity, weight, and shelf life, and marks the condition. The form fills itself. |
 | 2 | Donor | Point at *ONGs da região precisam de* | Live NGO needs near the shop. |
-| 3 | Donor | **Publicar doação** → *Doações* | The card opens **Por que esta ONG?**: all NGOs ranked with road distance, drive time, open needs, and why any were excluded. Prato Solidário (1.4 km, open bread need) gets the offer. |
-| 4 | NGO | *Ofertas* | The photo, Claude's condition note, "1,4 km · ~12 min". |
-| 5 | NGO | **Recusar** | Back in the donor window the ranking updates within seconds: *Recusou* on Prato, *Oferta enviada* to the next NGO. |
-| 6 | NGO | *Pedidos* → set *Espaço livre hoje* to 0 → donor posts again | Prato Solidário drops to the bottom: *Descartada: sem espaço livre hoje*. Restore the capacity afterwards. |
-| 7 | Donor, then NGO | Donor posts yogurt (photo or *Sem foto? Descreva o alimento*) → Prato Solidário is *Descartada: não recebe esta categoria*. NGO: *Pedidos* → **Laticínios 30 kg** → donor posts yogurt again | Prato Solidário, which did not take dairy a minute ago, now ranks first with an open need. |
+| 3 | Donor | **Publicar doação** → *Minhas doações* → **Ver histórico e por que esta ONG** | All NGOs ranked with road distance, drive time, open requests, and why any were excluded. Prato Solidário (1.4 km, asked for French rolls) gets the offer. |
+| 4 | NGO | *Doações* | The photo, then plain reasons: "Atende sua solicitação de Pão francês", "1,4 km de vocês, ~12 min de carro", Claude's condition note. |
+| 5 | NGO | **Não podemos** | Back in the donor window the ranking updates within seconds: *Recusou* on Prato, *Oferta enviada* to the next NGO. |
+| 6 | NGO | *Solicitações* → *Horário e espaço para receber* → *Espaço livre hoje* 0 → donor posts again | Prato Solidário drops to the bottom: *Descartada: sem espaço livre hoje*. Restore the capacity afterwards. |
+| 7 | Donor, then NGO | Donor posts yogurt (photo or *Descrever manualmente*) → Prato Solidário is *Descartada: não recebe esta categoria*. NGO: *Solicitações* → **Nova solicitação** → iogurte, 30 → donor posts yogurt again | Prato Solidário, which did not take dairy a minute ago, now ranks first with an open request. |
 | 8 | Donor | *Local de retirada* → **Editar endereço** → CEP `13083-970` (Cidade Universitária, Barão Geraldo) → post again | The winner changes to Rede Barra de Alimentos, next door. |
-| 9 | NGO | Accept any offer → *Pedidos* | The need bar fills by the donated kg and today's capacity drops. |
-| 10 | Driver | Switch to **Ana — motorista** | The new pickup comes first with its distance; drivers can go offline/online. |
+| 9 | NGO | **Aceitar doação** → *Entregas* | The donation is *A caminho* with the NGO's delivery code; the request bar fills on *Solicitações*. |
+| 10 | Driver | Switch to **Motorista** → select it → **Aceitar entregas** | *Minhas entregas* shows the optimized route on the Azure map. The donor's card now says "Ana Souza está a caminho" with a big **Código de retirada**. |
+| 11 | Driver | **Confirmar retirada** with the donor's code, then **Confirmar entrega** with the NGO's code | Wrong codes are refused. The NGO sees the delivery under *Para conferir*. |
+| 12 | NGO, donor | NGO: **Confirmar recebimento**. Donor: *Impacto* | kg checked by the NGO, estimated meals, and a prompt to rate the driver. The driver's *Prêmios* shows the new points. |
 
 Steps 5–8 are the proof: each one changes a single input and the ranking
 changes for the stated reason.
@@ -89,9 +91,9 @@ Publishing to a visible ranking takes about 5–8 seconds with Claude.
 ## If something goes wrong
 
 - **No photo analysis or request matching**: without `ANTHROPIC_API_KEY` the
-  photo result is labeled SIMULADO and requests are matched by rules
+  photo result comes from the offline classifier and requests are matched by rules
   (*avaliado por regras* in the panel); the rest of the flow still works.
-- **Every NGO excluded**: check the clock against NGO hours on *Pedidos*, or run
+- **Every NGO excluded**: check the clock against NGO hours on *Solicitações*, or run
   the reset again.
 - **Offer expired before the NGO clicked**: raise `OFFER_TIMEOUT_SECONDS` and
   restart the workers.
