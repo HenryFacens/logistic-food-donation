@@ -32,11 +32,11 @@ const categoryLabels: Record<DonationCategory, string> = {
   produce: 'Hortifruti',
 }
 
-const unitLabels: Record<DonationUnit, string> = {
-  box: 'caixas',
-  kg: 'kg',
-  tray: 'bandejas',
-  unit: 'unidades',
+const unitLabels: Record<DonationUnit, [singular: string, plural: string]> = {
+  box: ['caixa', 'caixas'],
+  kg: ['kg', 'kg'],
+  tray: ['bandeja', 'bandejas'],
+  unit: ['unidade', 'unidades'],
 }
 
 const conditionTones: Record<
@@ -75,7 +75,7 @@ const summarize = (result: Classification) => {
   const parts: string[] = []
   if (result.suggestedQuantity && result.suggestedUnit) {
     parts.push(
-      `≈ ${numberFormat.format(result.suggestedQuantity)} ${unitLabels[result.suggestedUnit]}`,
+      `≈ ${numberFormat.format(result.suggestedQuantity)} ${unitLabels[result.suggestedUnit][result.suggestedQuantity === 1 ? 0 : 1]}`,
     )
   }
   if (result.estimatedWeightKg) {

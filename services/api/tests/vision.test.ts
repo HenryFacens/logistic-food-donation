@@ -33,7 +33,7 @@ describe("Claude vision mapping", () => {
     const result = toClassification(
       analysis,
       { source: "camera", imageBase64: "/9j/abc" },
-      "claude-opus-5-5",
+      "claude-sonnet-5-5",
     );
     expect(result).toMatchObject({
       category: "bakery",
@@ -43,7 +43,7 @@ describe("Claude vision mapping", () => {
       perishabilityMinutes: 7 * 24 * 60,
       estimatedWeightKg: 1.5,
       simulated: false,
-      model: "claude-opus-5-5",
+      model: "claude-sonnet-5-5",
     });
     expect(result.conditionNotes).toBeUndefined();
   });
@@ -52,7 +52,7 @@ describe("Claude vision mapping", () => {
     const result = toClassification(
       { ...analysis, suggestedQuantity: 0, estimatedWeightKg: -1, shelfLifeHours: 0 },
       { source: "upload", imageBase64: "/9j/abc" },
-      "claude-opus-5-5",
+      "claude-sonnet-5-5",
     );
     expect(result.suggestedQuantity).toBeUndefined();
     expect(result.estimatedWeightKg).toBeUndefined();

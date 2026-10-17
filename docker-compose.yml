@@ -10,7 +10,7 @@ x-app-environment: &app-environment
   OPENAI_BASE_URL: http://mock-openai:3000
   OPENAI_API_KEY: local-simulated-key
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-  ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
+  ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5-5}
   MAPS_BASE_URL: http://mock-maps:3000
   ACS_BASE_URL: http://mock-acs:3000
   ACS_MOCK_URL: http://mock-acs:3000/messages

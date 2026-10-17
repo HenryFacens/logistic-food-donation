@@ -12,7 +12,7 @@ const environmentSchema = z.object({
     .trim()
     .optional()
     .transform((value) => value || undefined),
-  ANTHROPIC_MODEL: z.string().trim().min(1).default("claude-opus-5-5"),
+  ANTHROPIC_MODEL: z.string().trim().min(1).default("claude-sonnet-5-5"),
   CLAUDE_TIMEOUT_MS: z.coerce.number().int().positive().default(25000),
   ENABLE_DEV_RESET: z
     .enum(["true", "false"])
