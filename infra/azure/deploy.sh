@@ -95,15 +95,25 @@ fi
 
 if [[ -z "${SKIP_INFRA:-}" || -n "${RESET_DB:-}" ]]; then
   log "Database schema and demo data"
-  MY_IP="$(curl -fsS https://api.ipify.org)"
-  az postgres flexible-server firewall-rule create -g "$RESOURCE_GROUP" -s "$AZ_PG_SERVER" \
-    -n deployer --start-ip-address "$MY_IP" --end-ip-address "$MY_IP" \
-    --only-show-errors >/dev/null
+  # Some networks (mobile hotspots) leave through several public IPs; allow
+  # every one seen in a few lookups.
+  rule=0
+  for MY_IP in $(for _ in 1 2 3 4 5; do curl -fsS https://api.ipify.org; echo; done | sort -u); do
+    rule=$((rule + 1))
+    az postgres flexible-server firewall-rule create -g "$RESOURCE_GROUP" -s "$AZ_PG_SERVER" \
+      -n "deployer$rule" --start-ip-address "$MY_IP" --end-ip-address "$MY_IP" \
+      --only-show-errors >/dev/null
+  done
   run_psql() {
     docker run --rm -i -e PGPASSWORD="$AZ_PG_PASSWORD" postgres:16-alpine \
       psql "host=$PG_HOST port=5432 user=$AZ_PG_USER dbname=resgata sslmode=require" \
       -v ON_ERROR_STOP=1 -q "$@"
   }
+  # A new firewall rule takes a moment to apply; wait until Postgres accepts us.
+  for _ in $(seq 1 24); do
+    run_psql -At -c "SELECT 1" >/dev/null 2>&1 && break
+    sleep 5
+  done
   if [[ "$(run_psql -At -c "SELECT to_regclass('public.users') IS NOT NULL")" != "t" ]]; then
     # Same order as the docker-entrypoint-initdb.d mounts in docker-compose.yml.
     for file in \
