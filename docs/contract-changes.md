@@ -61,3 +61,23 @@
   gap (pre-existing): no screen shows `pickupCode` to the seller; see
   `docs/handoffs/api.md`.
 - Status: approved and applied for the hackathon demo.
+
+## Applied: itemized pickups and delivery deadline
+
+- Requester: web-field (driver deliveries screen)
+- Change:
+  - Migration `db/migrations/003_donation_items.sql` adds
+    `donations.items jsonb NOT NULL DEFAULT '[]'` (array of
+    `{ name, quantity, unit }`). Mounted in Compose as `025-donation-items.sql`.
+  - `PickupSummary` gains `items` (`PickupItem[]`, empty when the seller only
+    gave a description) and `deliverBy` =
+    `GREATEST(expiresAt, availableFrom + perishabilityMinutes)`.
+  - The open-pickups demo seed lists items per donation (weights sum to the
+    donation weight) and a delivery window 60–240 min after the pickup
+    deadline.
+- Reason: drivers need to know exactly what they carry and when the NGO must
+  receive it, not just a generic description and total weight.
+- Impact: additive. Existing databases need the migration applied (or
+  `make reset`); donations created through the form keep `items = []` and the
+  driver UI falls back to description + total weight.
+- Status: approved and applied for the hackathon demo.

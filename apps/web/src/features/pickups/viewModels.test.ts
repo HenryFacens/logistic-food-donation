@@ -7,6 +7,9 @@ import {
   formatRemaining,
   mapPickupConfirmation,
   nextPickupAction,
+  deliveryDeadline,
+  displayDescription,
+  formatItem,
   pickupUrgency,
   selectionSummaryLabel,
   selectionTotals,
@@ -89,7 +92,9 @@ const buildPickup = (
     description: 'SIMULADO',
     distanceToPickupKm: 2,
     estimatedWeightKg: 10,
+    deliverBy: '2026-10-16T16:00:00Z',
     expiresAt: '2026-10-16T15:00:00Z',
+    items: [],
     ngoName: 'ONG',
     pickupAddress: address,
     quantity: 10,
@@ -124,6 +129,22 @@ describe('driver deliveries view model', () => {
     expect(pickupUrgency(at(180), NOW)).toEqual({ label: 'Vence em 3h', tone: null })
     expect(pickupUrgency(at(-1), NOW)).toEqual({ label: 'Vencida', tone: 'danger' })
     expect(formatRemaining(61 * 60_000)).toBe('1h01')
+  })
+
+  it('labels the delivery deadline with its clock time and tone', () => {
+    const at = (minutes: number) => new Date(NOW + minutes * 60_000).toISOString()
+    expect(deliveryDeadline(at(45), NOW)?.tone).toBe('danger')
+    expect(deliveryDeadline(at(90), NOW)?.tone).toBe('warning')
+    expect(deliveryDeadline(at(180), NOW)?.label).toMatch(/^Entregar até \d{2}:\d{2}$/)
+    expect(deliveryDeadline(at(-1), NOW)).toEqual({ label: 'Prazo de entrega vencido', tone: 'danger' })
+    expect(deliveryDeadline(undefined, NOW)).toBeNull()
+  })
+
+  it('formats itemized loads and strips the SIMULADO prefix', () => {
+    expect(formatItem({ name: 'Bananas', quantity: 1, unit: 'kg' })).toBe('Bananas – 1 kg')
+    expect(formatItem({ name: 'Bolos', quantity: 1.5, unit: 'tray' })).toBe('Bolos – 1,5 bandejas')
+    expect(formatItem({ name: 'Cestas', quantity: 1, unit: 'box' })).toBe('Cestas – 1 caixa')
+    expect(displayDescription('SIMULADO - frutas e verduras da feira')).toBe('Frutas e verduras da feira')
   })
 
   it('sorts by urgency by default and by distance on demand', () => {

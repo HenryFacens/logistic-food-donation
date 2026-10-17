@@ -20,6 +20,14 @@ export const pickupStatusSchema = z.enum([
 ]);
 export type PickupStatus = z.infer<typeof pickupStatusSchema>;
 
+/** One itemized line of a donation, e.g. "Bananas, 12 kg". */
+export const pickupItemSchema = z.object({
+  name: nonEmptyTextSchema,
+  quantity: z.number().positive(),
+  unit: donationUnitSchema,
+});
+export type PickupItem = z.infer<typeof pickupItemSchema>;
+
 /**
  * Decision data for drivers, joined from the donation, seller, and NGO.
  * Present on `GET /pickups`; other pickup responses may omit it.
@@ -30,7 +38,12 @@ export const pickupSummarySchema = z.object({
   estimatedWeightKg: z.number().positive(),
   quantity: z.number().positive(),
   unit: donationUnitSchema,
+  /** Itemized contents; empty when the seller only gave a description. */
+  items: z.array(pickupItemSchema),
+  /** Pickup deadline at the seller (the donation expiry). */
   expiresAt: isoDateTimeSchema,
+  /** Delivery deadline at the NGO: availableFrom + perishability, never before expiresAt. */
+  deliverBy: isoDateTimeSchema,
   sellerName: nonEmptyTextSchema,
   pickupAddress: addressSchema,
   ngoName: nonEmptyTextSchema,

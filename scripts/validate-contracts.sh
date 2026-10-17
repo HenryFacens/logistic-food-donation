@@ -46,6 +46,9 @@ docker exec "${container_name}" psql \
   -f /work/db/migrations/002_messaging_and_atomic_operations.sql >/dev/null
 docker exec "${container_name}" psql \
   -U resgata -d resgata -v ON_ERROR_STOP=1 \
+  -f /work/db/migrations/003_donation_items.sql >/dev/null
+docker exec "${container_name}" psql \
+  -U resgata -d resgata -v ON_ERROR_STOP=1 \
   -f /work/db/seed/001_demo_seed.sql >/dev/null
 docker exec "${container_name}" psql \
   -U resgata -d resgata -v ON_ERROR_STOP=1 \

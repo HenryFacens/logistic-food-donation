@@ -3,10 +3,11 @@ import type { CSSProperties } from 'react'
 import {
   AppIcon,
   MetricValue,
-  SimuladoBadge,
   StatusBadge,
 } from '../../../shared/ui'
 import {
+  deliveryDeadline,
+  displayDescription,
   displayName,
   formatKg,
   formatKm,
@@ -14,6 +15,7 @@ import {
   pickupUrgency,
   shortAddress,
 } from '../viewModels'
+import { PickupItems } from './PickupItems'
 
 interface AvailablePickupCardProps {
   disabled: boolean
@@ -34,6 +36,7 @@ export function AvailablePickupCard({
 }: AvailablePickupCardProps) {
   const summary = pickup.summary
   const urgency = pickupUrgency(summary?.expiresAt, now)
+  const deadline = deliveryDeadline(summary?.deliverBy, now)
   const inputId = `select-pickup-${pickup.id}`
   const style = {
     '--stagger': Math.min(index, 8),
@@ -55,27 +58,20 @@ export function AvailablePickupCard({
           icon="package"
           label={summary?.category ? pickupCategoryLabels[summary.category] : 'Doação'}
         />
-        {urgency ? (
-          <span className="delivery-card__urgency">
-            {urgency.tone === 'danger' ? <span className="urgency-ping" aria-hidden="true" /> : null}
-            <StatusBadge
-              icon={urgency.tone ? 'warning' : 'clock'}
-              label={urgency.label}
-              tone={urgency.tone ?? 'neutral'}
-            />
-          </span>
-        ) : null}
-        <SimuladoBadge />
       </div>
 
-      <div className="delivery-card__load">
-        <strong className="delivery-card__weight">
-          <MetricValue value={formatKg(summary?.estimatedWeightKg ?? 0)} />
-        </strong>
-        <p className="delivery-card__description">
-          {summary?.description ?? `Doação ${pickup.donationId.slice(0, 8)}`}
-        </p>
-      </div>
+      {summary?.items.length ? (
+        <PickupItems items={summary.items} />
+      ) : (
+        <div className="delivery-card__load">
+          <strong className="delivery-card__weight">
+            <MetricValue value={formatKg(summary?.estimatedWeightKg ?? 0)} />
+          </strong>
+          <p className="delivery-card__description">
+            {summary ? displayDescription(summary.description) : `Doação ${pickup.donationId.slice(0, 8)}`}
+          </p>
+        </div>
+      )}
 
       {summary ? (
         <>
@@ -88,6 +84,16 @@ export function AvailablePickupCard({
                 <strong>{displayName(summary.sellerName)}</strong>
                 <span>Retirada · {shortAddress(summary.pickupAddress)}</span>
               </div>
+              {urgency ? (
+                <span className="delivery-card__urgency">
+                  {urgency.tone === 'danger' ? <span className="urgency-ping" aria-hidden="true" /> : null}
+                  <StatusBadge
+                    icon={urgency.tone ? 'warning' : 'clock'}
+                    label={urgency.label}
+                    tone={urgency.tone ?? 'neutral'}
+                  />
+                </span>
+              ) : null}
             </li>
             <li>
               <span className="delivery-route__icon delivery-route__icon--destination" aria-hidden="true">
@@ -97,6 +103,13 @@ export function AvailablePickupCard({
                 <strong>{displayName(summary.ngoName)}</strong>
                 <span>Entrega · {shortAddress(summary.deliveryAddress)}</span>
               </div>
+              {deadline ? (
+                <StatusBadge
+                  icon={deadline.tone ? 'warning' : 'clock'}
+                  label={deadline.label}
+                  tone={deadline.tone ?? 'neutral'}
+                />
+              ) : null}
             </li>
           </ol>
           <div className="delivery-card__distances">

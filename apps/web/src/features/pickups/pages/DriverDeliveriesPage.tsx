@@ -12,7 +12,6 @@ import {
   EmptyState,
   LottiePlayer,
   MetricValue,
-  SimuladoBadge,
   useToast,
 } from '../../../shared/ui'
 import routeAnimation from '../animations/route.json'
@@ -326,6 +325,7 @@ export function DriverDeliveriesPage() {
                   confirming={actions.confirm.isPending && actions.confirm.variables?.pickupId === pickup.id}
                   onAssign={actions.assign.mutateAsync}
                   onConfirm={confirmStep}
+                  now={now}
                   pickup={pickup}
                 />
               </div>
@@ -366,7 +366,6 @@ function CompletedPickups({ pickups }: { pickups: readonly Pickup[] }) {
       <summary>
         <AppIcon name="check" size={18} />
         Concluídas ({pickups.length})
-        <span className="ml-auto"><SimuladoBadge /></span>
       </summary>
       <ul>
         {pickups.map((pickup) => (

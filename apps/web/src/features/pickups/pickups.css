@@ -242,10 +242,6 @@
   gap: 0.4rem;
 }
 
-.delivery-card__top .simulated-badge {
-  margin-left: auto;
-}
-
 .delivery-card__urgency {
   position: relative;
   display: inline-flex;
@@ -288,6 +284,36 @@
   font-size: 0.925rem;
 }
 
+.delivery-items {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Name and quantity joined by a dotted leader. */
+.delivery-items li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.925rem;
+}
+
+.delivery-items li::before {
+  order: 1;
+  flex: 1;
+  min-width: 1rem;
+  border-bottom: 1px dotted rgb(var(--color-border-strong));
+  content: "";
+}
+
+.delivery-items li > span:last-child {
+  order: 2;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .delivery-route {
   position: relative;
   display: grid;
@@ -312,7 +338,7 @@
 .delivery-route li {
   position: relative;
   display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr);
+  grid-template-columns: 1.75rem minmax(0, 1fr) auto;
   gap: 0.6rem;
   align-items: start;
 }
@@ -348,6 +374,13 @@
 .delivery-route li > div > span {
   color: rgb(var(--color-muted));
   font-size: 0.8rem;
+}
+
+/* Deadline badges sit beside each address. */
+.delivery-route li > .status-badge,
+.delivery-route li > .delivery-card__urgency {
+  align-self: center;
+  white-space: nowrap;
 }
 
 .delivery-card__distances {

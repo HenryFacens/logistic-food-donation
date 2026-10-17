@@ -10,14 +10,18 @@ import {
 import { pickupErrorMessage, pickupMessages } from '../messages'
 import {
   coordinateLabel,
+  deliveryDeadline,
+  displayDescription,
   displayName,
   formatKg,
   formatKm,
   nextPickupAction,
   pickupStatusLabels,
+  pickupUrgency,
   shortAddress,
 } from '../viewModels'
 import { PickupConfirmation } from './PickupConfirmation'
+import { PickupItems } from './PickupItems'
 import { PickupProgress } from './PickupProgress'
 
 interface PickupCardProps {
@@ -26,6 +30,8 @@ interface PickupCardProps {
   confirming: boolean
   onAssign(pickupId: string): Promise<unknown>
   onConfirm: React.ComponentProps<typeof PickupConfirmation>['onConfirm']
+  /** Clock for the driver deadlines; they are hidden without it. */
+  now?: number
   pickup: Pickup
 }
 
@@ -42,12 +48,18 @@ export function PickupCard({
   confirming,
   onAssign,
   onConfirm,
+  now,
   pickup,
 }: PickupCardProps) {
   const [confirmation, setConfirmation] = useState<'collect' | 'deliver' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const action = nextPickupAction(pickup)
   const summary = pickup.summary
+  const isDriver = audience === 'driver'
+  // Pickup deadline only matters until the food is collected.
+  const showDeadlines = isDriver && now !== undefined
+  const pickupDeadline = showDeadlines && action === 'collect' ? pickupUrgency(summary?.expiresAt, now) : null
+  const deliverDeadline = showDeadlines && action ? deliveryDeadline(summary?.deliverBy, now) : null
 
   const assign = async () => {
     setError(null)
@@ -65,13 +77,13 @@ export function PickupCard({
           <span className="eyebrow">Doação {pickup.donationId.slice(0, 8)}</span>
           <h2 className="mb-1 text-xl">
             {summary
-              ? summary.description
+              ? isDriver ? displayDescription(summary.description) : summary.description
               : audience === 'ngo' ? 'Recebimento programado' : 'Rota solidária'}
           </h2>
           <p className="mb-0">Atualizada em {new Date(pickup.updatedAt).toLocaleString('pt-BR')}</p>
         </div>
         <div className="grid justify-items-end gap-2">
-          <SimuladoBadge />
+          {isDriver ? null : <SimuladoBadge />}
           <StatusBadge label={pickupStatusLabels[pickup.status]} tone={statusTone(pickup.status)} />
         </div>
       </div>
@@ -80,8 +92,12 @@ export function PickupCard({
 
       {summary ? (
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <strong className="text-2xl"><MetricValue value={formatKg(summary.estimatedWeightKg)} /></strong>
-          {audience === 'driver' ? (
+          {isDriver && summary.items.length ? (
+            <div className="min-w-[14rem] flex-1"><PickupItems items={summary.items} /></div>
+          ) : (
+            <strong className="text-2xl"><MetricValue value={formatKg(summary.estimatedWeightKg)} /></strong>
+          )}
+          {isDriver ? (
             <strong className="metric-value text-lg text-primary-strong">+{summary.rewardPoints} pts</strong>
           ) : null}
         </div>
@@ -94,6 +110,15 @@ export function PickupCard({
             <>
               <strong className="block">{displayName(summary.sellerName)}</strong>
               <span className="text-sm text-muted">{shortAddress(summary.pickupAddress)}</span>
+              {pickupDeadline ? (
+                <span className="mt-2 block">
+                  <StatusBadge
+                    icon={pickupDeadline.tone ? 'warning' : 'clock'}
+                    label={pickupDeadline.label}
+                    tone={pickupDeadline.tone ?? 'neutral'}
+                  />
+                </span>
+              ) : null}
             </>
           ) : (
             <strong className="metric-value">{coordinateLabel(pickup.pickupLocation)}</strong>
@@ -108,6 +133,15 @@ export function PickupCard({
                 {shortAddress(summary.deliveryAddress)} · rota{' '}
                 <span className="metric-value">{formatKm(summary.routeDistanceKm)}</span>
               </span>
+              {deliverDeadline ? (
+                <span className="mt-2 block">
+                  <StatusBadge
+                    icon={deliverDeadline.tone ? 'warning' : 'clock'}
+                    label={deliverDeadline.label}
+                    tone={deliverDeadline.tone ?? 'neutral'}
+                  />
+                </span>
+              ) : null}
             </>
           ) : (
             <strong className="metric-value">{coordinateLabel(pickup.deliveryLocation)}</strong>

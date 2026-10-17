@@ -221,19 +221,26 @@ BEGIN
     quantity,
     unit,
     weight_kg,
-    expires_in_minutes
+    expires_in_minutes,
+    deliver_within_minutes,
+    items
   ) AS (
     VALUES
       (101, 1, 4, 'bakery'::donation_category,
-        'SIMULADO - pães franceses e bolos do dia', 6, 'tray'::donation_unit, 18, 50),
+        'SIMULADO - pães franceses e bolos do dia', 6, 'tray'::donation_unit, 18, 50, 90,
+        '[{"name":"Pães franceses","quantity":10,"unit":"kg"},{"name":"Bolos de cenoura","quantity":4,"unit":"kg"},{"name":"Pães de forma","quantity":4,"unit":"kg"}]'::jsonb),
       (102, 2, 2, 'produce'::donation_category,
-        'SIMULADO - frutas e verduras da feira', 42, 'kg'::donation_unit, 42, 95),
+        'SIMULADO - frutas e verduras da feira', 42, 'kg'::donation_unit, 42, 95, 120,
+        '[{"name":"Bananas","quantity":12,"unit":"kg"},{"name":"Cenouras","quantity":10,"unit":"kg"},{"name":"Tomates","quantity":8,"unit":"kg"},{"name":"Alfaces","quantity":4,"unit":"kg"},{"name":"Laranjas","quantity":8,"unit":"kg"}]'::jsonb),
       (103, 3, 1, 'pantry'::donation_category,
-        'SIMULADO - cestas de arroz, feijão e óleo', 24, 'box'::donation_unit, 120, 300),
+        'SIMULADO - cestas de arroz, feijão e óleo', 24, 'box'::donation_unit, 120, 300, 240,
+        '[{"name":"Arroz","quantity":60,"unit":"kg"},{"name":"Feijão carioca","quantity":40,"unit":"kg"},{"name":"Óleo de soja","quantity":20,"unit":"kg"}]'::jsonb),
       (104, 6, 3, 'produce'::donation_category,
-        'SIMULADO - hortifrúti do atacado', 260, 'kg'::donation_unit, 260, 480),
+        'SIMULADO - hortifrúti do atacado', 260, 'kg'::donation_unit, 260, 480, 180,
+        '[{"name":"Batatas","quantity":90,"unit":"kg"},{"name":"Cebolas","quantity":60,"unit":"kg"},{"name":"Abóboras","quantity":50,"unit":"kg"},{"name":"Maçãs","quantity":40,"unit":"kg"},{"name":"Chuchus","quantity":20,"unit":"kg"}]'::jsonb),
       (105, 5, 3, 'dairy'::donation_category,
-        'SIMULADO - iogurtes e queijos refrigerados', 9, 'kg'::donation_unit, 9, 180)
+        'SIMULADO - iogurtes e queijos refrigerados', 9, 'kg'::donation_unit, 9, 180, 60,
+        '[{"name":"Iogurtes naturais","quantity":5,"unit":"kg"},{"name":"Queijo minas frescal","quantity":3,"unit":"kg"},{"name":"Requeijão","quantity":1,"unit":"kg"}]'::jsonb)
   ),
   inserted AS (
     INSERT INTO donations (
@@ -245,6 +252,7 @@ BEGIN
       quantity,
       unit,
       estimated_weight_kg,
+      items,
       perishability_minutes,
       pickup_address,
       pickup_location,
@@ -269,7 +277,9 @@ BEGIN
       demo.quantity,
       demo.unit,
       demo.weight_kg,
-      demo.expires_in_minutes + 30,
+      demo.items,
+      -- available_from + perishability = delivery deadline for the NGO.
+      demo.expires_in_minutes + 30 + demo.deliver_within_minutes,
       seller.address,
       seller.location,
       now() - interval '30 minutes',
@@ -278,7 +288,7 @@ BEGIN
         'category', demo.category,
         'description', demo.description,
         'confidence', 0.93,
-        'perishabilityMinutes', demo.expires_in_minutes + 30,
+        'perishabilityMinutes', demo.expires_in_minutes + 30 + demo.deliver_within_minutes,
         'source', 'manual',
         'simulated', true
       ),

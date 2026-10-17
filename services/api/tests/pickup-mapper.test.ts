@@ -36,7 +36,9 @@ const summaryColumns = {
   summary_weight_kg: "18.40",
   summary_quantity: "18.40",
   summary_unit: "kg",
+  summary_items: [{ name: "Pães franceses", quantity: "12.5", unit: "kg" }],
   summary_expires_at: new Date("2026-10-16T14:00:00Z"),
+  summary_deliver_by: new Date("2026-10-16T15:30:00Z"),
   summary_pickup_address: address,
   summary_seller_name: "Padaria Cambuí SIMULADO",
   summary_ngo_name: "Instituto Prato Solidário SIMULADO",
@@ -67,6 +69,8 @@ describe("pickup mapper", () => {
       distanceToPickupKm: null,
       rewardPoints: calculateTotalRewardPoints(18.4),
       sellerName: "Padaria Cambuí SIMULADO",
+      items: [{ name: "Pães franceses", quantity: 12.5, unit: "kg" }],
+      deliverBy: "2026-10-16T15:30:00.000Z",
     });
   });
 });

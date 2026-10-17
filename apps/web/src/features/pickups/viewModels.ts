@@ -1,7 +1,9 @@
 import type {
   Address,
+  DonationUnit,
   GeoPoint,
   Pickup,
+  PickupItem,
   PickupStatus,
 } from '@resgata/shared'
 
@@ -116,6 +118,38 @@ export const pickupUrgency = (
   return { label, tone: null }
 }
 
+const clock = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+/** Delivery deadline at the NGO: "Entregar até 15:40", toned by time left. */
+export const deliveryDeadline = (
+  deliverBy: string | undefined,
+  now: number,
+): { label: string; tone: UrgencyTone | null } | null => {
+  if (!deliverBy) return null
+  const deadline = Date.parse(deliverBy)
+  if (Number.isNaN(deadline)) return null
+  const remaining = deadline - now
+  if (remaining <= 0) return { label: 'Prazo de entrega vencido', tone: 'danger' }
+  const label = `Entregar até ${clock.format(deadline)}`
+  if (remaining < HOUR_MS) return { label, tone: 'danger' }
+  if (remaining < 2 * HOUR_MS) return { label, tone: 'warning' }
+  return { label, tone: null }
+}
+
+const unitLabels: Record<DonationUnit, [singular: string, plural: string]> = {
+  box: ['caixa', 'caixas'],
+  kg: ['kg', 'kg'],
+  tray: ['bandeja', 'bandejas'],
+  unit: ['un.', 'un.'],
+}
+
+/** "12 kg", "1 caixa", "4 bandejas". */
+export const formatQuantity = (quantity: number, unit: DonationUnit) =>
+  `${decimal.format(quantity)} ${unitLabels[unit][quantity === 1 ? 0 : 1]}`
+
+export const formatItem = (item: PickupItem) =>
+  `${item.name} – ${formatQuantity(item.quantity, item.unit)}`
+
 const expiryOf = (pickup: Pickup) =>
   pickup.summary ? Date.parse(pickup.summary.expiresAt) : Number.POSITIVE_INFINITY
 
@@ -212,8 +246,14 @@ export const pickupCategoryLabels: Record<string, string> = {
   produce: 'Hortifruti',
 }
 
-/** Cards already carry the SIMULADO badge, so names drop the repeated suffix. */
+/** The driver view hides the SIMULADO label, so names drop the suffix. */
 export const displayName = (name: string) => name.replace(/\s+SIMULADO$/u, '')
+
+/** "SIMULADO - frutas e verduras" -> "Frutas e verduras". */
+export const displayDescription = (description: string) => {
+  const text = description.replace(/^SIMULADO\s*[-–]\s*/u, '')
+  return text.charAt(0).toLocaleUpperCase('pt-BR') + text.slice(1)
+}
 
 export const shortAddress = (address: Pick<Address, 'district' | 'line1'>) =>
   `${address.district} · ${address.line1}`
