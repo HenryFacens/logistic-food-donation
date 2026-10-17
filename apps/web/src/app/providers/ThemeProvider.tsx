@@ -24,10 +24,9 @@ const restoreTheme = (): ThemePreference => {
     const value = localStorage.getItem(STORAGE_KEY)
     if (value === 'dark' || value === 'light' || value === 'system') return value
   } catch {
-    // The light default remains the safe fallback.
+    // The dark default remains the safe fallback.
   }
-  // Light is the default: projectors wash out the dark theme during demos.
-  return 'light'
+  return 'dark'
 }
 
 const systemTheme = () =>

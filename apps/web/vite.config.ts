@@ -16,8 +16,8 @@ export default defineConfig({
         description:
           'Conecta excedentes de alimentos a organizações sociais em Campinas.',
         lang: 'pt-BR',
-        theme_color: '#f8fafc',
-        background_color: '#f8fafc',
+        theme_color: '#0b1220',
+        background_color: '#0b1220',
         display: 'standalone',
         start_url: '/',
         scope: '/',
