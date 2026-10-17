@@ -12,12 +12,13 @@ choice.
 
    ```bash
    curl -X POST http://localhost:8080/api/dev/reset \
-     -H 'X-Demo-User: seller-padaria-cambui' -H "Idempotency-Key: reset-$(date +%s)"
+     -H 'X-Demo-User: platform-resgata' -H "Idempotency-Key: reset-$(date +%s)"
    ```
 
-3. Open two windows: one for the donor (**Padaria Cambuí**), one for the NGO
-   (**ONG Prato Solidário**). Use the demo profiles on `/entrar`; phone sign-in
-   is optional and not needed for the demo.
+3. Open two windows: one for the donor (**Doador — Padaria Cambuí**), one for
+   the NGO (**ONG — Operação**, Prato Solidário). Use the demo profiles on
+   `/entrar`; phone sign-in is optional and not needed for the demo. The reset
+   above requires the platform profile (`platform-resgata`).
 4. Have real food ready to photograph (bread works best for the story).
 
 Demo NGO hours: every NGO receives around the clock except **Casa Acolhedora

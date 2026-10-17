@@ -99,7 +99,7 @@ partners, coupons, and historical donations.
 make seed
 
 curl -X POST http://localhost:8080/api/dev/reset \
-  -H 'X-Demo-User: seller-padaria-cambui' \
+  -H 'X-Demo-User: platform-resgata' \
   -H 'Idempotency-Key: reset-demo-001'
 ```
 
