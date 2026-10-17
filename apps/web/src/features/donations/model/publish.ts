@@ -12,6 +12,7 @@ export interface DonationFormValues {
   city: string
   description: string
   district: string
+  disposalCostBrl: string
   estimatedWeightKg: string
   expiresAt: string
   latitude: string
@@ -22,6 +23,7 @@ export interface DonationFormValues {
   quantity: string
   state: string
   unit: string
+  unitValueBrl: string
 }
 
 /** Pickup address fields taken from a profile, CEP lookup, or GPS. */
@@ -76,8 +78,8 @@ export const toLocalInput = (date: Date) => {
 
 const formatAmount = (value: number) => String(Math.round(value * 10) / 10)
 
-// Prefills the vendor form from an image analysis. The pickup deadline follows
-// the estimated shelf life so NGOs never receive food past its safe window.
+// Prefills the vendor form from an image analysis. The pickup deadline the
+// vendor chose is kept, but never later than the food's estimated shelf life.
 export const applyClassification = (
   values: DonationFormValues,
   classification: Classification,
@@ -96,12 +98,14 @@ export const applyClassification = (
     next.estimatedWeightKg = formatAmount(classification.estimatedWeightKg)
   }
   const availableFrom = new Date(values.availableFrom)
+  const chosenDeadline = new Date(values.expiresAt)
   if (!Number.isNaN(availableFrom.getTime())) {
-    next.expiresAt = toLocalInput(
-      new Date(
-        availableFrom.getTime() + classification.perishabilityMinutes * 60_000,
-      ),
+    const safeUntil = new Date(
+      availableFrom.getTime() + classification.perishabilityMinutes * 60_000,
     )
+    if (Number.isNaN(chosenDeadline.getTime()) || safeUntil < chosenDeadline) {
+      next.expiresAt = toLocalInput(safeUntil)
+    }
   }
   return next
 }
@@ -110,22 +114,63 @@ export const isUnsafeClassification = (
   classification?: Classification | null,
 ) => classification?.condition === 'unsafe'
 
+export const parseOptionalBrl = (rawValue: string) => {
+  const value = rawValue
+    .trim()
+    .replace(/\u00a0/gu, ' ')
+    .replace(/^R\$\s*/iu, '')
+    .replace(/\s+/gu, '')
+
+  if (!value) return undefined
+  if (!/^\d+(?:[.,]\d+)*$/u.test(value)) {
+    throw new Error('Invalid BRL value')
+  }
+
+  let normalized: string
+  if (value.includes(',')) {
+    const ptBrCurrency =
+      /^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/u
+    if (!ptBrCurrency.test(value)) {
+      throw new Error('Invalid BRL value')
+    }
+    normalized = value.replace(/\./gu, '').replace(',', '.')
+  } else if (/^\d{1,3}(?:\.\d{3})+$/u.test(value)) {
+    normalized = value.replace(/\./gu, '')
+  } else if (/^\d+(?:\.\d{1,2})?$/u.test(value)) {
+    normalized = value
+  } else {
+    throw new Error('Invalid BRL value')
+  }
+
+  const amount = Number(normalized)
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new Error('Invalid BRL value')
+  }
+  return Math.round((amount + Number.EPSILON) * 100) / 100
+}
+
 export const buildDonationRequest = (
   values: DonationFormValues,
   classification?: Classification | null,
-) =>
-  createDonationRequestSchema.parse({
+) => {
+  const disposalCostBrl = parseOptionalBrl(values.disposalCostBrl)
+  const unitValueBrl = parseOptionalBrl(values.unitValueBrl)
+
+  return createDonationRequestSchema.parse({
     availableFrom: localDateToIso(values.availableFrom),
     category: values.category || classification?.category,
     classification: classification || undefined,
     description: values.description,
+    ...(disposalCostBrl === undefined ? {} : { disposalCostBrl }),
     estimatedWeightKg: Number(values.estimatedWeightKg),
     expiresAt: localDateToIso(values.expiresAt),
     perishabilityMinutes: Number(values.perishabilityMinutes),
     pickupAddress: addressFromValues(values),
     quantity: Number(values.quantity),
     unit: values.unit,
+    ...(unitValueBrl === undefined ? {} : { unitValueBrl }),
   })
+}
 
 export const buildDonationPublishOperation = (
   body: CreateDonationRequest,

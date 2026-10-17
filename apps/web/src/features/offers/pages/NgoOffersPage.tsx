@@ -1,7 +1,9 @@
 import { Button, EmptyState, LoadingState } from '../../../shared/ui'
 import { useOfferDecision, useOffers } from '../api/useOffers'
 import { OfferCard } from '../components/OfferCard'
+import { OffersHeader } from '../components/OffersHeader'
 import { offerMessages } from '../messages'
+import '../offers.css'
 
 export function NgoOffersPage() {
   const offers = useOffers()
@@ -28,11 +30,12 @@ export function NgoOffersPage() {
   }
 
   return (
-    <div className="grid gap-4">
-      <div>
-        <span className="eyebrow">Decisão rápida</span>
-        <p className="mb-0">Avalie aderência, prazo e logística antes de responder.</p>
-      </div>
+    <div className="offers-screen">
+      <OffersHeader
+        hasSimulatedOffers={offers.data.items.some(
+          (offer) => offer.donation?.simulated === true,
+        )}
+      />
       {offers.data.items.map((offer) => (
         <OfferCard
           deciding={decision.isPending && decision.variables?.offerId === offer.id}

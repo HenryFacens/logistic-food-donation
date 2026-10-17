@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Resgata API
-  version: 0.1.0
+  version: 0.2.0
   description: |
     Contract for the Resgata demo. Fictional forecast, ROI, sponsor, coupon,
     and historical data is returned with `simulated: true` and the visible
@@ -15,9 +15,12 @@ tags:
   - name: Donations
   - name: Offers
   - name: Pickups
+  - name: Receipts
+  - name: Ratings
   - name: Coupons
   - name: Impact
   - name: Partner
+  - name: Platform
   - name: Admin
   - name: Events
 paths:
@@ -400,6 +403,100 @@ paths:
         "422":
           $ref: "#/components/responses/ValidationError"
 
+  /pickups/{pickupId}/receipt:
+    post:
+      tags: [Receipts]
+      operationId: createDeliveryReceipt
+      parameters:
+        - $ref: "#/components/parameters/PickupId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDeliveryReceiptRequest"
+      responses:
+        "201":
+          description: NGO independently confirmed and triaged the delivered goods.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryReceipt"
+        "200":
+          description: Idempotent replay of an existing identical receipt.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryReceipt"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /pickups/{pickupId}/driver-rating:
+    post:
+      tags: [Ratings]
+      operationId: createDriverRating
+      parameters:
+        - $ref: "#/components/parameters/PickupId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDriverRatingRequest"
+      responses:
+        "201":
+          description: Seller or NGO rated the driver after confirmed receipt.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverRating"
+        "200":
+          description: Idempotent replay of an identical rating.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverRating"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /driver-ratings/opportunities:
+    get:
+      tags: [Ratings]
+      operationId: listDriverRatingOpportunities
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [available, completed]
+      responses:
+        "200":
+          description: Driver ratings available to the authenticated seller.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverRatingOpportunityList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /coupons:
     get:
       tags: [Coupons]
@@ -467,6 +564,78 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ImpactDashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /seller/dashboard:
+    get:
+      tags: [Impact]
+      operationId: getSellerDashboard
+      parameters:
+        - $ref: "#/components/parameters/DashboardPeriodStart"
+        - $ref: "#/components/parameters/DashboardPeriodEnd"
+        - $ref: "#/components/parameters/IncludeMonthlySeries"
+      responses:
+        "200":
+          description: Seller donation, fiscal and loyalty metrics with evidence labels.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerDashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /driver/dashboard:
+    get:
+      tags: [Impact]
+      operationId: getDriverDashboard
+      parameters:
+        - $ref: "#/components/parameters/DashboardPeriodStart"
+        - $ref: "#/components/parameters/DashboardPeriodEnd"
+        - $ref: "#/components/parameters/IncludeMonthlySeries"
+      responses:
+        "200":
+          description: Driver operation, reputation and rewards metrics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverDashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /ngo/dashboard:
+    get:
+      tags: [Impact]
+      operationId: getNgoDashboard
+      parameters:
+        - $ref: "#/components/parameters/DashboardPeriodStart"
+        - $ref: "#/components/parameters/DashboardPeriodEnd"
+        - $ref: "#/components/parameters/IncludeMonthlySeries"
+      responses:
+        "200":
+          description: NGO receiving, logistics and community distribution metrics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NgoDashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /platform/dashboard:
+    get:
+      tags: [Platform]
+      operationId: getPlatformDashboard
+      parameters:
+        - $ref: "#/components/parameters/DashboardPeriodStart"
+        - $ref: "#/components/parameters/DashboardPeriodEnd"
+        - $ref: "#/components/parameters/IncludeMonthlySeries"
+      responses:
+        "200":
+          description: Global Resgata operation metrics restricted to platform operators.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformDashboard"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -924,6 +1093,27 @@ components:
       schema:
         type: string
         format: uuid
+    DashboardPeriodStart:
+      name: periodStart
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    DashboardPeriodEnd:
+      name: periodEnd
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    IncludeMonthlySeries:
+      name: includeMonthlySeries
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: true
 
   responses:
     Unauthorized:
@@ -954,7 +1144,7 @@ components:
   schemas:
     Role:
       type: string
-      enum: [seller, ngo, driver, partner]
+      enum: [seller, ngo, driver, partner, platform]
     DonationCategory:
       type: string
       enum: [produce, bakery, dairy, prepared, pantry, other]
@@ -1166,6 +1356,14 @@ components:
         estimatedWeightKg:
           type: number
           exclusiveMinimum: 0
+        unitValueBrl:
+          type: number
+          minimum: 0
+          description: Optional declared value per received kilogram.
+        disposalCostBrl:
+          type: number
+          minimum: 0
+          description: Optional declared disposal cost avoided by this donation.
         perishabilityMinutes:
           type: integer
           minimum: 15
@@ -1195,6 +1393,8 @@ components:
         - quantity
         - unit
         - estimatedWeightKg
+        - unitValueBrl
+        - disposalCostBrl
         - perishabilityMinutes
         - pickupAddress
         - availableFrom
@@ -1229,6 +1429,12 @@ components:
         estimatedWeightKg:
           type: number
           exclusiveMinimum: 0
+        unitValueBrl:
+          type: [number, "null"]
+          minimum: 0
+        disposalCostBrl:
+          type: [number, "null"]
+          minimum: 0
         perishabilityMinutes:
           type: integer
           minimum: 15
@@ -1378,6 +1584,8 @@ components:
       required:
         - id
         - donationId
+        - donationDescription
+        - estimatedWeightKg
         - ngoId
         - rank
         - status
@@ -1464,7 +1672,9 @@ components:
         - deliveryLocation
         - assignedAt
         - collectedAt
+        - deliveryDueAt
         - deliveredAt
+        - receipt
         - createdAt
         - updatedAt
       properties:
@@ -1474,6 +1684,11 @@ components:
         donationId:
           type: string
           format: uuid
+        donationDescription:
+          type: string
+        estimatedWeightKg:
+          type: number
+          exclusiveMinimum: 0
         ngoId:
           type: string
           format: uuid
@@ -1498,9 +1713,16 @@ components:
         collectedAt:
           type: [string, "null"]
           format: date-time
+        deliveryDueAt:
+          type: [string, "null"]
+          format: date-time
         deliveredAt:
           type: [string, "null"]
           format: date-time
+        receipt:
+          oneOf:
+            - $ref: "#/components/schemas/DeliveryReceipt"
+            - type: "null"
         createdAt:
           type: string
           format: date-time
@@ -1536,6 +1758,223 @@ components:
           pattern: '^\d{6}$'
         location:
           $ref: "#/components/schemas/GeoPoint"
+
+    DeliveryReceiptCondition:
+      type: string
+      enum: [all_good, partial, rejected]
+    CreateDeliveryReceiptRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - condition
+        - receivedWeightKg
+        - rejectedWeightKg
+        - rejectionReasons
+      properties:
+        condition:
+          $ref: "#/components/schemas/DeliveryReceiptCondition"
+        receivedWeightKg:
+          type: number
+          minimum: 0
+        rejectedWeightKg:
+          type: number
+          minimum: 0
+        rejectionReasons:
+          type: array
+          uniqueItems: true
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 120
+        photoUrl:
+          type: string
+          format: uri
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    DeliveryReceipt:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - pickupId
+        - ngoId
+        - condition
+        - receivedWeightKg
+        - rejectedWeightKg
+        - rejectionReasons
+        - photoUrl
+        - notes
+        - simulated
+        - simulationLabel
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        pickupId:
+          type: string
+          format: uuid
+        ngoId:
+          type: string
+          format: uuid
+        condition:
+          $ref: "#/components/schemas/DeliveryReceiptCondition"
+        receivedWeightKg:
+          type: number
+          minimum: 0
+        rejectedWeightKg:
+          type: number
+          minimum: 0
+        rejectionReasons:
+          type: array
+          items:
+            type: string
+        photoUrl:
+          type: [string, "null"]
+          format: uri
+        notes:
+          type: [string, "null"]
+        simulated:
+          type: boolean
+        simulationLabel:
+          type: [string, "null"]
+          enum: [SIMULADO, null]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateDriverRatingRequest:
+      type: object
+      additionalProperties: false
+      required: [rating, tags]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        tags:
+          type: array
+          uniqueItems: true
+          maxItems: 10
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        comment:
+          type: string
+          minLength: 1
+          maxLength: 1000
+    DriverRating:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - pickupId
+        - driverId
+        - reviewerUserId
+        - reviewerRole
+        - rating
+        - tags
+        - comment
+        - simulated
+        - simulationLabel
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        pickupId:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+        reviewerUserId:
+          type: string
+          format: uuid
+        reviewerRole:
+          type: string
+          enum: [seller, ngo]
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        tags:
+          type: array
+          items:
+            type: string
+        comment:
+          type: [string, "null"]
+        simulated:
+          type: boolean
+        simulationLabel:
+          type: [string, "null"]
+          enum: [SIMULADO, null]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    DriverRatingOpportunity:
+      type: object
+      additionalProperties: false
+      required:
+        - pickupId
+        - donationId
+        - donationDescription
+        - driverId
+        - driverDisplayName
+        - reviewerRole
+        - status
+        - availableAt
+        - completedRating
+      properties:
+        pickupId:
+          type: string
+          format: uuid
+        donationId:
+          type: string
+          format: uuid
+        donationDescription:
+          type: string
+        driverId:
+          type: string
+          format: uuid
+        driverDisplayName:
+          type: string
+        reviewerRole:
+          type: string
+          enum: [seller, ngo]
+        status:
+          type: string
+          enum: [available, completed]
+        availableAt:
+          type: string
+          format: date-time
+        completedRating:
+          oneOf:
+            - $ref: "#/components/schemas/DriverRating"
+            - type: "null"
+    DriverRatingOpportunityList:
+      type: object
+      additionalProperties: false
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DriverRatingOpportunity"
+        page:
+          $ref: "#/components/schemas/PageInfo"
 
     Coupon:
       type: object
@@ -1759,6 +2198,143 @@ components:
           const: true
         simulationLabel:
           const: SIMULADO
+
+    MetricEvidence:
+      type: string
+      enum: [recorded, calculated, estimated, unavailable]
+    DashboardMetric:
+      type: object
+      additionalProperties: false
+      required: [key, label, evidence, value, unit]
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        evidence:
+          $ref: "#/components/schemas/MetricEvidence"
+        value:
+          type: [number, "null"]
+          description: Null only when evidence is unavailable.
+        unit:
+          type: string
+        detail:
+          type: string
+    MonthlyMetricPoint:
+      type: object
+      additionalProperties: false
+      required: [month, value]
+      properties:
+        month:
+          type: string
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+        value:
+          type: [number, "null"]
+    MonthlyMetricSeries:
+      type: object
+      additionalProperties: false
+      required: [key, label, evidence, unit, points]
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        evidence:
+          $ref: "#/components/schemas/MetricEvidence"
+        unit:
+          type: string
+        detail:
+          type: string
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthlyMetricPoint"
+    DashboardSection:
+      type: object
+      additionalProperties: false
+      required: [key, title, metrics, monthlySeries]
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardMetric"
+        monthlySeries:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthlyMetricSeries"
+    DashboardEnvelope:
+      type: object
+      required:
+        - periodStart
+        - periodEnd
+        - generatedAt
+        - sections
+        - simulated
+        - simulationLabel
+      properties:
+        periodStart:
+          type: string
+          format: date-time
+        periodEnd:
+          type: string
+          format: date-time
+        generatedAt:
+          type: string
+          format: date-time
+        sections:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/DashboardSection"
+        simulated:
+          type: boolean
+        simulationLabel:
+          type: [string, "null"]
+          enum: [SIMULADO, null]
+    SellerDashboard:
+      allOf:
+        - $ref: "#/components/schemas/DashboardEnvelope"
+        - type: object
+          required: [sellerId, fiscalNotice]
+          properties:
+            sellerId:
+              type: string
+              format: uuid
+            fiscalNotice:
+              const: Estimativa para apoio gerencial. A dedutibilidade depende do regime tributário, documentação e validação contábil.
+    DriverDashboard:
+      allOf:
+        - $ref: "#/components/schemas/DashboardEnvelope"
+        - type: object
+          required: [driverId]
+          properties:
+            driverId:
+              type: string
+              format: uuid
+    NgoDashboard:
+      allOf:
+        - $ref: "#/components/schemas/DashboardEnvelope"
+        - type: object
+          required: [ngoId]
+          properties:
+            ngoId:
+              type: string
+              format: uuid
+    PlatformDashboard:
+      allOf:
+        - $ref: "#/components/schemas/DashboardEnvelope"
+        - type: object
+          required: [platformOperatorId]
+          properties:
+            platformOperatorId:
+              type: string
+              format: uuid
 
     ImpactMetric:
       type: object

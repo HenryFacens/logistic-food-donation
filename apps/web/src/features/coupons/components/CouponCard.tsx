@@ -37,12 +37,12 @@ export function CouponCard({
   }
 
   return (
-    <Card className="grid gap-4 overflow-hidden">
-      <div className="flex items-start justify-between gap-3">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[rgb(var(--color-primary)/0.12)] text-[rgb(var(--color-primary-strong))]">
+    <Card className="coupon-card">
+      <div className="coupon-card__topline">
+        <span className="coupon-card__icon">
           <AppIcon name="coupon" size={26} />
         </span>
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="coupon-card__badges">
           <SimuladoBadge />
           <StatusBadge
             label={availability.available ? 'Disponível' : 'Indisponível'}
@@ -51,42 +51,42 @@ export function CouponCard({
         </div>
       </div>
 
-      <div>
+      <div className="coupon-card__title">
         <span className="eyebrow">Benefício parceiro</span>
-        <h2 className="mb-1 text-xl">{coupon.title}</h2>
-        <p className="mb-0">{coupon.description}</p>
+        <h2>{coupon.title}</h2>
+        <p>{coupon.description}</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl bg-[rgb(var(--color-primary)/0.07)] p-3">
-          <span className="block text-xs font-bold text-[rgb(var(--color-muted))]">Custo</span>
+      <div className="coupon-card__facts">
+        <div>
+          <span>Custo</span>
           <strong>{coupon.pointsCost} pts</strong>
         </div>
-        <div className="col-span-2 rounded-xl bg-[rgb(var(--color-primary)/0.07)] p-3">
-          <span className="block text-xs font-bold text-[rgb(var(--color-muted))]">Estoque</span>
+        <div>
+          <span>Estoque</span>
           <strong>{availability.stockLabel}</strong>
         </div>
       </div>
 
-      <div className="text-sm">
-        <strong className="block">{availability.validityLabel}</strong>
-        <span className="text-[rgb(var(--color-muted))]">{coupon.terms}</span>
+      <div className="coupon-card__terms">
+        <strong><AppIcon name="clock" size={17} />{availability.validityLabel}</strong>
+        <span>{coupon.terms}</span>
       </div>
 
       {redemption ? (
-        <output className="block rounded-2xl border-2 border-dashed border-[rgb(var(--color-primary))] bg-[rgb(var(--color-primary)/0.08)] p-4 text-center">
+        <output className="coupon-card__redemption">
           <span className="eyebrow">Código emitido</span>
-          <strong className="block break-all text-2xl tracking-wider">{redemption.redemptionCode}</strong>
-          <p className="mb-0 mt-2 text-sm">Apresente ao parceiro. Benefício e parceiro são simulados.</p>
+          <strong>{redemption.redemptionCode}</strong>
+          <p>Apresente ao parceiro. Benefício e parceiro são simulados.</p>
         </output>
       ) : null}
 
       {confirming && !redemption ? (
-        <div className="grid gap-3 rounded-2xl border border-[rgb(var(--color-border))] p-4">
-          <p className="mb-0 text-sm">
+        <div className="coupon-card__confirmation">
+          <p>
             O resgate consumirá <strong>{coupon.pointsCost} pontos</strong>. Esta operação não pode ser desfeita pela interface.
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div>
             <Button disabled={redeeming} onClick={() => setConfirming(false)} variant="ghost">Cancelar</Button>
             <Button disabled={redeeming} icon="check" onClick={() => void redeem()} variant="primary">
               Emitir cupom
@@ -99,6 +99,7 @@ export function CouponCard({
 
       {!confirming && !redemption ? (
         <Button
+          className="coupon-card__action"
           disabled={!availability.available || redeeming}
           icon="coupon"
           onClick={() => setConfirming(true)}

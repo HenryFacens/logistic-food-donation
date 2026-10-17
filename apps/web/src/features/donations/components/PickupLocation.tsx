@@ -103,11 +103,14 @@ export function PickupLocation({
       profile.data.address.location.longitude !== Number(values.longitude))
 
   return (
-    <fieldset className="grid gap-3 rounded-card border border-border p-4">
-      <legend className="px-2 font-extrabold">{donationMessages.pickupDetails}</legend>
+    <section
+      aria-label={donationMessages.pickupDetails}
+      className="screen-card producer-location grid gap-3"
+    >
+      <h2 className="m-0 text-lg font-extrabold">{donationMessages.pickupDetails}</h2>
 
       <div className="flex items-start gap-3">
-        <AppIcon name="route" size={22} />
+        <AppIcon name="location" size={22} />
         <div className="grid flex-1 gap-1">
           <strong>
             {values.line1} · {values.district}
@@ -215,6 +218,6 @@ export function PickupLocation({
           ) : null}
         </div>
       ) : null}
-    </fieldset>
+    </section>
   )
 }

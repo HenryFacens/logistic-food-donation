@@ -19,7 +19,7 @@ import { decodeCursor, pageFrom } from "../pagination.js";
 export const getQueueDashboard: ApiHandler = async (request) => {
   const client = await getPool().connect();
   try {
-    await requireActor(client, request);
+    await requireActor(client, request, ["platform"]);
     const result = await client.query(
       `WITH topics(name) AS (
          VALUES
@@ -78,7 +78,7 @@ export const listDeadLetters: ApiHandler = async (request) => {
   const cursor = decodeCursor(query.cursor);
   const client = await getPool().connect();
   try {
-    await requireActor(client, request);
+    await requireActor(client, request, ["platform"]);
     const values: unknown[] = [];
     const filters = ["replayed_at IS NULL"];
     if (topic) {
@@ -134,7 +134,7 @@ export const replayDeadLetters: ApiHandler = async (request) => {
   const authClient = await getPool().connect();
   let actor;
   try {
-    actor = await requireActor(authClient, request);
+    actor = await requireActor(authClient, request, ["platform"]);
   } finally {
     authClient.release();
   }

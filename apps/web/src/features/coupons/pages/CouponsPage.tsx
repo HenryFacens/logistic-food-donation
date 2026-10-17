@@ -2,6 +2,8 @@ import { Button, EmptyState, LoadingState, SimuladoBadge } from '../../../shared
 import { useCoupons, useRedeemCoupon } from '../api/useCoupons'
 import { CouponCard } from '../components/CouponCard'
 import { couponMessages } from '../messages'
+import { couponAvailability } from '../viewModels'
+import '../coupons.css'
 
 export function CouponsPage() {
   const coupons = useCoupons()
@@ -28,16 +30,31 @@ export function CouponsPage() {
     )
   }
 
+  const availableCount = coupons.data.items.filter(
+    (coupon) => couponAvailability(coupon).available,
+  ).length
+
   return (
-    <div className="grid gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="coupons-screen">
+      <header className="coupons-screen__header">
         <div>
           <span className="eyebrow">Recompensas por entregas</span>
-          <p className="mb-0">Troque seus pontos por benefícios fictícios da demonstração.</p>
+          <h1>Cupons</h1>
+          <p>{couponMessages.simulationDescription}</p>
         </div>
         <SimuladoBadge />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      </header>
+      <section className="coupons-screen__summary" aria-label="Resumo dos benefícios">
+        <span>
+          <strong>{availableCount}</strong>
+          benefícios disponíveis
+        </span>
+        <span>
+          <strong>{coupons.data.items.length}</strong>
+          opções na carteira
+        </span>
+      </section>
+      <div className="coupons-screen__list">
         {coupons.data.items.map((coupon) => (
           <CouponCard
             coupon={coupon}

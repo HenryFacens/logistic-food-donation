@@ -41,6 +41,41 @@ export const formatDateTime = (value: string) =>
     timeStyle: 'short',
   }).format(new Date(value))
 
+export const formatTime = (value: string) =>
+  new Intl.DateTimeFormat('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value))
+
+export const formatRemainingTime = (
+  expiresAt: string,
+  now = new Date(),
+) => {
+  const remainingMinutes = Math.ceil(
+    (new Date(expiresAt).getTime() - now.getTime()) / 60_000,
+  )
+  if (remainingMinutes <= 0) return 'Prazo encerrado'
+  const hours = Math.floor(remainingMinutes / 60)
+  const minutes = remainingMinutes % 60
+  if (!hours) return `${minutes} min`
+  if (!minutes) return `${hours}h`
+  return `${hours}h ${minutes}min`
+}
+
+export const nextDonationStepLabel = (status: DonationStatus) => {
+  const nextSteps: Record<DonationStatus, string | null> = {
+    accepted: 'Aguardar a retirada pelo coletador',
+    classified: 'Encontrar uma entidade compatível',
+    collected: 'Aguardar a confirmação da entrega',
+    delivered: null,
+    expired: null,
+    no_destination: null,
+    offered: 'Aguardar a resposta de uma entidade',
+    posted: 'Concluir a classificação',
+  }
+  return nextSteps[status]
+}
+
 export const eventLabel = (eventType: string, status: DonationStatus) => {
   const knownEvents: Record<string, string> = {
     'donation.accepted': 'Uma ONG aceitou a doação',

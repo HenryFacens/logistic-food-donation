@@ -7,34 +7,86 @@ import {
   useState,
 } from 'react'
 
-const STORAGE_KEY = 'resgata.session'
-const LEGACY_STORAGE_KEY = 'resgata.demo-user'
+const STORAGE_KEY = 'resgata.demo-session'
 
-export type DemoIdentity = Pick<DemoUser, 'demoKey' | 'displayName' | 'role'> & {
+export type DemoEntryPoint =
+  | 'driver'
+  | 'ngo-analytics'
+  | 'ngo-operations'
+  | 'partner'
+  | 'platform'
+  | 'seller'
+
+export type DemoIdentity = Pick<
+  DemoUser,
+  'demoKey' | 'displayName' | 'role'
+> & {
+  defaultPath: string
+  description: string
+  entryPoint: DemoEntryPoint
+  label: string
   /** Bearer token from phone sign-in; absent for demo profiles. */
   token?: string
 }
 
 export const DEMO_IDENTITIES: readonly DemoIdentity[] = [
   {
+    defaultPath: '/doar',
     demoKey: 'seller-padaria-cambui',
+    description:
+      'Publica excedentes, acompanha impacto e avalia o transportador.',
     displayName: 'Padaria Cambuí',
+    entryPoint: 'seller',
+    label: 'Doador',
     role: 'seller',
   },
   {
+    defaultPath: '/ong/ofertas',
     demoKey: 'ngo-prato-solidario',
+    description:
+      'Produto mobile para aceitar ofertas e conferir a recepção dos alimentos.',
     displayName: 'ONG Prato Solidário',
+    entryPoint: 'ngo-operations',
+    label: 'ONG — Operação',
     role: 'ngo',
   },
   {
+    defaultPath: '/ong/painel',
+    demoKey: 'ngo-prato-solidario',
+    description:
+      'Produto web para recebimento, logística, distribuição e impacto social.',
+    displayName: 'ONG Prato Solidário',
+    entryPoint: 'ngo-analytics',
+    label: 'ONG — Métricas',
+    role: 'ngo',
+  },
+  {
+    defaultPath: '/coleta',
     demoKey: 'driver-ana',
-    displayName: 'Ana — motorista',
+    description:
+      'Executa coletas, entregas e acompanha reputação e recompensas.',
+    displayName: 'Ana — transportadora',
+    entryPoint: 'driver',
+    label: 'Transportador',
     role: 'driver',
   },
   {
+    defaultPath: '/patrocinador',
     demoKey: 'partner-cafe-local',
-    displayName: 'Café Local — parceiro',
+    description: 'Acompanha campanhas, benefícios, retorno e impacto.',
+    displayName: 'Café Local — patrocinador',
+    entryPoint: 'partner',
+    label: 'Patrocinador',
     role: 'partner',
+  },
+  {
+    defaultPath: '/plataforma',
+    demoKey: 'platform-resgata',
+    description: 'Acompanha a saúde global da operação e suas filas.',
+    displayName: 'Equipe Resgata',
+    entryPoint: 'platform',
+    label: 'Plataforma Resgata',
+    role: 'platform',
   },
 ]
 
@@ -50,12 +102,19 @@ const SessionContext = createContext<SessionContextValue | null>(null)
 const restoreIdentity = (): DemoIdentity | null => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      const parsed = JSON.parse(stored) as DemoIdentity
-      if (parsed?.demoKey && parsed.role && parsed.displayName) return parsed
+    if (!stored) return null
+    const parsed = JSON.parse(stored) as Partial<DemoIdentity>
+    // Phone sign-in sessions are stored whole: any registered user can sign in.
+    if (parsed.token && parsed.demoKey && parsed.role && parsed.entryPoint) {
+      return parsed as DemoIdentity
     }
-    const demoKey = localStorage.getItem(LEGACY_STORAGE_KEY)
-    return DEMO_IDENTITIES.find((identity) => identity.demoKey === demoKey) || null
+    return (
+      DEMO_IDENTITIES.find(
+        (identity) =>
+          identity.demoKey === parsed.demoKey &&
+          identity.entryPoint === parsed.entryPoint,
+      ) || null
+    )
   } catch {
     return null
   }
@@ -69,7 +128,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       clearUser() {
         try {
           localStorage.removeItem(STORAGE_KEY)
-          localStorage.removeItem(LEGACY_STORAGE_KEY)
         } catch {
           // Storage can be unavailable in private browsing.
         }
@@ -78,7 +136,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       role: user?.role || null,
       selectUser(identity) {
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(identity))
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(
+              identity.token
+                ? identity
+                : { demoKey: identity.demoKey, entryPoint: identity.entryPoint },
+            ),
+          )
         } catch {
           // The in-memory session remains usable.
         }
@@ -97,4 +162,3 @@ export function useSession() {
   if (!value) throw new Error('useSession must be used within SessionProvider')
   return value
 }
-

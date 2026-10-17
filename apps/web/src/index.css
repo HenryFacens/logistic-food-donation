@@ -3,30 +3,30 @@
 @tailwind utilities;
 
 :root {
-  --color-canvas: 244 247 245;
+  --color-canvas: 243 247 244;
   --color-surface: 255 255 255;
-  --color-surface-raised: 250 252 251;
-  --color-text: 20 42 35;
-  --color-muted: 91 112 104;
-  --color-border: 210 222 217;
-  --color-primary: 15 118 110;
-  --color-primary-strong: 13 92 87;
+  --color-surface-raised: 247 250 248;
+  --color-text: 15 42 34;
+  --color-muted: 65 89 79;
+  --color-border: 207 221 214;
+  --color-primary: 14 107 88;
+  --color-primary-strong: 10 86 70;
   --color-primary-contrast: 255 255 255;
-  --color-success: 22 126 75;
-  --color-warning: 180 83 9;
-  --color-danger: 190 45 45;
+  --color-success: 30 133 82;
+  --color-warning: 166 116 14;
+  --color-danger: 173 66 45;
   --color-info: 29 102 177;
-  --radius-control: 0.75rem;
-  --radius-card: 1rem;
+  --radius-control: 0.9rem;
+  --radius-card: 1.25rem;
   --control-min-size: 3rem;
   --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06);
   --shadow-floating: 0 14px 40px rgb(15 23 42 / 0.16);
-  --content-max: 76rem;
+  --content-max: 80rem;
 
   color: rgb(var(--color-text));
   background: rgb(var(--color-canvas));
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Figtree, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
   font-synthesis: none;
   line-height: 1.5;
@@ -35,18 +35,18 @@
 }
 
 :root[data-theme="dark"] {
-  --color-canvas: 10 23 19;
-  --color-surface: 17 37 31;
-  --color-surface-raised: 22 46 38;
-  --color-text: 231 241 237;
-  --color-muted: 160 181 173;
-  --color-border: 50 76 67;
-  --color-primary: 45 190 177;
-  --color-primary-strong: 99 225 207;
-  --color-primary-contrast: 5 48 45;
-  --color-success: 74 222 128;
-  --color-warning: 251 191 36;
-  --color-danger: 248 113 113;
+  --color-canvas: 11 26 22;
+  --color-surface: 18 38 31;
+  --color-surface-raised: 14 32 26;
+  --color-text: 234 244 240;
+  --color-muted: 169 194 184;
+  --color-border: 37 68 58;
+  --color-primary: 52 211 180;
+  --color-primary-strong: 94 230 203;
+  --color-primary-contrast: 6 33 27;
+  --color-success: 107 224 154;
+  --color-warning: 255 200 87;
+  --color-danger: 255 155 122;
   --color-info: 96 165 250;
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.22);
   --shadow-floating: 0 18px 48px rgb(0 0 0 / 0.38);
@@ -65,9 +65,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100dvh;
-  background:
-    radial-gradient(circle at top left, rgb(var(--color-primary) / 0.08), transparent 32rem),
-    rgb(var(--color-canvas));
+  background: rgb(var(--color-canvas));
 }
 
 button,
@@ -107,7 +105,10 @@ p {
 }
 
 h1,
-h2 {
+h2,
+h3,
+.display-title {
+  font-family: "Bricolage Grotesque", Figtree, Inter, ui-sans-serif, system-ui, sans-serif;
   letter-spacing: -0.025em;
 }
 
@@ -151,7 +152,7 @@ p {
   border: 1px solid transparent;
   border-radius: var(--radius-control);
   cursor: pointer;
-  font-weight: 750;
+  font-weight: 800;
   line-height: 1.1;
   transition:
     background-color 150ms ease,
@@ -199,7 +200,7 @@ p {
   border: 1px solid rgb(var(--color-border));
   border-radius: var(--radius-card);
   background: rgb(var(--color-surface));
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .card__title {
@@ -270,6 +271,16 @@ p {
   padding: 1.5rem 1rem calc(2rem + env(safe-area-inset-bottom));
 }
 
+.public-shell:has(.community-today) {
+  background: rgb(243 247 244);
+}
+
+.public-shell:has(.community-today) .public-shell__content {
+  min-height: 100dvh;
+  align-items: stretch;
+  padding: 1rem;
+}
+
 .role-picker {
   display: grid;
   width: min(100%, 68rem);
@@ -327,30 +338,6 @@ p {
   padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
 
-.mobile-shell__header {
-  position: sticky;
-  z-index: 20;
-  top: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: calc(0.75rem + env(safe-area-inset-top)) 1rem 0.75rem;
-  border-bottom: 1px solid rgb(var(--color-border));
-  background: rgb(var(--color-surface) / 0.94);
-  backdrop-filter: blur(16px);
-}
-
-.mobile-shell__header h1 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.mobile-shell__header .button span,
-.mobile-shell__footer .button span {
-  display: none;
-}
-
 .mobile-shell__queue:empty {
   display: none;
 }
@@ -362,9 +349,9 @@ p {
 }
 
 .mobile-shell__content {
-  width: min(100%, 48rem);
+  width: min(100%, 30rem);
   margin: 0 auto;
-  padding: 1rem;
+  padding: calc(0.75rem + env(safe-area-inset-top)) 1rem 1.5rem;
 }
 
 .mobile-shell__footer {
@@ -375,7 +362,7 @@ p {
   left: 0;
   padding: 0.45rem 0.75rem calc(0.45rem + env(safe-area-inset-bottom));
   border-top: 1px solid rgb(var(--color-border));
-  background: rgb(var(--color-surface) / 0.96);
+  background: rgb(var(--color-surface-raised) / 0.98);
   backdrop-filter: blur(18px);
 }
 
@@ -405,8 +392,24 @@ p {
 }
 
 .mobile-nav-link[aria-current="page"] {
-  background: rgb(var(--color-primary) / 0.12);
+  background: rgb(var(--color-primary) / 0.13);
   color: rgb(var(--color-primary-strong));
+}
+
+.mobile-shell__footer .button {
+  min-width: 4.5rem;
+  min-height: var(--control-min-size);
+  flex: 1;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.35rem;
+  border: 0;
+  color: rgb(var(--color-muted));
+  font-size: 0.72rem;
+}
+
+.mobile-shell__footer .button span {
+  display: inline;
 }
 
 .offline-banner {
@@ -415,30 +418,29 @@ p {
 }
 
 .desktop-shell {
-  display: grid;
   min-height: 100dvh;
-  grid-template-columns: 17rem minmax(0, 1fr);
 }
 
-.desktop-shell__sidebar {
+.desktop-shell__header {
   position: sticky;
+  z-index: 30;
   top: 0;
   display: flex;
-  height: 100dvh;
-  flex-direction: column;
-  gap: 1.5rem;
-  padding: calc(1rem + env(safe-area-inset-top)) 1rem 1rem;
-  border-right: 1px solid rgb(var(--color-border));
-  background: rgb(var(--color-surface));
+  max-width: calc(var(--content-max) + 3rem);
+  align-items: center;
+  gap: 1rem;
+  margin: 0 auto;
+  padding: calc(1rem + env(safe-area-inset-top)) 1.5rem 0.75rem;
+  background: rgb(var(--color-canvas) / 0.95);
+  backdrop-filter: blur(18px);
 }
 
-.desktop-shell__sidebar nav {
-  display: grid;
-  gap: 0.4rem;
-}
-
-.desktop-shell__sidebar > .button {
-  margin-top: auto;
+.desktop-shell__nav {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .desktop-nav-link {
@@ -446,8 +448,9 @@ p {
   min-height: var(--control-min-size);
   align-items: center;
   gap: 0.75rem;
-  padding: 0.65rem 0.85rem;
-  border-radius: var(--radius-control);
+  padding: 0.55rem 1rem;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 999px;
   color: rgb(var(--color-muted));
   font-weight: 750;
   text-decoration: none;
@@ -463,35 +466,107 @@ p {
   min-width: 0;
 }
 
-.desktop-shell__topbar {
-  position: sticky;
-  z-index: 20;
-  top: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: calc(1rem + env(safe-area-inset-top)) 1.5rem 1rem;
-  border-bottom: 1px solid rgb(var(--color-border));
-  background: rgb(var(--color-surface) / 0.92);
-  backdrop-filter: blur(16px);
-}
-
-.desktop-shell__topbar h1 {
-  margin: 0;
-  font-size: 1.5rem;
-}
-
 .desktop-shell__actions {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
+.desktop-shell__actions .button span {
+  display: none;
+}
+
 .desktop-shell__content {
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem 3rem;
+}
+
+.resgata-screen {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.screen-header__title {
+  margin: 0;
+  font-size: clamp(1.65rem, 8vw, 2.2rem);
+  line-height: 1;
+}
+
+.screen-card {
+  padding: 1rem;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: var(--radius-card);
+  background: rgb(var(--color-surface));
+}
+
+.screen-chip {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 999px;
+  background: transparent;
+  color: rgb(var(--color-text));
+  font-weight: 750;
+}
+
+.screen-chip[aria-pressed="true"],
+.screen-chip--active {
+  border-color: rgb(var(--color-primary));
+  background: rgb(var(--color-primary));
+  color: rgb(var(--color-primary-contrast));
+}
+
+.metric-card {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: var(--radius-card);
+  background: rgb(var(--color-surface));
+}
+
+.metric-card > span:first-child {
+  color: rgb(var(--color-muted));
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.metric-card > strong {
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: clamp(1.75rem, 4vw, 2.45rem);
+  line-height: 1;
+}
+
+.metric-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.progress-track {
+  height: 0.75rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(var(--color-border) / 0.55);
+}
+
+.progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: rgb(var(--color-primary));
 }
 
 .foundation-demo {
@@ -638,35 +713,18 @@ p {
 }
 
 @media (max-width: 860px) {
-  .desktop-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .desktop-shell__sidebar {
+  .desktop-shell__header {
     position: static;
-    display: grid;
-    height: auto;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 0.75rem 1rem;
-    border-right: 0;
-    border-bottom: 1px solid rgb(var(--color-border));
+    flex-wrap: wrap;
   }
 
-  .desktop-shell__sidebar nav {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  .desktop-shell__nav {
+    order: 3;
+    width: 100%;
   }
 
-  .desktop-shell__sidebar > .button {
-    margin-top: 0;
-  }
-
-  .desktop-shell__topbar {
-    position: static;
-    align-items: flex-start;
-    flex-direction: column;
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .desktop-shell__actions {
@@ -677,11 +735,14 @@ p {
 }
 
 @media (max-width: 480px) {
-  .desktop-shell__sidebar,
-  .desktop-shell__topbar,
+  .desktop-shell__header,
   .desktop-shell__content {
     padding-right: 1rem;
     padding-left: 1rem;
+  }
+
+  .metric-grid {
+    grid-template-columns: 1fr;
   }
 }
 

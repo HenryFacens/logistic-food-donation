@@ -11,17 +11,17 @@ interface DesktopShellProps {
 }
 
 export function DesktopShell({ children, route }: DesktopShellProps) {
-  const { role, user } = useSession()
+  const { role } = useSession()
   const navigation = role ? navigationForRole(role, 'desktop') : []
 
   return (
     <div className="desktop-shell">
-      <aside className="desktop-shell__sidebar">
+      <header className="desktop-shell__header">
         <a className="brand" href="/" aria-label="Resgata — início">
           <img src="/logo.svg" alt="" width="44" height="44" />
           <span>Resgata</span>
         </a>
-        <nav aria-label="Navegação principal">
+        <nav className="desktop-shell__nav" aria-label="Navegação principal">
           {navigation.map((item) => (
             <AppLink
               aria-current={item.path === route.path ? 'page' : undefined}
@@ -34,22 +34,15 @@ export function DesktopShell({ children, route }: DesktopShellProps) {
             </AppLink>
           ))}
         </nav>
-        <SessionControl />
-      </aside>
+        <div className="desktop-shell__actions">
+          <LiveStatus />
+          <ThemeToggle />
+          <SessionControl />
+        </div>
+      </header>
       <div className="desktop-shell__main">
-        <header className="desktop-shell__topbar">
-          <div>
-            <span className="eyebrow">{user?.displayName}</span>
-            <h1>{route.title}</h1>
-          </div>
-          <div className="desktop-shell__actions">
-            <LiveStatus />
-            <ThemeToggle />
-          </div>
-        </header>
         <main className="desktop-shell__content">{children}</main>
       </div>
     </div>
   )
 }
-

@@ -1,8 +1,12 @@
 import {
+  createDeliveryReceiptRequestSchema,
+  deliveryReceiptSchema,
   demoUserSchema,
   pickupListSchema,
   pickupSchema,
   uuidSchema,
+  type CreateDeliveryReceiptRequest,
+  type DeliveryReceipt,
   type GeoPoint,
   type Pickup,
 } from '@resgata/shared'
@@ -113,5 +117,30 @@ export function usePickupActions() {
     },
   })
 
-  return { assign, confirm }
+  const createReceipt = useMutation({
+    mutationFn: async ({
+      pickupId,
+      receipt,
+    }: {
+      pickupId: string
+      receipt: CreateDeliveryReceiptRequest
+    }): Promise<DeliveryReceipt> => {
+      const parsedRequest = createDeliveryReceiptRequestSchema.parse(receipt)
+      const scope = `receipt:${pickupId}:${JSON.stringify(parsedRequest)}`
+      const response = await api.post(
+        `/pickups/${pickupId}/receipt`,
+        parsedRequest,
+        { idempotencyKey: stableKeys.get(scope) },
+      )
+      const parsed = deliveryReceiptSchema.parse(response)
+      stableKeys.clear(scope)
+      return parsed
+    },
+    onSuccess: async () => {
+      await refresh()
+      toast.show(pickupMessages.receiptSuccess, 'success')
+    },
+  })
+
+  return { assign, confirm, createReceipt }
 }

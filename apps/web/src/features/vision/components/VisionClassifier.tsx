@@ -4,24 +4,25 @@ import type {
   DonationUnit,
   FoodCondition,
 } from '@resgata/shared'
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import type { ApiClient } from '../../../shared/api'
 import {
   AppIcon,
   Button,
-  Card,
   LoadingState,
   SimuladoBadge,
   StatusBadge,
-  type StatusTone,
 } from '../../../shared/ui'
 import { useVisionClassification } from '../api/classification'
 import { visionMessages } from '../messages'
 import {
+  browserSupportsCameraCapture,
   createImageClassificationRequest,
   createManualClassificationRequest,
   prepareImageForUpload,
+  type VisionMode,
 } from '../model/classification'
+import './vision.css'
 
 const categoryLabels: Record<DonationCategory, string> = {
   bakery: 'Padaria',
@@ -39,55 +40,21 @@ const unitLabels: Record<DonationUnit, [singular: string, plural: string]> = {
   unit: ['unidade', 'unidades'],
 }
 
-const conditionTones: Record<
+const conditionView: Record<
   FoodCondition,
-  { label: string; tone: StatusTone; panel: string }
+  { label: string; tone: 'danger' | 'success' | 'warning' }
 > = {
-  good: {
-    label: visionMessages.conditionGood,
-    panel: 'border-success/30 bg-success/10',
-    tone: 'success',
-  },
-  attention: {
-    label: visionMessages.conditionAttention,
-    panel: 'border-warning/30 bg-warning/10',
-    tone: 'warning',
-  },
-  unsafe: {
-    label: visionMessages.conditionUnsafe,
-    panel: 'border-danger/30 bg-danger/10',
-    tone: 'danger',
-  },
+  attention: { label: visionMessages.conditionAttention, tone: 'warning' },
+  good: { label: visionMessages.conditionGood, tone: 'success' },
+  unsafe: { label: visionMessages.conditionUnsafe, tone: 'danger' },
 }
 
-const numberFormat = new Intl.NumberFormat('pt-BR', {
-  maximumFractionDigits: 1,
-})
-
-const formatShelfLife = (minutes: number) =>
-  minutes < 120
-    ? `${minutes} min`
-    : minutes < 48 * 60
-      ? `${Math.round(minutes / 60)} h`
-      : `${Math.round(minutes / (24 * 60))} dias`
-
-const summarize = (result: Classification) => {
-  const parts: string[] = []
-  if (result.suggestedQuantity && result.suggestedUnit) {
-    parts.push(
-      `≈ ${numberFormat.format(result.suggestedQuantity)} ${unitLabels[result.suggestedUnit][result.suggestedQuantity === 1 ? 0 : 1]}`,
-    )
-  }
-  if (result.estimatedWeightKg) {
-    parts.push(`${numberFormat.format(result.estimatedWeightKg)} kg`)
-  }
-  parts.push(`${visionMessages.goodFor} ${formatShelfLife(result.perishabilityMinutes)}`)
-  return parts.join(' · ')
-}
+const amount = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
 
 interface VisionClassifierProps {
   apiClient: ApiClient
   disabled?: boolean
+  /** Receives null while re-analyzing and when the photo shows no food. */
   onChange(classification: Classification | null): void
   value?: Classification | null
 }
@@ -99,15 +66,20 @@ export function VisionClassifier({
   value,
 }: VisionClassifierProps) {
   const cameraInputId = useId()
-  const galleryInputId = useId()
-  const descriptionId = useId()
-  const [describing, setDescribing] = useState(false)
+  const uploadInputId = useId()
+  const [mode, setMode] = useState<VisionMode>('camera')
   const [manualDescription, setManualDescription] = useState('')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const classificationMutation = useVisionClassification(apiClient)
+  const supportsCapture = useMemo(
+    () => browserSupportsCameraCapture(),
+    [],
+  )
   const result = classificationMutation.data || value || null
-  const busy = disabled || classificationMutation.isPending
+  const freshnessHours = result
+    ? Math.max(1, Math.round(result.perishabilityMinutes / 60))
+    : null
 
   useEffect(
     () => () => {
@@ -141,9 +113,10 @@ export function VisionClassifier({
     if (!file) return
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     setPreviewUrl(URL.createObjectURL(file))
-    setDescribing(false)
+    setMode(source)
     let imageBase64: string
     try {
+      // Downscaled JPEG: fast on mobile data and readable for any phone format.
       imageBase64 = await prepareImageForUpload(file)
     } catch {
       setFileError(visionMessages.fileError)
@@ -152,199 +125,214 @@ export function VisionClassifier({
     await classify(createImageClassificationRequest(imageBase64, source))
   }
 
-  const reset = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
-    setPreviewUrl(null)
-    setFileError(null)
-    classificationMutation.reset()
-    onChange(null)
-  }
-
-  const hasAttempt =
-    Boolean(previewUrl) || classificationMutation.status !== 'idle'
-  const condition = result?.condition ? conditionTones[result.condition] : null
-  const errorMessage =
-    fileError ||
-    (classificationMutation.isError
-      ? classificationMutation.error?.message || visionMessages.genericError
-      : null)
-
   return (
-    <Card className="grid gap-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <span className="eyebrow">{visionMessages.eyebrow}</span>
-          <h2 className="mb-2 text-xl font-extrabold">{visionMessages.title}</h2>
-          <p className="mb-0 text-sm">{visionMessages.description}</p>
-        </div>
-        {result?.simulated ? <SimuladoBadge /> : null}
-      </div>
+    <div className="vision-classifier">
+      <section
+        className="screen-card vision-capture"
+        aria-labelledby="vision-capture-title"
+      >
+        {previewUrl ? (
+          <img
+            alt="Prévia do alimento selecionado"
+            className="vision-capture__preview"
+            src={previewUrl}
+          />
+        ) : null}
 
-      <input
-        accept="image/*"
-        capture="environment"
-        className="sr-only"
-        disabled={busy}
-        id={cameraInputId}
-        onChange={(event) => void handleFile(event.currentTarget, 'camera')}
-        type="file"
-      />
-      <input
-        accept="image/*"
-        className="sr-only"
-        disabled={busy}
-        id={galleryInputId}
-        onChange={(event) => void handleFile(event.currentTarget, 'upload')}
-        type="file"
-      />
-
-      {!hasAttempt ? (
-        <div className="grid gap-3">
-          <label
-            aria-disabled={busy}
-            className="button button--primary min-h-20 cursor-pointer text-lg"
-            htmlFor={cameraInputId}
-          >
+        <div className="vision-capture__content">
+          <div className="vision-capture__heading">
             <AppIcon name="camera" size={28} />
-            <span>{visionMessages.takePhoto}</span>
-          </label>
-          <label
-            aria-disabled={busy}
-            className="button button--secondary min-h-12 cursor-pointer"
-            htmlFor={galleryInputId}
-          >
-            <AppIcon name="image" />
-            <span>{visionMessages.gallery}</span>
-          </label>
-          {!describing ? (
-            <Button
-              className="justify-self-center"
-              disabled={busy}
-              onClick={() => setDescribing(true)}
-              variant="ghost"
+            <div>
+              <h2 id="vision-capture-title">{visionMessages.eyebrow}</h2>
+              <p>{visionMessages.description}</p>
+            </div>
+          </div>
+
+          <div className="vision-capture__sources">
+            <input
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              disabled={disabled}
+              id={cameraInputId}
+              onChange={(event) => void handleFile(event.currentTarget, 'camera')}
+              type="file"
+            />
+            <label className="screen-chip" htmlFor={cameraInputId}>
+              <AppIcon name="camera" />
+              {previewUrl ? visionMessages.retry : visionMessages.camera}
+            </label>
+
+            <input
+              accept="image/*"
+              className="sr-only"
+              disabled={disabled}
+              id={uploadInputId}
+              onChange={(event) => void handleFile(event.currentTarget, 'upload')}
+              type="file"
+            />
+            <label className="screen-chip" htmlFor={uploadInputId}>
+              {visionMessages.upload}
+            </label>
+
+            <button
+              aria-pressed={mode === 'manual'}
+              className="screen-chip"
+              disabled={disabled || classificationMutation.isPending}
+              onClick={() => setMode('manual')}
+              type="button"
             >
-              {visionMessages.noPhoto}
-            </Button>
+              {visionMessages.manual}
+            </button>
+          </div>
+
+          {mode === 'camera' && !supportsCapture ? (
+            <p className="vision-capture__fallback">
+              {visionMessages.cameraFallback}
+            </p>
+          ) : null}
+
+          {mode === 'manual' ? (
+            <form
+              className="vision-manual"
+              onSubmit={(event) => {
+                event.preventDefault()
+                void classify(
+                  createManualClassificationRequest(manualDescription),
+                )
+              }}
+            >
+              <label htmlFor="vision-description">
+                {visionMessages.manualLabel}
+              </label>
+              <textarea
+                disabled={disabled || classificationMutation.isPending}
+                id="vision-description"
+                onChange={(event) => setManualDescription(event.target.value)}
+                placeholder={visionMessages.manualPlaceholder}
+                required
+                value={manualDescription}
+              />
+              <Button
+                disabled={
+                  disabled ||
+                  classificationMutation.isPending ||
+                  !manualDescription.trim()
+                }
+                type="submit"
+                variant="primary"
+              >
+                {visionMessages.classify}
+              </Button>
+            </form>
           ) : null}
         </div>
-      ) : null}
-
-      {describing && !hasAttempt ? (
-        <form
-          className="grid gap-3"
-          onSubmit={(event) => {
-            event.preventDefault()
-            void classify(createManualClassificationRequest(manualDescription))
-          }}
-        >
-          <label className="grid gap-2 font-bold" htmlFor={descriptionId}>
-            {visionMessages.manualLabel}
-            <textarea
-              className="min-h-24 rounded-control border border-border bg-surface p-3 font-normal text-text"
-              disabled={busy}
-              id={descriptionId}
-              onChange={(event) => setManualDescription(event.target.value)}
-              placeholder={visionMessages.manualPlaceholder}
-              required
-              value={manualDescription}
-            />
-          </label>
-          <Button
-            disabled={busy || !manualDescription.trim()}
-            type="submit"
-            variant="primary"
-          >
-            {visionMessages.classify}
-          </Button>
-        </form>
-      ) : null}
-
-      {previewUrl ? (
-        <img
-          alt={visionMessages.previewAlt}
-          className="max-h-72 w-full rounded-card object-cover"
-          src={previewUrl}
-        />
-      ) : null}
+      </section>
 
       {classificationMutation.isPending ? (
         <LoadingState label={visionMessages.classifying} />
       ) : null}
 
-      {errorMessage ? (
+      {classificationMutation.isError || fileError ? (
         <div
           className="rounded-control border border-danger/30 bg-danger/10 p-3 text-sm text-danger"
           role="alert"
         >
-          {errorMessage}
+          {fileError ||
+            classificationMutation.error?.message ||
+            'Não foi possível classificar o alimento.'}
         </div>
       ) : null}
 
       {result && result.isFood === false ? (
-        <div
-          className="grid gap-1 rounded-card border border-warning/30 bg-warning/10 p-4"
-          role="alert"
-        >
-          <strong>{visionMessages.notFoodTitle}</strong>
-          <p className="mb-0 text-sm">
+        <section className="screen-card vision-result" role="alert">
+          <div className="vision-result__heading">
+            <div>
+              <span>{visionMessages.result}</span>
+              <h2>{visionMessages.notFoodTitle}</h2>
+            </div>
+          </div>
+          <p className="vision-result__notes">
             {result.conditionNotes || visionMessages.notFoodDescription}
           </p>
-        </div>
+        </section>
       ) : null}
 
       {result && result.isFood !== false ? (
-        <output className="grid gap-3 rounded-card border border-primary/25 bg-primary/5 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="eyebrow mb-0">
+        <section className="screen-card vision-result">
+          <div className="vision-result__heading">
+            <div>
+              <span>{visionMessages.result}</span>
+              <h2>{result.description.replace(/\s+—\s+SIMULADO$/u, '')}</h2>
+            </div>
+            {result.simulated ? <SimuladoBadge /> : null}
+          </div>
+
+          <div className="vision-result__chips">
+            <span className="screen-chip">
               {categoryLabels[result.category]}
             </span>
             <StatusBadge
-              label={`${Math.round(result.confidence * 100)}% ${visionMessages.confidence}`}
-              tone="info"
+              label={`Folga · bom por ~${freshnessHours}h`}
+              tone="success"
             />
+            {result.suggestedQuantity && result.suggestedUnit ? (
+              <span className="screen-chip">
+                ≈ {amount.format(result.suggestedQuantity)}{' '}
+                {unitLabels[result.suggestedUnit][result.suggestedQuantity === 1 ? 0 : 1]}
+              </span>
+            ) : null}
+            {result.estimatedWeightKg ? (
+              <span className="screen-chip">
+                {amount.format(result.estimatedWeightKg)} kg
+              </span>
+            ) : null}
           </div>
-          <p className="mb-0 text-lg font-extrabold text-text">
-            {result.description.replace(/\s+—\s+SIMULADO$/u, '')}
-          </p>
+
           {result.items && result.items.length > 1 ? (
-            <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
-              {result.items.map((item) => (
-                <li
-                  className="rounded-full border border-border px-3 py-1 text-sm"
-                  key={item}
-                >
-                  {item}
-                </li>
-              ))}
-            </ul>
+            <p className="vision-result__items">{result.items.join(' · ')}</p>
           ) : null}
-          <p className="mb-0 text-sm font-bold">{summarize(result)}</p>
-          {condition ? (
-            <div className={`grid gap-1 rounded-control border p-3 ${condition.panel}`}>
-              <StatusBadge label={condition.label} tone={condition.tone} />
-              {result.conditionNotes ? (
-                <p className="mb-0 text-sm">{result.conditionNotes}</p>
-              ) : null}
+
+          {result.condition ? (
+            <div
+              className={`vision-result__condition vision-result__condition--${result.condition}`}
+            >
+              <StatusBadge
+                label={conditionView[result.condition].label}
+                tone={conditionView[result.condition].tone}
+              />
+              {result.conditionNotes ? <p>{result.conditionNotes}</p> : null}
             </div>
           ) : null}
-          <p className="mb-0 text-xs">{visionMessages.reviewHint}</p>
-        </output>
-      ) : null}
 
-      {hasAttempt && !classificationMutation.isPending ? (
-        <div className="grid gap-2 sm:grid-cols-2">
-          <label
-            className="button button--secondary min-h-12 cursor-pointer"
-            htmlFor={cameraInputId}
+          <div className="vision-result__confidence">
+            <span aria-hidden="true">
+              {[0.25, 0.5, 0.75, 0.9].map((threshold) => (
+                <i
+                  className={
+                    result.confidence >= threshold
+                      ? 'vision-result__dot vision-result__dot--active'
+                      : 'vision-result__dot'
+                  }
+                  key={threshold}
+                />
+              ))}
+            </span>
+            <span>
+              {visionMessages.confidence}:{' '}
+              {Math.round(result.confidence * 100)}%
+            </span>
+          </div>
+
+          <button
+            className="vision-result__edit"
+            onClick={() => setMode('manual')}
+            type="button"
           >
-            <AppIcon name="camera" />
-            <span>{visionMessages.retake}</span>
-          </label>
-          <Button onClick={reset} variant="ghost">
-            {visionMessages.startOver}
-          </Button>
-        </div>
+            {visionMessages.editSuggestion}
+          </button>
+        </section>
       ) : null}
-    </Card>
+    </div>
   )
 }

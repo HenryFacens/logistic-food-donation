@@ -61,3 +61,11 @@ export const partnerSchema = z.object({
   active: z.boolean(),
 });
 export type Partner = z.infer<typeof partnerSchema>;
+
+export const platformOperatorSchema = z.object({
+  id: uuidSchema,
+  userId: uuidSchema,
+  name: nonEmptyTextSchema,
+  active: z.boolean(),
+});
+export type PlatformOperator = z.infer<typeof platformOperatorSchema>;

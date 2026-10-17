@@ -1,0 +1,937 @@
+.pickups-screen {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.pickups-screen__header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 10vw, 3rem);
+  line-height: 1;
+}
+
+.pickups-screen__header p {
+  margin: 0.7rem 0 0;
+}
+
+.pickups-screen__title-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pickups-screen__count {
+  display: grid;
+  min-width: 5rem;
+  justify-items: end;
+}
+
+.pickups-screen__count strong {
+  color: rgb(var(--color-primary-strong));
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.pickups-screen__count small {
+  color: rgb(var(--color-muted));
+  font-weight: 700;
+}
+
+.pickup-card {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.2rem;
+  border-radius: 1.7rem;
+  overflow: hidden;
+}
+
+.pickup-card--active {
+  border-color: rgb(var(--color-primary));
+  background:
+    linear-gradient(160deg, rgb(var(--color-primary) / 0.08), transparent 44%),
+    rgb(var(--color-surface));
+}
+
+.pickup-card__heading,
+.pickup-card__ngo-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pickup-card__heading h2,
+.pickup-card__ngo-heading h3 {
+  margin: 0;
+}
+
+.pickup-card__heading h2 {
+  font-size: 1.65rem;
+  line-height: 1.05;
+}
+
+.pickup-card__heading p {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+}
+
+.pickup-card__heading .pickup-card__description {
+  color: rgb(var(--color-text));
+  font-size: 0.95rem;
+  font-weight: 750;
+}
+
+.pickup-card__status {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+}
+
+.pickup-card__details {
+  overflow: hidden;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 1.1rem;
+  background: rgb(var(--color-canvas) / 0.35);
+}
+
+.pickup-card__details > summary {
+  display: flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+  color: rgb(var(--color-text));
+  font-size: 0.85rem;
+  font-weight: 800;
+  list-style: none;
+}
+
+.pickup-card__details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pickup-card__details > summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.pickup-card__details > summary > svg {
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.pickup-card__details[open] > summary > svg {
+  transform: rotate(90deg);
+}
+
+.pickup-card__details > summary:focus-visible {
+  outline: 3px solid rgb(var(--color-primary) / 0.45);
+  outline-offset: -3px;
+}
+
+.pickup-card__details-content {
+  display: grid;
+  gap: 1rem;
+  padding: 0 0.9rem 0.9rem;
+}
+
+.pickup-card__timeline {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  list-style: none;
+}
+
+.pickup-card__timeline li {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  justify-items: center;
+  gap: 0.35rem;
+  color: rgb(var(--color-muted));
+  font-weight: 700;
+  text-align: center;
+}
+
+.pickup-card__timeline li::before {
+  position: absolute;
+  z-index: 0;
+  top: 0.8rem;
+  right: 50%;
+  left: -50%;
+  height: 2px;
+  background: rgb(var(--color-border));
+  content: "";
+}
+
+.pickup-card__timeline li:first-child::before {
+  display: none;
+}
+
+.pickup-card__timeline li > span {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border: 2px solid rgb(var(--color-border));
+  border-radius: 50%;
+  background: rgb(var(--color-surface));
+}
+
+.pickup-card__timeline li.is-complete,
+.pickup-card__timeline li.is-current {
+  color: rgb(var(--color-primary-strong));
+}
+
+.pickup-card__timeline li.is-complete::before,
+.pickup-card__timeline li.is-current::before {
+  background: rgb(var(--color-primary));
+}
+
+.pickup-card__timeline li.is-complete > span {
+  border-color: rgb(var(--color-primary));
+  background: rgb(var(--color-primary));
+  color: rgb(var(--color-primary-contrast));
+}
+
+.pickup-card__timeline li.is-current > span {
+  border-color: rgb(var(--color-warning));
+  box-shadow: 0 0 0 0.45rem rgb(var(--color-warning) / 0.14);
+}
+
+.route-preview {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 1.35rem;
+  background: rgb(8 35 29);
+}
+
+.route-preview svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.route-preview__street {
+  fill: none;
+  stroke: rgb(31 72 62);
+  stroke-width: 10;
+}
+
+.route-preview__guide {
+  fill: none;
+  stroke: rgb(46 90 80);
+  stroke-dasharray: 5 10;
+  stroke-linecap: round;
+  stroke-width: 4;
+}
+
+.route-preview__route {
+  fill: none;
+  stroke: rgb(var(--color-primary));
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 7;
+}
+
+.route-preview__origin {
+  fill: rgb(var(--color-warning));
+  stroke: rgb(8 35 29);
+  stroke-width: 4;
+}
+
+.route-preview__driver {
+  fill: rgb(235 244 240);
+  stroke: rgb(8 35 29);
+  stroke-width: 4;
+}
+
+.route-preview__destination {
+  fill: rgb(var(--color-primary));
+  stroke: rgb(8 35 29);
+  stroke-width: 4;
+}
+
+.route-preview figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  background: rgb(12 43 36);
+  color: rgb(185 209 200);
+  font-size: 0.68rem;
+}
+
+.route-preview figcaption > span {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.route-preview figcaption code {
+  flex: 0 0 auto;
+  color: inherit;
+}
+
+.pickup-card__locations {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pickup-card__locations > div {
+  min-width: 0;
+  padding: 0.85rem;
+  border-radius: 1.15rem;
+  background: rgb(var(--color-canvas) / 0.5);
+}
+
+.pickup-card__locations span,
+.pickup-card__locations strong {
+  display: block;
+}
+
+.pickup-card__locations span {
+  color: rgb(var(--color-muted));
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pickup-card__locations strong {
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.pickup-card__ngo-panel {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 1.35rem;
+  background: rgb(var(--color-surface-raised));
+}
+
+.pickup-card__delivery-code {
+  padding: 1rem;
+  border: 2px solid rgb(var(--color-primary));
+  border-radius: 1.2rem;
+}
+
+.pickup-card__delivery-code > span,
+.pickup-card__delivery-code > strong {
+  display: block;
+}
+
+.pickup-card__delivery-code > span {
+  color: rgb(var(--color-primary-strong));
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pickup-card__delivery-code > strong {
+  margin: 0.25rem 0;
+  font-size: clamp(2rem, 11vw, 3rem);
+  letter-spacing: 0.18em;
+}
+
+.pickup-card__delivery-code p {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.pickup-card__primary-action {
+  min-height: 4rem;
+  border-radius: 1.2rem;
+  font-size: 1.05rem;
+}
+
+.pickup-confirmation {
+  display: grid;
+  gap: 1rem;
+  margin: 0 -1.2rem -1.2rem;
+  padding: 1.2rem;
+  border-top: 1px solid rgb(var(--color-border));
+  border-radius: 1.8rem 1.8rem 0 0;
+  background: rgb(var(--color-surface-raised));
+  box-shadow: 0 -16px 50px rgb(0 0 0 / 0.14);
+}
+
+.pickup-confirmation__heading h3 {
+  margin: 0;
+  font-size: 1.55rem;
+}
+
+.pickup-confirmation__heading p {
+  margin: 0.25rem 0 0;
+}
+
+.pickup-confirmation__code {
+  position: relative;
+  display: grid;
+  gap: 0.6rem;
+  font-weight: 800;
+}
+
+.pickup-confirmation__code > input {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3.7rem;
+  border: 0;
+  opacity: 0;
+  cursor: text;
+}
+
+.pickup-confirmation__code:focus-within
+  .pickup-confirmation__digits
+  > span {
+  border-color: rgb(var(--color-primary));
+  box-shadow: inset 0 0 0 1px rgb(var(--color-primary));
+}
+
+.pickup-confirmation__digits {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.pickup-confirmation__digits > span {
+  display: grid;
+  min-width: 0;
+  height: 3.7rem;
+  place-items: center;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 0.9rem;
+  background: rgb(var(--color-surface));
+  font-size: 1.5rem;
+}
+
+.pickup-confirmation__digits > span.is-filled {
+  border-color: rgb(var(--color-primary));
+  box-shadow: inset 0 0 0 1px rgb(var(--color-primary));
+}
+
+.pickup-confirmation__location {
+  display: grid;
+  align-items: center;
+  gap: 0.75rem;
+  grid-template-columns: 1fr auto;
+}
+
+.pickup-confirmation__location strong,
+.pickup-confirmation__location span {
+  display: block;
+}
+
+.pickup-confirmation__location span,
+.pickup-confirmation__location-message,
+.qr-reader__message {
+  color: rgb(var(--color-muted));
+  font-size: 0.75rem;
+}
+
+.pickup-confirmation__actions {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pickup-confirmation__actions .button,
+.qr-reader__button {
+  min-height: 3.6rem;
+  border-radius: 1.1rem;
+}
+
+.qr-reader {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.qr-reader__video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 1.15rem;
+  background: #000;
+  object-fit: cover;
+}
+
+.receipt-pending {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.receipt-pending p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.receipt-form,
+.receipt-summary {
+  display: grid;
+  gap: 1rem;
+}
+
+.receipt-form__heading h3,
+.receipt-summary__heading h3 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.receipt-form__heading p {
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+}
+
+.receipt-form fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.receipt-form legend,
+.receipt-form__notes > span,
+.receipt-form__weights > label > span:first-child {
+  margin-bottom: 0.55rem;
+  color: rgb(var(--color-text));
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.receipt-form__conditions > div {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.receipt-form__conditions label,
+.receipt-form__reasons label {
+  position: relative;
+  display: grid;
+  min-height: 3.25rem;
+  place-items: center;
+  padding: 0.65rem;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 1rem;
+  cursor: pointer;
+  color: rgb(var(--color-muted));
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.receipt-form__conditions label.is-selected,
+.receipt-form__reasons label.is-selected {
+  border-color: rgb(var(--color-primary));
+  background: rgb(var(--color-primary) / 0.14);
+  color: rgb(var(--color-primary-strong));
+  box-shadow: inset 0 0 0 1px rgb(var(--color-primary));
+}
+
+.receipt-form__conditions input,
+.receipt-form__reasons input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.receipt-form__conditions label:has(input:focus-visible),
+.receipt-form__reasons label:has(input:focus-visible) {
+  outline: 3px solid rgb(var(--color-primary) / 0.45);
+  outline-offset: 2px;
+}
+
+.receipt-form__weights {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.receipt-form__weights label {
+  min-width: 0;
+}
+
+.receipt-form__weight-input {
+  display: grid;
+  min-height: 3.5rem;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 1rem;
+  background: rgb(var(--color-surface));
+}
+
+.receipt-form__weight-input:focus-within {
+  border-color: rgb(var(--color-primary));
+  box-shadow: inset 0 0 0 1px rgb(var(--color-primary));
+}
+
+.receipt-form__weight-input input {
+  min-width: 0;
+  height: 100%;
+  padding: 0.75rem;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: rgb(var(--color-text));
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.receipt-form__weight-input strong {
+  padding-right: 0.85rem;
+  color: rgb(var(--color-muted));
+}
+
+.receipt-form__reasons > div {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.receipt-form__notes {
+  display: grid;
+}
+
+.receipt-form__notes textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 1rem;
+  background: rgb(var(--color-surface));
+  color: rgb(var(--color-text));
+  font: inherit;
+  padding: 0.85rem;
+}
+
+.receipt-form__notes textarea:focus-visible {
+  border-color: rgb(var(--color-primary));
+  outline: 2px solid rgb(var(--color-primary) / 0.4);
+  outline-offset: 1px;
+}
+
+.receipt-form__weight-note,
+.receipt-form__error {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.receipt-form__weight-note {
+  color: rgb(var(--color-muted));
+}
+
+.receipt-form__error {
+  color: rgb(var(--color-danger));
+  font-weight: 800;
+}
+
+.receipt-form > .button {
+  min-height: 3.75rem;
+  border-radius: 1rem;
+}
+
+.receipt-summary__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.receipt-summary__metrics {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.receipt-summary__metrics > div {
+  padding: 0.8rem;
+  border-radius: 1rem;
+  background: rgb(var(--color-canvas) / 0.45);
+}
+
+.receipt-summary__metrics dt {
+  color: rgb(var(--color-muted));
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.receipt-summary__metrics dd {
+  margin: 0.25rem 0 0;
+  color: rgb(var(--color-text));
+  font-size: 1.25rem;
+  font-weight: 850;
+}
+
+.receipt-summary__reasons strong {
+  font-size: 0.82rem;
+}
+
+.receipt-summary__reasons ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.receipt-summary__reasons li {
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: rgb(var(--color-warning) / 0.13);
+  color: rgb(var(--color-warning));
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.receipt-summary__notes,
+.receipt-summary__locked {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.receipt-summary__locked {
+  color: rgb(var(--color-muted));
+}
+
+.pickup-dashboard {
+  width: 100%;
+}
+
+.pickup-dashboard--driver {
+  max-width: 52rem;
+  margin-inline: auto;
+}
+
+.pickup-dashboard .dashboard-header {
+  display: grid;
+  gap: 1rem;
+}
+
+.pickup-dashboard .dashboard-header__aside {
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.pickup-dashboard .dashboard-header__period {
+  text-align: left;
+}
+
+.pickup-dashboard--ngo {
+  max-width: 96rem;
+  margin-inline: auto;
+}
+
+.pickup-dashboard__evidence {
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 1rem;
+  background: rgb(var(--color-surface));
+}
+
+.pickup-dashboard__evidence > summary {
+  display: flex;
+  min-height: 3rem;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  color: rgb(var(--color-muted));
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.pickup-dashboard__evidence > summary:focus-visible {
+  outline: 3px solid rgb(var(--color-primary) / 0.45);
+  outline-offset: -3px;
+}
+
+.pickup-dashboard__evidence[open] > summary {
+  border-bottom: 1px solid rgb(var(--color-border));
+  color: rgb(var(--color-text));
+}
+
+.pickup-dashboard__evidence .evidence-legend {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.pickup-dashboard__content {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.pickup-dashboard__visual-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pickup-dashboard--driver .pickup-dashboard__visual-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pickup-dashboard__visual-card {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.9rem;
+  padding: clamp(1rem, 2.2vw, 1.4rem);
+}
+
+.pickup-dashboard__visual-card--wide {
+  grid-column: 1 / -1;
+}
+
+.pickup-dashboard__visual-card > .card__title {
+  margin: 0;
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+}
+
+.pickup-dashboard__visual-description {
+  min-height: 2.6em;
+  margin: -0.45rem 0 0;
+  color: rgb(var(--color-muted));
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.pickup-dashboard__empty-chart {
+  display: grid;
+  min-height: 12rem;
+  margin: 0;
+  place-items: center;
+  border: 1px dashed rgb(var(--color-border));
+  border-radius: 1rem;
+  color: rgb(var(--color-muted));
+  text-align: center;
+}
+
+.pickup-dashboard__metric-section {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 2.2vw, 1.4rem);
+  border: 1px solid rgb(var(--color-border));
+  border-radius: var(--radius-card);
+  background: rgb(var(--color-surface));
+}
+
+.pickup-dashboard__metric-section > h2,
+.pickup-dashboard__metric-heading h2 {
+  margin: 0;
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+}
+
+.pickup-dashboard__metric-heading {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.pickup-dashboard__metric-heading p {
+  margin: 0;
+  color: rgb(var(--color-muted));
+  font-size: 0.88rem;
+}
+
+.pickup-dashboard__metric-section .dashboard-metric-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+}
+
+.pickup-dashboard__generated {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding: 0.85rem 1rem;
+  color: rgb(var(--color-muted));
+  font-size: 0.8rem;
+}
+
+.pickup-dashboard__generated strong {
+  color: rgb(var(--color-text));
+  text-align: right;
+}
+
+@media (min-width: 72rem) {
+  .pickup-dashboard__visual-grid--ngo {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 52rem) {
+  .pickup-dashboard__visual-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pickup-dashboard__visual-card--wide {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .pickup-card__heading,
+  .pickup-card__ngo-heading {
+    display: grid;
+  }
+
+  .pickup-card__status {
+    justify-items: start;
+  }
+
+  .pickup-card__locations,
+  .pickup-confirmation__actions,
+  .receipt-form__conditions > div,
+  .receipt-form__weights,
+  .receipt-form__reasons > div,
+  .receipt-summary__metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .receipt-summary__heading,
+  .route-preview figcaption {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pickup-dashboard__generated {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pickup-dashboard__generated strong {
+    text-align: left;
+  }
+
+  .pickup-dashboard__visual-card,
+  .pickup-dashboard__metric-section {
+    padding: 0.9rem;
+  }
+
+  .pickup-dashboard__visual-description {
+    min-height: 0;
+  }
+}

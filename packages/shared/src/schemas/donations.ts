@@ -88,6 +88,8 @@ export const createDonationRequestSchema = z.object({
   imageUrl: z.url().optional(),
   photoId: z.uuid().optional(),
   classification: classificationSchema.optional(),
+  unitValueBrl: z.number().nonnegative().optional(),
+  disposalCostBrl: z.number().nonnegative().optional(),
 });
 export type CreateDonationRequest = z.infer<
   typeof createDonationRequestSchema
@@ -109,6 +111,8 @@ export const donationSchema = z.object({
   // Absolute URL or an API-relative photo path such as /api/photos/{id}.
   imageUrl: z.string().min(1).nullable(),
   classification: classificationSchema.nullable(),
+  unitValueBrl: z.number().nonnegative().nullable(),
+  disposalCostBrl: z.number().nonnegative().nullable(),
   correlationId: correlationIdSchema,
   version: z.number().int().nonnegative(),
   simulated: z.boolean(),

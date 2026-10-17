@@ -1,8 +1,4 @@
-import type {
-  GeoPoint,
-  Pickup,
-  PickupStatus,
-} from '@resgata/shared'
+import type { DeliveryReceiptCondition, GeoPoint, Pickup, PickupStatus } from '@resgata/shared'
 
 export const pickupStatusLabels: Record<PickupStatus, string> = {
   assigned: 'Motorista atribuído',
@@ -54,3 +50,82 @@ export const mapPickupConfirmation = ({
 
 export const coordinateLabel = (point: GeoPoint) =>
   `${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)}`
+
+export const pickupProgress = (status: PickupStatus) => {
+  const steps = [
+    { key: 'assigned', label: 'Atribuída' },
+    { key: 'pickup', label: 'Retirada' },
+    { key: 'delivery', label: 'Entrega' },
+  ] as const
+  const completedCount = {
+    assigned: 0,
+    awaiting_driver: 0,
+    cancelled: 0,
+    collected: 2,
+    delivered: 3,
+    en_route_delivery: 2,
+    en_route_pickup: 0,
+  }[status]
+  const hasCurrentStep =
+    status !== 'awaiting_driver' &&
+    status !== 'cancelled' &&
+    status !== 'delivered'
+
+  return steps.map((step, index) => ({
+    ...step,
+    complete: index < completedCount,
+    current: hasCurrentStep && index === completedCount,
+  }))
+}
+
+export const pickupShortId = (pickup: Pick<Pickup, 'donationId'>) =>
+  pickup.donationId.slice(0, 8).toUpperCase()
+
+const roundWeight = (value: number) => Math.round(value * 100) / 100
+
+export const receiptWeightDefaults = (
+  condition: DeliveryReceiptCondition,
+  estimatedWeightKg: number,
+) => {
+  if (condition === 'all_good') {
+    return {
+      receivedWeightKg: roundWeight(estimatedWeightKg),
+      rejectedWeightKg: 0,
+    }
+  }
+
+  if (condition === 'rejected') {
+    return {
+      receivedWeightKg: 0,
+      rejectedWeightKg: roundWeight(estimatedWeightKg),
+    }
+  }
+
+  const rejectedWeightKg =
+    estimatedWeightKg <= 0.1
+      ? roundWeight(estimatedWeightKg / 2)
+      : Math.min(
+          roundWeight(Math.max(estimatedWeightKg * 0.1, 0.1)),
+          roundWeight(estimatedWeightKg - 0.01),
+        )
+
+  return {
+    receivedWeightKg: roundWeight(estimatedWeightKg - rejectedWeightKg),
+    rejectedWeightKg: roundWeight(rejectedWeightKg),
+  }
+}
+
+export const formatDashboardPeriod = (
+  periodStart: string,
+  periodEnd: string,
+) => {
+  const format = new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+
+  return `${format.format(new Date(periodStart))} – ${format.format(
+    new Date(periodEnd),
+  )}`
+}

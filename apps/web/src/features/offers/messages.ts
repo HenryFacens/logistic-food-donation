@@ -1,5 +1,6 @@
 export const offerMessages = {
   matchesRequest: 'Atende seu pedido:',
+  distance: 'Distância de carro',
   covers: 'cobre',
   of: 'de',
   unitLabels: { box: 'caixas', kg: 'kg', tray: 'bandejas', unit: 'unidades' },
@@ -7,6 +8,9 @@ export const offerMessages = {
   conditionAttention: 'Foto analisada: receber com atenção',
   acceptError: 'Não foi possível aceitar esta oferta.',
   acceptSuccess: 'Oferta aceita. O recebimento já foi criado.',
+  acceptanceChoiceDescription:
+    'A preferência logística ainda não é enviada ao servidor. A aceitação da oferta é real.',
+  acceptanceChoiceTitle: 'Como vocês vão receber?',
   emptyDescription: 'Novas oportunidades compatíveis aparecerão aqui.',
   emptyTitle: 'Nenhuma oferta disponível',
   loadError: 'Não foi possível carregar as ofertas.',

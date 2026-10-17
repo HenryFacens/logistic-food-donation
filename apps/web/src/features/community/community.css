@@ -1,0 +1,167 @@
+.community-today {
+  display: flex;
+  width: min(100%, 30rem);
+  min-height: calc(100dvh - 2rem);
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0 auto;
+  color: rgb(15 42 34);
+}
+
+.community-today__heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.community-today__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  font-family: "Bricolage Grotesque", Figtree, sans-serif;
+  font-size: 1.45rem;
+}
+
+.community-today__logo {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border-radius: 0.8rem;
+  background: rgb(14 107 88);
+  color: white;
+}
+
+.community-today h1 {
+  max-width: 14rem;
+  margin: 0;
+  font-size: clamp(2.3rem, 11vw, 3.2rem);
+  line-height: 0.98;
+}
+
+.community-today__city {
+  display: inline-flex;
+  min-height: 3.25rem;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgb(157 184 174);
+  border-radius: 0.9rem;
+  background: white;
+  color: rgb(15 42 34);
+  font-weight: 800;
+}
+
+.community-today__intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.community-today__intro p {
+  margin: 0;
+  color: rgb(65 89 79);
+  font-size: 1rem;
+}
+
+.community-today__list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.community-entry {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid rgb(207 221 214);
+  border-radius: 1.25rem;
+  background: white;
+}
+
+.community-entry__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.community-entry h2 {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.community-entry__heading > span {
+  flex: 0 0 auto;
+  color: rgb(65 89 79);
+  font-weight: 700;
+}
+
+.community-entry p {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0;
+  color: rgb(15 42 34);
+}
+
+.community-entry p svg {
+  flex: 0 0 auto;
+  color: rgb(14 107 88);
+}
+
+.community-entry__route,
+.community-today__login {
+  display: inline-flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 0.9rem;
+  background: rgb(14 107 88);
+  color: white;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.community-whatsapp {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: auto;
+  padding: 1.1rem;
+  border-radius: 1.25rem;
+  background: rgb(15 42 34);
+  color: rgb(234 244 240);
+}
+
+.community-whatsapp h2,
+.community-whatsapp p {
+  margin: 0;
+}
+
+.community-whatsapp p {
+  color: rgb(234 244 240);
+}
+
+.community-whatsapp small {
+  color: rgb(183 206 196);
+}
+
+.community-today__login {
+  min-height: 3rem;
+  background: transparent;
+  color: rgb(14 107 88);
+}
+
+@media (max-width: 390px) {
+  .community-today__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .community-today h1 {
+    max-width: none;
+  }
+}

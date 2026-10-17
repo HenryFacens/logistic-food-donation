@@ -20,6 +20,9 @@ export {
   donationUnitLabels,
   eventLabel,
   formatDateTime,
+  formatRemainingTime,
+  formatTime,
+  nextDonationStepLabel,
 } from './model/donationView'
 export {
   applyClassification,
@@ -28,6 +31,7 @@ export {
   createStableIdempotencyRegistry,
   isUnsafeClassification,
   toLocalInput,
+  parseOptionalBrl,
   type DonationFormValues,
   type DonationPublisher,
   type DonationPublishOperation,

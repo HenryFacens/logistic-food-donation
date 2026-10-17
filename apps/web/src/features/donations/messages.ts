@@ -1,9 +1,29 @@
 export const donationMessages = {
-  donateEyebrow: 'Passo 2',
-  donateTitle: 'Confira e publique',
+  donateEyebrow: 'Nova doação',
+  donateTitle: 'Confirmar item',
   donateDescription:
-    'Confira o que a foto preencheu, ajuste se precisar e publique para as ONGs próximas.',
+    'Revise a identificação, a quantidade e o prazo antes de publicar.',
+  donateStep: 'Etapa final',
+  quantityTitle: 'Quantos?',
+  expiryTitle: 'Retirar até quando?',
+  optional: 'Preenchimento opcional',
+  financialTitle: 'Valores gerenciais',
+  financialNotice:
+    'Use estes valores somente para estimativas de gestão. Eles não comprovam nem calculam dedução fiscal.',
+  unitValueLabel: 'Valor declarado por kg',
+  unitValueHelp:
+    'Informe quanto esse alimento vale por kg, usando moeda brasileira.',
+  disposalCostLabel: 'Custo estimado de descarte',
+  disposalCostHelp:
+    'Informe o custo total que seria necessário para descartar esta doação.',
+  pickupLocation: 'Local de retirada',
+  publicationDetails: 'Detalhes da publicação',
+  classificationPending:
+    'Adicione uma foto ou uma descrição para receber a classificação assistida.',
+  listEyebrow: 'Padaria Cambuí',
+  listTitle: 'Suas doações',
   pickupDetails: 'Local de retirada',
+  loadingShop: 'Carregando endereço da loja',
   moreOptions: 'Mais opções (horário e validade)',
   locationDefault: 'Endereço padrão',
   locationFromShop: 'Endereço da loja',
@@ -22,8 +42,6 @@ export const donationMessages = {
   shopSaved: 'Endereço da loja atualizado',
   unsafeBlocked:
     'A análise indicou que este alimento não está seguro para doação. Tire outra foto se achar que houve um engano.',
-  listEyebrow: 'Acompanhamento',
-  listTitle: 'Minhas doações',
   listDescription:
     'Acompanhe o caminho de cada alimento, da publicação até a entrega.',
   loading: 'Carregando doações',
@@ -34,10 +52,14 @@ export const donationMessages = {
   retry: 'Tentar novamente',
   publish: 'Publicar doação',
   publishing: 'Publicando doação',
+  invalidForm:
+    'Revise os campos obrigatórios. Nos valores opcionais, use formatos como 12,50 ou 1.234,56.',
   published: 'Doação publicada e enviada para classificação.',
   queued: 'Doação salva para sincronização quando a conexão voltar.',
-  timeline: 'Ver histórico',
+  timeline: 'Ver andamento',
+  hideTimeline: 'Ocultar andamento',
   matching: 'Por que esta ONG?',
+  matchingEyebrow: 'Matching ao vivo',
   hideMatching: 'Ocultar matching',
   matchingLoading: 'Carregando matching',
   matchingPending: 'Analisando e buscando ONGs…',
@@ -54,7 +76,10 @@ export const donationMessages = {
   noOpenRequest: 'Sem pedido aberto compatível',
   excluded: 'Descartada:',
   outOfRange: 'Fora do raio:',
-  hideTimeline: 'Ocultar histórico',
   timelineLoading: 'Carregando histórico',
   timelineEmpty: 'Ainda não há eventos para esta doação.',
+  pickupIdentification: 'Identificação da retirada',
+  pickupIdentificationUnavailable:
+    'O QR e o código de retirada ainda não estão disponíveis ao produtor neste contrato.',
+  nextStep: 'Próxima etapa',
 } as const

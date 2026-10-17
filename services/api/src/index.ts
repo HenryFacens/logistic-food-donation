@@ -21,6 +21,16 @@ import {
   getSellerImpact,
   listPartnerRedemptions,
 } from "./routes/dashboards.js";
+import {
+  getDriverDashboard,
+  getNgoDashboard,
+  getPlatformDashboard,
+  getSellerDashboard,
+} from "./routes/metricsDashboards.js";
+import {
+  createDriverRating,
+  listDriverRatingOpportunities,
+} from "./routes/driverRatings.js";
 import { streamEvents } from "./routes/events.js";
 import { listNgos } from "./routes/ngos.js";
 import {
@@ -53,6 +63,7 @@ import {
   updateDriverStatus,
   updateSellerProfile,
 } from "./routes/profile.js";
+import { createDeliveryReceipt } from "./routes/receipts.js";
 import { resetDemo } from "./routes/reset.js";
 import {
   getCurrentUser,
@@ -114,6 +125,24 @@ route(
   "pickups/{pickupId}/deliver",
   confirmDelivery,
 );
+route(
+  "createDeliveryReceipt",
+  "POST",
+  "pickups/{pickupId}/receipt",
+  createDeliveryReceipt,
+);
+route(
+  "createDriverRating",
+  "POST",
+  "pickups/{pickupId}/driver-rating",
+  createDriverRating,
+);
+route(
+  "listDriverRatingOpportunities",
+  "GET",
+  "driver-ratings/opportunities",
+  listDriverRatingOpportunities,
+);
 route("listCoupons", "GET", "coupons", listCoupons);
 route("redeemCoupon", "POST", "coupons/{couponId}/redeem", redeemCoupon);
 route("streamEvents", "GET", "events", streamEvents);
@@ -121,6 +150,15 @@ route("stream", "GET", "stream", streamEvents);
 route("getSellerImpact", "GET", "impact", getSellerImpact);
 route("getImpactMetrics", "GET", "metrics/impact", getSellerImpact);
 route("getSellerForecast", "GET", "impact/forecast", getSellerForecast);
+route("getSellerDashboard", "GET", "seller/dashboard", getSellerDashboard);
+route("getDriverDashboard", "GET", "driver/dashboard", getDriverDashboard);
+route("getNgoDashboard", "GET", "ngo/dashboard", getNgoDashboard);
+route(
+  "getPlatformDashboard",
+  "GET",
+  "platform/dashboard",
+  getPlatformDashboard,
+);
 route("getPartnerDashboard", "GET", "partner/dashboard", getPartnerDashboard);
 route(
   "listPartnerRedemptions",

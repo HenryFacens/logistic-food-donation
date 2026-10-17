@@ -1,9 +1,4 @@
-import type {
-  Donation,
-  MatchingScore,
-  Offer,
-  OfferStatus,
-} from '@resgata/shared'
+import type { MatchingScore, Offer, OfferStatus } from '@resgata/shared'
 
 const dateTime = new Intl.DateTimeFormat('pt-BR', {
   dateStyle: 'short',
@@ -18,6 +13,20 @@ const categoryLabels: Record<string, string> = {
   prepared: 'Refeição pronta',
   produce: 'Hortifruti',
 }
+
+const unitLabels: Record<string, string> = {
+  box: 'caixas',
+  kg: 'kg',
+  tray: 'bandejas',
+  unit: 'unidades',
+}
+
+const withoutSimulationMarker = (value: string) =>
+  value
+    .replace(/\bSIMULADO\b/giu, '')
+    .replace(/\s*[-—·]\s*(?=\p{L}|\p{N})/gu, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
 
 export const offerStatusLabels: Record<OfferStatus, string> = {
   accepted: 'Aceita',
@@ -76,14 +85,9 @@ export const mapOfferDecision = (
 }
 
 export const offerTitle = (offer: Offer) =>
-  offer.donation?.description || `Doação ${offer.donationId.slice(0, 8)}`
-
-const unitLabels: Record<Donation['unit'], [string, string]> = {
-  box: ['caixa', 'caixas'],
-  kg: ['kg', 'kg'],
-  tray: ['bandeja', 'bandejas'],
-  unit: ['unidade', 'unidades'],
-}
+  offer.donation?.description
+    ? withoutSimulationMarker(offer.donation.description)
+    : `Doação ${offer.donationId.slice(0, 8)}`
 
 export const offerSummary = (offer: Offer) => {
   const donation = offer.donation
@@ -91,6 +95,28 @@ export const offerSummary = (offer: Offer) => {
   const category = donation.category
     ? categoryLabels[donation.category] || donation.category
     : 'Categoria pendente'
-  const unit = unitLabels[donation.unit][donation.quantity === 1 ? 0 : 1]
-  return `${category} · ${donation.quantity} ${unit} · ${donation.estimatedWeightKg} kg estimados`
+  return `${category} · ${donation.quantity} ${unitLabels[donation.unit] || donation.unit} · ${donation.estimatedWeightKg} kg estimados`
+}
+
+export const offerFreshnessLabel = (offer: Offer) => {
+  const minutes = offer.donation?.perishabilityMinutes
+  if (!minutes) return null
+  if (minutes < 60) return `Boa por cerca de ${minutes} min`
+  const hours = Math.max(1, Math.round(minutes / 60))
+  return `Boa por cerca de ${hours}h`
+}
+
+export const offerResponseWindow = (
+  offer: Pick<Offer, 'expiresAt' | 'status'>,
+  now = new Date(),
+) => {
+  if (offer.status !== 'pending') return offerStatusLabels[offer.status]
+  const milliseconds = new Date(offer.expiresAt).getTime() - now.getTime()
+  if (milliseconds <= 0) return 'Prazo encerrado'
+  const totalMinutes = Math.max(1, Math.ceil(milliseconds / 60_000))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return hours > 0
+    ? `Responder em ${hours}h ${minutes.toString().padStart(2, '0')}min`
+    : `Responder em ${minutes} min`
 }

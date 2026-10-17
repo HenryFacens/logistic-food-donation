@@ -10,8 +10,10 @@ import { useDemoUsers } from '../api/demoUsers'
 import { PhoneLogin } from '../components/PhoneLogin'
 import { RoleCard } from '../components/RoleCard'
 import {
+  buildSessionEntries,
+  entryForSignedInUser,
   groupSessionIdentities,
-  rolePaths,
+  type SessionEntry,
   type SessionIdentity,
 } from '../model/session'
 import { sessionMessages } from '../messages'
@@ -19,24 +21,27 @@ import { sessionMessages } from '../messages'
 export interface LoginPageProps {
   apiClient: ApiClient
   currentDemoKey?: string | null
+  currentEntryPoint?: SessionEntry['entryPoint'] | null
   fallbackUsers?: readonly SessionIdentity[]
   onNavigate?(path: string): void
-  onSelectUser(identity: SessionIdentity): void
+  onSelectUser(identity: SessionEntry): void
 }
 
 export function LoginPage({
   apiClient,
   currentDemoKey,
+  currentEntryPoint,
   fallbackUsers = [],
   onNavigate = navigate,
   onSelectUser,
 }: LoginPageProps) {
   const usersQuery = useDemoUsers(apiClient, fallbackUsers)
   const users = groupSessionIdentities(usersQuery.data || [])
+  const entries = buildSessionEntries(users)
 
-  const selectIdentity = (identity: SessionIdentity) => {
+  const selectIdentity = (identity: SessionEntry) => {
     onSelectUser(identity)
-    onNavigate(rolePaths[identity.role])
+    onNavigate(identity.defaultPath)
   }
 
   return (
@@ -53,13 +58,13 @@ export function LoginPage({
         <LoadingState label={sessionMessages.loading} />
       ) : null}
 
-      {usersQuery.isError && users.length ? (
+      {usersQuery.isError && entries.length ? (
         <output className="block">
           <StatusBadge label={sessionMessages.fallback} tone="warning" />
         </output>
       ) : null}
 
-      {usersQuery.isError && !users.length ? (
+      {usersQuery.isError && !entries.length ? (
         <EmptyState
           action={
             <Button
@@ -76,13 +81,16 @@ export function LoginPage({
         />
       ) : null}
 
-      {users.length ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {users.map((identity) => (
+      {entries.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {entries.map((identity) => (
             <RoleCard
-              current={identity.demoKey === currentDemoKey}
+              current={
+                identity.demoKey === currentDemoKey &&
+                identity.entryPoint === currentEntryPoint
+              }
               identity={identity}
-              key={identity.demoKey}
+              key={`${identity.demoKey}:${identity.entryPoint}`}
               onSelect={selectIdentity}
             />
           ))}
@@ -92,7 +100,10 @@ export function LoginPage({
       <details className="max-w-md">
         <summary className="cursor-pointer font-bold">{sessionMessages.phoneOptional}</summary>
         <div className="mt-3">
-          <PhoneLogin apiClient={apiClient} onSignedIn={selectIdentity} />
+          <PhoneLogin
+            apiClient={apiClient}
+            onSignedIn={(identity) => selectIdentity(entryForSignedInUser(identity))}
+          />
         </div>
       </details>
     </div>

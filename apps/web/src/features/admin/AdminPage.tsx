@@ -7,12 +7,14 @@ import {
   LoadingState,
   StatusBadge,
 } from '../../shared/ui'
+import { adminMessages } from './messages'
 import {
   useDeadLettersQuery,
   useQueueDashboardQuery,
   useReplayDeadLettersMutation,
 } from './queries'
 import {
+  buildQueueHealth,
   formatQueueAge,
   queueLabels,
   summarizeQueues,
@@ -34,6 +36,10 @@ export function AdminPage() {
 
   const summary = useMemo(
     () => summarizeQueues(queues.data?.queues || []),
+    [queues.data?.queues],
+  )
+  const health = useMemo(
+    () => buildQueueHealth(queues.data?.queues || []),
     [queues.data?.queues],
   )
   const visibleSelected = useMemo(() => {
@@ -73,28 +79,53 @@ export function AdminPage() {
     }
   }
 
+  const checkedAt = queues.data
+    ? new Intl.DateTimeFormat('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }).format(new Date(queues.data.checkedAt))
+    : null
+
   return (
     <div className="admin-page">
-      <section className="admin-summary" aria-label="Resumo das filas">
-        <Card className="admin-summary__card">
-          <span>Pendentes</span>
-          <strong>{summary.pending}</strong>
-          <small>prontas ou agendadas</small>
-        </Card>
-        <Card className="admin-summary__card">
-          <span>Em processamento</span>
-          <strong>{summary.inFlight}</strong>
-          <small>mensagens em execução</small>
-        </Card>
-        <Card className="admin-summary__card admin-summary__card--danger">
-          <span>Dead-letter</span>
-          <strong>{summary.deadLetter}</strong>
-          <small>aguardando análise</small>
-        </Card>
-        <Card className="admin-summary__driver">
+      <header className="admin-header">
+        <div>
+          <span className="eyebrow">{adminMessages.eyebrow}</span>
+          <h2>{adminMessages.title}</h2>
+          <p>{adminMessages.subtitle}</p>
+        </div>
+        <div className="admin-header__meta">
+          <StatusBadge
+            label={queues.isError ? 'Integração indisponível' : 'Dados operacionais'}
+            tone={queues.isError ? 'danger' : 'success'}
+          />
+          <span>{checkedAt ? `Verificado às ${checkedAt}` : 'Consultando agora'}</span>
+        </div>
+      </header>
+
+      <Card className="admin-indicator">
+        <div>
+          <span className="eyebrow">Indicador principal</span>
+          <strong>{adminMessages.indicatorTitle}</strong>
+        </div>
+        <b>{health.healthRate}%</b>
+        <p>
+          {health.totalQueues === 0
+            ? 'Aguardando o message bus retornar as filas configuradas.'
+            : `${health.healthyQueues} de ${health.totalQueues} filas não possuem mensagens em dead-letter.`}
+        </p>
+        <StatusBadge
+          label={health.healthRate === 100 ? 'Operação estável' : 'Requer atenção'}
+          tone={health.healthRate === 100 ? 'success' : 'warning'}
+        />
+      </Card>
+
+      <Card className="admin-activity">
+        <div className="admin-section-heading">
           <div>
-            <span className="eyebrow">Message bus</span>
-            <strong>{queues.data?.driver || '—'}</strong>
+            <span className="eyebrow">Tempo real</span>
+            <h2>{adminMessages.activityTitle}</h2>
           </div>
           <Button
             icon="refresh"
@@ -103,25 +134,72 @@ export function AdminPage() {
           >
             Atualizar filas
           </Button>
-        </Card>
-      </section>
+        </div>
+
+        {queues.isPending ? (
+          <LoadingState label="Consultando filas" />
+        ) : queues.isError ? (
+          <EmptyState
+            action={
+              <Button icon="refresh" onClick={() => void queues.refetch()}>
+                Tentar novamente
+              </Button>
+            }
+            description={queues.error.message}
+            icon="warning"
+            title="Filas indisponíveis"
+          />
+        ) : (
+          <>
+            <div className="admin-activity__bars">
+              {health.activity.map((state) => (
+                <div
+                  className={`admin-activity__row admin-activity__row--${state.key}`}
+                  key={state.key}
+                >
+                  <span>{state.label}</span>
+                  <div aria-hidden="true">
+                    <span style={{ width: `${state.width}%` }} />
+                  </div>
+                  <strong>{state.value}</strong>
+                </div>
+              ))}
+            </div>
+            <div className="admin-activity__metrics">
+              <div>
+                <span>Mensagens visíveis</span>
+                <strong>{health.totalVisibleMessages}</strong>
+              </div>
+              <div>
+                <span>Pendentes</span>
+                <strong>{summary.pending}</strong>
+              </div>
+              <div>
+                <span>Em processamento</span>
+                <strong>{summary.inFlight}</strong>
+              </div>
+              <div>
+                <span>Dead-letter</span>
+                <strong>{summary.deadLetter}</strong>
+              </div>
+              <div>
+                <span>Driver</span>
+                <strong>{queues.data.driver}</strong>
+              </div>
+            </div>
+          </>
+        )}
+      </Card>
 
       <Card className="admin-queues">
         <div className="admin-section-heading">
           <div>
-            <span className="eyebrow">Operação</span>
-            <h2>Saúde das filas</h2>
+            <span className="eyebrow">Diagnóstico</span>
+            <h2>{adminMessages.queuesTitle}</h2>
           </div>
-          {queues.data ? (
-            <span className="admin-updated">
-              Verificado às{' '}
-              {new Intl.DateTimeFormat('pt-BR', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              }).format(new Date(queues.data.checkedAt))}
-            </span>
-          ) : null}
+          <span className="admin-updated">
+            Atualização automática a cada 15 segundos
+          </span>
         </div>
 
         {queues.isPending ? (
@@ -184,8 +262,8 @@ export function AdminPage() {
       <Card className="admin-dead-letters">
         <div className="admin-section-heading admin-section-heading--actions">
           <div>
-            <span className="eyebrow">Recuperação</span>
-            <h2>Mensagens dead-letter</h2>
+            <span className="eyebrow">Recuperação real</span>
+            <h2>{adminMessages.deadLettersTitle}</h2>
           </div>
           <div className="admin-toolbar">
             <label>
@@ -222,6 +300,11 @@ export function AdminPage() {
             </Button>
           </div>
         </div>
+
+        <p className="admin-dead-letters__note">
+          A seleção, o filtro, a leitura do payload e o replay idempotente abaixo
+          continuam conectados aos endpoints administrativos existentes.
+        </p>
 
         {notice ? (
           <div

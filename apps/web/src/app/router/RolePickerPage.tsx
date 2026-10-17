@@ -3,16 +3,7 @@ import { navigate } from '../../shared/routing'
 import {
   DEMO_IDENTITIES,
   useSession,
-  type DemoIdentity,
 } from '../providers'
-import { defaultPathForRole } from './contract'
-
-const roleLabels: Record<DemoIdentity['role'], string> = {
-  driver: 'Motorista',
-  ngo: 'ONG',
-  partner: 'Parceiro',
-  seller: 'Doador',
-}
 
 export function RolePickerPage() {
   const { selectUser } = useSession()
@@ -29,24 +20,33 @@ export function RolePickerPage() {
       </div>
       <div className="role-picker__grid">
         {DEMO_IDENTITIES.map((identity) => (
-          <Card key={identity.demoKey}>
+          <Card key={`${identity.demoKey}:${identity.entryPoint}`}>
             <div className="role-picker__card-header">
               <span className="role-picker__icon">
-                <AppIcon name={identity.role === 'driver' ? 'route' : 'user'} />
+                <AppIcon
+                  name={
+                    identity.role === 'driver'
+                      ? 'route'
+                      : identity.role === 'platform'
+                        ? 'dashboard'
+                        : 'user'
+                  }
+                />
               </span>
               <SimuladoBadge />
             </div>
-            <h2>{roleLabels[identity.role]}</h2>
+            <h2>{identity.label}</h2>
             <p>{identity.displayName}</p>
             <Button
+              aria-label={`Entrar em ${identity.label} como ${identity.displayName}`}
               icon="arrow-right"
               onClick={() => {
                 selectUser(identity)
-                navigate(defaultPathForRole(identity.role))
+                navigate(identity.defaultPath)
               }}
               variant="primary"
             >
-              Entrar como {roleLabels[identity.role]}
+              Entrar em {identity.label}
             </Button>
           </Card>
         ))}
@@ -54,4 +54,3 @@ export function RolePickerPage() {
     </div>
   )
 }
-

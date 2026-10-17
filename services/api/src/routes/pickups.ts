@@ -55,8 +55,6 @@ export const listPickups: ApiHandler = async (request) => {
     values.push(query.limit + 1);
     const result = await client.query(
       `SELECT ${pickupSelect},
-              donation.estimated_weight_kg AS donation_weight_kg,
-              donation.description AS donation_description,
               ${isDriver ? "ST_Distance(me.current_location, pickup.pickup_location) / 1000.0" : "NULL"} AS distance_km
        FROM pickups AS pickup
        JOIN donations AS donation ON donation.id = pickup.donation_id

@@ -11,6 +11,8 @@ export interface ImpactCategoryInput {
   weightKg: number
 }
 
+export type ImpactEvidence = 'estimated' | 'real'
+
 const categoryLabels: Record<string, string> = {
   bakery: 'Padaria',
   dairy: 'Laticínios',
@@ -49,8 +51,31 @@ export const formatDateRange = (start: string, end: string) => {
 export const buildImpactCards = (metrics: ImpactMetricInput[]) =>
   metrics.map((metric) => ({
     ...metric,
+    evidence: (
+      metric.key === 'meals' || metric.key === 'co2' ? 'estimated' : 'real'
+    ) as ImpactEvidence,
     formattedValue: formatMetricValue(metric.value, metric.unit),
   }))
+
+export const findImpactMetric = (
+  metrics: ImpactMetricInput[],
+  key: string,
+) => metrics.find((metric) => metric.key === key)
+
+export const buildImpactSnapshot = (metrics: ImpactMetricInput[]) => {
+  const donations = findImpactMetric(metrics, 'donations')?.value || 0
+  const weightKg = findImpactMetric(metrics, 'weight')?.value || 0
+  const meals = findImpactMetric(metrics, 'meals')?.value || 0
+  const co2Kg = findImpactMetric(metrics, 'co2')?.value || 0
+
+  return {
+    co2Kg,
+    donations,
+    meals,
+    proofCoverageLabel: donations > 0 ? `${donations} entregas concluídas` : 'Sem entregas',
+    weightKg,
+  }
+}
 
 export const buildCategoryRows = (categories: ImpactCategoryInput[]) => {
   const maximumWeight = Math.max(...categories.map(({ weightKg }) => weightKg), 0)

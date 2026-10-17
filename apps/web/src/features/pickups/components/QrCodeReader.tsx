@@ -74,8 +74,9 @@ export function QrCodeReader({ onCode }: { onCode(code: string): void }) {
   }, [active, onCode])
 
   return (
-    <div className="grid gap-2">
+    <div className="qr-reader">
       <Button
+        className="qr-reader__button"
         icon={active ? 'warning' : 'route'}
         onClick={() => setActive((current) => !current)}
         variant="secondary"
@@ -85,13 +86,13 @@ export function QrCodeReader({ onCode }: { onCode(code: string): void }) {
       {active ? (
         <video
           aria-label="Visualização da câmera para leitura do QR"
-          className="aspect-video w-full rounded-2xl bg-black object-cover"
+          className="qr-reader__video"
           muted
           playsInline
           ref={videoRef}
         />
       ) : null}
-      {message ? <output className="mb-0 block text-sm">{message}</output> : null}
+      {message ? <output className="qr-reader__message">{message}</output> : null}
     </div>
   )
 }

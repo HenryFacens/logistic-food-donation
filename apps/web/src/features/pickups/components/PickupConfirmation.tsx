@@ -34,6 +34,7 @@ export function PickupConfirmation({
   const [locationMessage, setLocationMessage] = useState<string | null>(null)
   const [currentLocation, setCurrentLocation] = useState<GeoPoint | null>(null)
   const label = action === 'collect' ? 'retirada' : 'entrega'
+  const codeDigits = Array.from({ length: 6 }, (_, index) => code[index] || '')
 
   const readCode = useCallback((value: string) => {
     setCode(normalizeConfirmationCode(value))
@@ -90,18 +91,22 @@ export function PickupConfirmation({
   }
 
   return (
-    <div className="grid gap-4 rounded-2xl border border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface-raised))] p-4">
-      <div>
+    <div className="pickup-confirmation">
+      <div className="pickup-confirmation__heading">
         <span className="eyebrow">Confirmação segura</span>
-        <h3 className="mb-1 text-lg">Confirmar {label}</h3>
-        <p className="mb-0 text-sm">Leia o QR ou use o código manual informado no local.</p>
+        <h3>Confirmar {label}</h3>
+        <p>Leia o QR ou use o código manual informado no local.</p>
       </div>
       <QrCodeReader onCode={readCode} />
-      <label className="grid gap-1 font-bold" htmlFor={`pickup-code-${pickup.id}-${action}`}>
-        Código manual
+      <label className="pickup-confirmation__code" htmlFor={`pickup-code-${pickup.id}-${action}`}>
+        <span>Ou digite o código de 6 números</span>
+        <span className="pickup-confirmation__digits" aria-hidden="true">
+          {codeDigits.map((digit, index) => (
+            <span className={digit ? 'is-filled' : ''} key={index}>{digit}</span>
+          ))}
+        </span>
         <input
           autoComplete="one-time-code"
-          className="min-h-12 rounded-xl border border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))] px-4 text-center text-2xl font-black tracking-[0.35em]"
           id={`pickup-code-${pickup.id}-${action}`}
           inputMode="numeric"
           maxLength={6}
@@ -111,13 +116,22 @@ export function PickupConfirmation({
           value={code}
         />
       </label>
-      <Button icon="route" onClick={locate}>Usar localização do navegador</Button>
-      {locationMessage ? <output className="mb-0 block text-sm">{locationMessage}</output> : null}
-      <p className="mb-0 text-xs">
-        Fallback: se o GPS falhar, o ponto cadastrado da {label} será enviado.
-      </p>
+      <div className="pickup-confirmation__location">
+        <div>
+          <strong>{currentLocation ? 'GPS capturado' : 'Confirmar localização'}</strong>
+          <span>
+            {currentLocation
+              ? coordinateLabel(currentLocation)
+              : `Sem validação de distância. Se o GPS falhar, será usado o ponto cadastrado da ${label}.`}
+          </span>
+        </div>
+        <Button icon="location" onClick={locate}>
+          {currentLocation ? 'Atualizar GPS' : 'Usar GPS'}
+        </Button>
+      </div>
+      {locationMessage ? <output className="pickup-confirmation__location-message">{locationMessage}</output> : null}
       {error ? <p className="mb-0 text-sm font-bold text-[rgb(var(--color-danger))]" role="alert">{error}</p> : null}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="pickup-confirmation__actions">
         <Button disabled={busy} onClick={onCancel} variant="ghost">Cancelar</Button>
         <Button disabled={busy} icon="check" onClick={() => void submit()} variant="primary">
           Confirmar {label}

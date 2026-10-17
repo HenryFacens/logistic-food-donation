@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildSessionEntries,
   groupSessionIdentities,
   rolePaths,
   type SessionIdentity,
@@ -20,5 +21,22 @@ describe('session model', () => {
 
   it('routes sellers to the donation flow', () => {
     expect(rolePaths.seller).toBe('/doar')
+  })
+
+  it('offers operation and analytics entry points for the same NGO', () => {
+    const entries = buildSessionEntries([
+      {
+        demoKey: 'ngo-prato-solidario',
+        displayName: 'Prato Solidário',
+        role: 'ngo',
+      },
+    ])
+
+    expect(
+      entries.map(({ entryPoint, defaultPath }) => [entryPoint, defaultPath]),
+    ).toEqual([
+      ['ngo-operations', '/ong/ofertas'],
+      ['ngo-analytics', '/ong/painel'],
+    ])
   })
 })
