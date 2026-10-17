@@ -18,6 +18,7 @@ import {
   shortAddress,
 } from '../viewModels'
 import { PickupConfirmation } from './PickupConfirmation'
+import { PickupProgress } from './PickupProgress'
 
 interface PickupCardProps {
   audience: 'driver' | 'ngo'
@@ -74,6 +75,8 @@ export function PickupCard({
           <StatusBadge label={pickupStatusLabels[pickup.status]} tone={statusTone(pickup.status)} />
         </div>
       </div>
+
+      <PickupProgress status={pickup.status} />
 
       {summary ? (
         <div className="flex flex-wrap items-baseline justify-between gap-3">

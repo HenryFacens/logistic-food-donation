@@ -15,6 +15,7 @@
   "dependencies": {
     "@resgata/shared": "workspace:*",
     "@tanstack/react-query": "5.104.3",
+    "lottie-web": "5.12.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "workbox-window": "^7.3.0"

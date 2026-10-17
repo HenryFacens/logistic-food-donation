@@ -1,12 +1,21 @@
-import type { Pickup } from '@resgata/shared'
-import { useEffect, useMemo, useState } from 'react'
 import {
+  COLLECTION_REWARD_POINTS,
+  calculateRewardPoints,
+  type GeoPoint,
+  type Pickup,
+} from '@resgata/shared'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { flushSync } from 'react-dom'
+import {
+  AppIcon,
   Button,
   EmptyState,
+  LottiePlayer,
   MetricValue,
   SimuladoBadge,
   useToast,
 } from '../../../shared/ui'
+import routeAnimation from '../animations/route.json'
 import {
   useCurrentProfile,
   usePickupActions,
@@ -18,6 +27,7 @@ import {
 } from '../components/AvailablePickupCard'
 import { PickupCard } from '../components/PickupCard'
 import { SelectionBar } from '../components/SelectionBar'
+import { SuccessBurst, type Celebration } from '../components/SuccessBurst'
 import { pickupMessages } from '../messages'
 import {
   acceptOutcomeMessage,
@@ -46,10 +56,26 @@ const useNow = (intervalMs: number) => {
   return now
 }
 
+const reducedMotion = () =>
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+
+/** Morphs the cards into their new order where View Transitions exist. */
+const withViewTransition = (update: () => void) => {
+  const start = (
+    document as Document & { startViewTransition?: (callback: () => void) => unknown }
+  ).startViewTransition
+  if (!start || reducedMotion()) {
+    update()
+    return
+  }
+  start.call(document, () => flushSync(update))
+}
+
 export function DriverDeliveriesPage() {
   const [tab, setTab] = useState<DriverTab>('available')
   const [sort, setSort] = useState<AvailableSort>('urgency')
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set())
+  const [celebration, setCelebration] = useState<Celebration | null>(null)
   const pickups = usePickups('driver', {
     refetchInterval: tab === 'available' ? AVAILABLE_REFETCH_MS : false,
   })
@@ -57,6 +83,7 @@ export function DriverDeliveriesPage() {
   const actions = usePickupActions()
   const toast = useToast()
   const now = useNow(30_000)
+  const clearCelebration = useCallback(() => setCelebration(null), [])
 
   const groups = useMemo(
     () => splitDriverPickups(pickups.data?.items ?? [], profile.data?.profileId),
@@ -90,7 +117,24 @@ export function DriverDeliveriesPage() {
       const outcome = await actions.acceptMany.mutateAsync(
         selected.map((pickup) => pickup.id),
       )
-      toast.show(acceptOutcomeMessage(outcome), acceptOutcomeTone(outcome))
+      const acceptedPoints = selected
+        .filter((pickup) => outcome.accepted.includes(pickup.id))
+        .reduce((sum, pickup) => sum + (pickup.summary?.rewardPoints ?? 0), 0)
+      // Full success gets the celebration; partial outcomes need the toast text.
+      if (outcome.taken.length || outcome.failed.length) {
+        toast.show(acceptOutcomeMessage(outcome), acceptOutcomeTone(outcome))
+      }
+      if (outcome.accepted.length) {
+        setCelebration({
+          id: Date.now(),
+          points: acceptedPoints,
+          subtitle: 'Rota pronta em Minhas entregas',
+          title:
+            outcome.accepted.length === 1
+              ? '1 entrega aceita'
+              : `${outcome.accepted.length} entregas aceitas`,
+        })
+      }
       setSelectedIds(new Set(outcome.failed.map((failure) => failure.id)))
       if (outcome.accepted.length && !outcome.failed.length) {
         setTab('mine')
@@ -104,6 +148,33 @@ export function DriverDeliveriesPage() {
     }
   }
 
+  const confirmStep = async (input: {
+    action: 'collect' | 'deliver'
+    code: string
+    location: GeoPoint
+    pickupId: string
+  }) => {
+    const pickup = groups.active.find((item) => item.id === input.pickupId)
+    const result = await actions.confirm.mutateAsync(input)
+    // Same shared rule the API uses when crediting each step.
+    setCelebration(
+      input.action === 'collect'
+        ? {
+            id: Date.now(),
+            points: COLLECTION_REWARD_POINTS,
+            subtitle: 'Siga para a ONG com os alimentos',
+            title: 'Retirada confirmada',
+          }
+        : {
+            id: Date.now(),
+            points: calculateRewardPoints(pickup?.summary?.estimatedWeightKg ?? 0),
+            subtitle: 'Alimento resgatado. Obrigado!',
+            title: 'Entrega concluída',
+          },
+    )
+    return result
+  }
+
   return (
     <div
       className={
@@ -112,7 +183,13 @@ export function DriverDeliveriesPage() {
           : 'driver-deliveries'
       }
     >
-      <div className="driver-tabs" role="tablist" aria-label="Entregas do motorista">
+      <div
+        aria-label="Entregas do motorista"
+        className="driver-tabs"
+        data-active={tab}
+        role="tablist"
+      >
+        <span className="driver-tabs__indicator" aria-hidden="true" />
         <button
           aria-controls="driver-panel-available"
           aria-selected={tab === 'available'}
@@ -122,8 +199,13 @@ export function DriverDeliveriesPage() {
           role="tab"
           type="button"
         >
+          <AppIcon name="package" size={18} />
           Disponíveis
-          {pickups.data ? <span className="driver-tab__count">{groups.available.length}</span> : null}
+          {pickups.data ? (
+            <span className="driver-tab__count" key={groups.available.length}>
+              {groups.available.length}
+            </span>
+          ) : null}
         </button>
         <button
           aria-controls="driver-panel-mine"
@@ -134,8 +216,13 @@ export function DriverDeliveriesPage() {
           role="tab"
           type="button"
         >
+          <AppIcon name="truck" size={18} />
           Minhas entregas
-          {pickups.data ? <span className="driver-tab__count">{groups.active.length}</span> : null}
+          {pickups.data ? (
+            <span className="driver-tab__count" key={groups.active.length}>
+              {groups.active.length}
+            </span>
+          ) : null}
         </button>
       </div>
 
@@ -155,36 +242,48 @@ export function DriverDeliveriesPage() {
       ) : tab === 'available' ? (
         <section
           aria-labelledby="driver-tab-available"
-          className="grid gap-4"
+          className="driver-panel grid gap-4"
           id="driver-panel-available"
+          key="available"
           role="tabpanel"
         >
           {available.length ? (
             <>
               <div className="driver-toolbar">
                 <p>
+                  <span className="live-dot" aria-hidden="true" />
                   Selecione uma ou mais entregas
                   {profile.data?.capacityKg ? (
                     <>
-                      {' · capacidade '}
+                      {' · '}
+                      <AppIcon name="truck" size={16} />
                       <MetricValue value={formatKg(profile.data.capacityKg)} />
                     </>
                   ) : null}
                 </p>
                 <fieldset className="driver-sort">
                   <legend className="sr-only">Ordenar entregas</legend>
-                  <Button aria-pressed={sort === 'urgency'} onClick={() => setSort('urgency')}>
+                  <Button
+                    aria-pressed={sort === 'urgency'}
+                    icon="clock"
+                    onClick={() => withViewTransition(() => setSort('urgency'))}
+                  >
                     Mais urgentes
                   </Button>
-                  <Button aria-pressed={sort === 'nearest'} onClick={() => setSort('nearest')}>
+                  <Button
+                    aria-pressed={sort === 'nearest'}
+                    icon="navigation"
+                    onClick={() => withViewTransition(() => setSort('nearest'))}
+                  >
                     Mais perto
                   </Button>
                 </fieldset>
               </div>
               <div className="driver-available-grid">
-                {available.map((pickup) => (
+                {available.map((pickup, index) => (
                   <AvailablePickupCard
                     disabled={accepting}
+                    index={index}
                     key={pickup.id}
                     now={now}
                     onToggle={toggle}
@@ -195,37 +294,47 @@ export function DriverDeliveriesPage() {
               </div>
             </>
           ) : (
-            <EmptyState
-              description={pickupMessages.emptyAvailable}
-              icon="route"
-              title="Nenhuma entrega disponível agora"
-            />
+            <div className="driver-empty">
+              <LottiePlayer animationData={routeAnimation} className="driver-empty__lottie" loop />
+              <h2>Nenhuma entrega disponível agora</h2>
+              <p>{pickupMessages.emptyAvailable}</p>
+              <span className="driver-empty__live">
+                <span className="live-dot" aria-hidden="true" />
+                Procurando novas entregas
+              </span>
+            </div>
           )}
         </section>
       ) : (
         <section
           aria-labelledby="driver-tab-mine"
-          className="grid gap-4"
+          className="driver-panel grid gap-4"
           id="driver-panel-mine"
+          key="mine"
           role="tabpanel"
         >
           {groups.active.length ? (
-            groups.active.map((pickup) => (
-              <PickupCard
-                assigning={false}
-                audience="driver"
-                confirming={actions.confirm.isPending && actions.confirm.variables?.pickupId === pickup.id}
+            groups.active.map((pickup, index) => (
+              <div
+                className="driver-mine-item"
                 key={pickup.id}
-                onAssign={actions.assign.mutateAsync}
-                onConfirm={actions.confirm.mutateAsync}
-                pickup={pickup}
-              />
+                style={{ '--stagger': Math.min(index, 8) } as CSSProperties}
+              >
+                <PickupCard
+                  assigning={false}
+                  audience="driver"
+                  confirming={actions.confirm.isPending && actions.confirm.variables?.pickupId === pickup.id}
+                  onAssign={actions.assign.mutateAsync}
+                  onConfirm={confirmStep}
+                  pickup={pickup}
+                />
+              </div>
             ))
           ) : (
             <EmptyState
-              action={<Button icon="route" onClick={() => setTab('available')}>Ver disponíveis</Button>}
+              action={<Button icon="package" onClick={() => setTab('available')}>Ver disponíveis</Button>}
               description={pickupMessages.emptyMine}
-              icon="route"
+              icon="truck"
               title="Nenhuma entrega em andamento"
             />
           )}
@@ -236,12 +345,16 @@ export function DriverDeliveriesPage() {
       {tab === 'available' && selected.length ? (
         <SelectionBar
           busy={accepting}
+          capacityKg={profile.data?.capacityKg}
           capacityMessage={capacity.message}
           onAccept={() => void accept()}
           onClear={() => setSelectedIds(new Set())}
           summary={selectionSummaryLabel(totals)}
+          totals={totals}
         />
       ) : null}
+
+      <SuccessBurst celebration={celebration} onDone={clearCelebration} />
     </div>
   )
 }
@@ -251,6 +364,7 @@ function CompletedPickups({ pickups }: { pickups: readonly Pickup[] }) {
   return (
     <details className="driver-completed">
       <summary>
+        <AppIcon name="check" size={18} />
         Concluídas ({pickups.length})
         <span className="ml-auto"><SimuladoBadge /></span>
       </summary>

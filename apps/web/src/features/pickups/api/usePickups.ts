@@ -154,15 +154,8 @@ export function usePickupActions() {
       stableKeys.clear(scope)
       return parsed
     },
-    onSuccess: async (_result, variables) => {
-      await refresh()
-      toast.show(
-        variables.action === 'collect'
-          ? pickupMessages.collectSuccess
-          : pickupMessages.deliverSuccess,
-        'success',
-      )
-    },
+    // The driver screen celebrates each step (SuccessBurst, role="status").
+    onSuccess: refresh,
   })
 
   return { acceptMany, assign, confirm }

@@ -1,5 +1,11 @@
 import type { Pickup } from '@resgata/shared'
-import { MetricValue, SimuladoBadge, StatusBadge } from '../../../shared/ui'
+import type { CSSProperties } from 'react'
+import {
+  AppIcon,
+  MetricValue,
+  SimuladoBadge,
+  StatusBadge,
+} from '../../../shared/ui'
 import {
   displayName,
   formatKg,
@@ -11,6 +17,7 @@ import {
 
 interface AvailablePickupCardProps {
   disabled: boolean
+  index: number
   now: number
   onToggle(pickupId: string): void
   pickup: Pickup
@@ -19,6 +26,7 @@ interface AvailablePickupCardProps {
 
 export function AvailablePickupCard({
   disabled,
+  index,
   now,
   onToggle,
   pickup,
@@ -27,25 +35,35 @@ export function AvailablePickupCard({
   const summary = pickup.summary
   const urgency = pickupUrgency(summary?.expiresAt, now)
   const inputId = `select-pickup-${pickup.id}`
+  const style = {
+    '--stagger': Math.min(index, 8),
+    // Lets the browser morph cards between positions when the sort changes.
+    viewTransitionName: `pickup-${pickup.id}`,
+  } as CSSProperties
 
   return (
     <label
       className="delivery-card"
       data-disabled={disabled}
       data-selected={selected}
+      data-urgency={urgency?.tone ?? 'none'}
       htmlFor={inputId}
+      style={style}
     >
       <div className="delivery-card__top">
         <StatusBadge
-          icon="donation"
+          icon="package"
           label={summary?.category ? pickupCategoryLabels[summary.category] : 'Doação'}
         />
         {urgency ? (
-          <StatusBadge
-            icon={urgency.tone ? 'warning' : 'clock'}
-            label={urgency.label}
-            tone={urgency.tone ?? 'neutral'}
-          />
+          <span className="delivery-card__urgency">
+            {urgency.tone === 'danger' ? <span className="urgency-ping" aria-hidden="true" /> : null}
+            <StatusBadge
+              icon={urgency.tone ? 'warning' : 'clock'}
+              label={urgency.label}
+              tone={urgency.tone ?? 'neutral'}
+            />
+          </span>
         ) : null}
         <SimuladoBadge />
       </div>
@@ -63,14 +81,18 @@ export function AvailablePickupCard({
         <>
           <ol className="delivery-route" aria-label="Rota">
             <li>
-              <span className="delivery-route__marker" aria-hidden="true" />
+              <span className="delivery-route__icon delivery-route__icon--origin" aria-hidden="true">
+                <AppIcon name="pin" size={16} />
+              </span>
               <div>
                 <strong>{displayName(summary.sellerName)}</strong>
                 <span>Retirada · {shortAddress(summary.pickupAddress)}</span>
               </div>
             </li>
             <li>
-              <span className="delivery-route__marker" aria-hidden="true" />
+              <span className="delivery-route__icon delivery-route__icon--destination" aria-hidden="true">
+                <AppIcon name="flag" size={16} />
+              </span>
               <div>
                 <strong>{displayName(summary.ngoName)}</strong>
                 <span>Entrega · {shortAddress(summary.deliveryAddress)}</span>
@@ -79,10 +101,12 @@ export function AvailablePickupCard({
           </ol>
           <div className="delivery-card__distances">
             <span>
+              <AppIcon name="route" size={16} />
               Rota <span className="metric-value">{formatKm(summary.routeDistanceKm)}</span>
             </span>
             {summary.distanceToPickupKm !== null ? (
               <span>
+                <AppIcon name="navigation" size={15} />
                 a <span className="metric-value">{formatKm(summary.distanceToPickupKm)}</span> de você
               </span>
             ) : null}
@@ -91,18 +115,27 @@ export function AvailablePickupCard({
       ) : null}
 
       <div className="delivery-card__footer">
-        <strong className="delivery-card__points metric-value" aria-label={`Recompensa de ${summary?.rewardPoints ?? 0} pontos`}>
-          +{summary?.rewardPoints ?? 0} pts
+        <strong
+          aria-label={`Recompensa de ${summary?.rewardPoints ?? 0} pontos`}
+          className="delivery-card__points metric-value"
+        >
+          <AppIcon name="star" size={18} />+{summary?.rewardPoints ?? 0} pts
         </strong>
         <span className="delivery-card__select">
           {selected ? 'Selecionada' : 'Selecionar'}
           <input
             checked={selected}
+            className="sr-only"
             disabled={disabled}
             id={inputId}
             onChange={() => onToggle(pickup.id)}
             type="checkbox"
           />
+          <span className="delivery-check" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="m6 12.5 4 4 8-9" />
+            </svg>
+          </span>
         </span>
       </div>
     </label>
